@@ -1,0 +1,35 @@
+profiles:
+    default:
+        enabled-distributions: [npm]
+        tool:
+            name: jevlint
+            main: ./cmd/jevlint
+        version:
+            source: env
+        targets:
+            - os: darwin
+              arch: amd64
+            - os: darwin
+              arch: arm64
+            - os: linux
+              arch: amd64
+            - os: linux
+              arch: arm64
+            - os: windows
+              arch: amd64
+        build:
+            ldflags: -s -w -X main.version=${OMNIDIST_VERSION}
+            tags: []
+            cgo: false
+        distributions:
+            npm:
+                package: jevlint
+                aliases:
+                    - '@diffpal/jevlint'
+                platform-package: '@diffpal/jevlint'
+                repository-url: https://github.com/diffpal/jevlint
+                license: MIT
+                registry: https://registry.npmjs.org
+                access: public
+                publish-auth: token
+                include-readme: true

@@ -1,0 +1,54 @@
+name: Stage distribution
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SemVer version for local staging (for example 0.1.0-dev.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    env:
+      OMNIDIST_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Validate staging version
+        shell: bash
+        run: |
+          if [[ ! "$OMNIDIST_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo 'Expected a SemVer staging version' >&2
+            exit 1
+          fi
+      - name: Build, stage, and verify
+        run: |
+          npx -y @omnidist/omnidist@0.1.37 build
+          npx -y @omnidist/omnidist@0.1.37 stage
+          npx -y @omnidist/omnidist@0.1.37 verify
+      - name: Hash target binaries
+        shell: bash
+        run: |
+          find .omnidist/default/dist -type f -name 'jevlint*' -print0 |
+            sort -z | xargs -0 sha256sum > .omnidist/default/dist/checksums.txt
+          test "$(wc -l < .omnidist/default/dist/checksums.txt)" -eq 5
+      - name: Store staged artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jevlint-staged-${{ inputs.version }}
+          path: |
+            .omnidist/default/dist/
+            .omnidist/default/npm/
+          if-no-files-found: error

@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  correctness:
+    name: Go correctness (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - run: go build ./...
+      - run: go test ./...
+      - run: go vet ./...
+      - name: Format and race
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          test -z "$(git ls-files -z '*.go' | xargs -0 gofmt -l)"
+          go test -race ./...

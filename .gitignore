@@ -5,3 +5,7 @@
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+
+# Local binaries and Omnidist profile workspaces
+/jevlint
+/.omnidist/*/
