@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -115,6 +116,9 @@ func TestCompareRenameOnlyHasNoAnchor(t *testing.T) {
 func TestCompareUnusualCommittedPath(t *testing.T) {
 	dir := testRepo(t)
 	name := "odd\nname:part.txt"
+	if runtime.GOOS == "windows" {
+		name = "odd name part.txt"
+	}
 	base := testCommit(t, dir, name, "before\n")
 	head := testCommit(t, dir, name, "after\n")
 	repo, err := NewRepository(dir, Limits{})

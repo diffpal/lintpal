@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -90,8 +91,12 @@ func TestRenameOnlyAndBinary(t *testing.T) {
 func TestParseRealDiffWithUnusualPathsAndRename(t *testing.T) {
 	dir := testRepo(t)
 	name := "a space\tname.txt"
-	base := testCommit(t, dir, name, "one\ntwo\nthree\nfour\n")
 	renamed := "new space\tname.txt"
+	if runtime.GOOS == "windows" {
+		name = "a space name.txt"
+		renamed = "new space name.txt"
+	}
+	base := testCommit(t, dir, name, "one\ntwo\nthree\nfour\n")
 	runTestGit(t, dir, "mv", name, renamed)
 	if err := os.WriteFile(filepath.Join(dir, renamed), []byte("one\ntwo\nthree\nfive\n"), 0600); err != nil {
 		t.Fatal(err)
