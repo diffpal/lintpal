@@ -1,4 +1,0 @@
-jevlint jevlint.report.v1 base=<base> head=<head> merge_base=<base>
-medium RIGHT "example.go":2-2 rule="correctness.ignored-error" title="Possible ignored error" message="Changed code may ignore a meaningful error." evidence=noul_probability:0.99 provider="custom" model="jev-latest"
-high RIGHT "example.go":2-2 rule="security.shell-injection" title="Possible shell injection" message="Changed code may pass untrusted data to a shell command." evidence=noul_probability:0.99 provider="custom" model="jev-latest"
-stats work_items=1 skipped=0 groups=1 batches=1 questions=2 diagnostics=2 input_tokens=1 output_tokens=1

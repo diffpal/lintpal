@@ -1,9 +1,9 @@
-# `jevlint.report.v1` report reference
+# `lintpal.report.v1` report reference
 
-`jevlint lint --format json` writes one UTF-8 JSON object followed by a newline.
+`lintpal lint --format json` writes one UTF-8 JSON object followed by a newline.
 `--format human` writes a line-oriented rendering of the same report. The
-checked-in [JSON](../cmd/jevlint/testdata/golden/report.json) and
-[human](../cmd/jevlint/testdata/golden/report.txt) goldens show a two-diagnostic
+checked-in [JSON](../cmd/lintpal/testdata/golden/report.json) and
+[human](../cmd/lintpal/testdata/golden/report.txt) goldens show a two-diagnostic
 comparison. `--out PATH` writes an additional JSON artifact atomically, even
 when stdout uses the human format.
 
@@ -11,7 +11,7 @@ when stdout uses the human format.
 
 | Field | Meaning |
 | --- | --- |
-| `schema_version` | Exact string `jevlint.report.v1`. |
+| `schema_version` | Exact string `lintpal.report.v1`. |
 | `base_sha`, `head_sha` | Full Git object IDs of the requested committed revisions (40 or 64 hex digits). |
 | `merge_base_sha` | Full Git object ID of their merge base; it may equal `base_sha`. |
 | `diagnostics` | Ordered array of accepted findings; empty array when none. |

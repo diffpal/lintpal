@@ -1,0 +1,218 @@
+[
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 0,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [
+      {
+        "rule_id": "correctness.ignored-error",
+        "work_item_id": "5b312c5953923bd43e8cbdc3c7c297c468ff016c17e0e135fb14ed1af2d731e0",
+        "severity": "medium",
+        "path": "pkg/worker.go",
+        "side": "RIGHT",
+        "start_line": 2,
+        "end_line": 2,
+        "title": "Possible ignored error",
+        "message": "Changed code may ignore a meaningful error.",
+        "provider": "fixture",
+        "model": "jev-offline",
+        "evidence": {
+          "kind": "noul_probability",
+          "value": 0.97
+        }
+      }
+    ],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 1,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 0,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [
+      {
+        "rule_id": "security.shell-injection",
+        "work_item_id": "64f34b88681ed4f1cad7c9f405ceeee031d74f718780327b227eb4b078905240",
+        "severity": "high",
+        "path": "pkg/false_positive.go",
+        "side": "RIGHT",
+        "start_line": 2,
+        "end_line": 2,
+        "title": "Possible shell injection",
+        "message": "Changed code may pass untrusted data to a shell command.",
+        "provider": "fixture",
+        "model": "jev-offline",
+        "evidence": {
+          "kind": "noul_probability",
+          "value": 0.96
+        }
+      }
+    ],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 1,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [
+      {
+        "rule_id": "security.shell-injection",
+        "work_item_id": "0a5817bc4ad05afa47f62a82f2461cb447f356971771640dbe8ff7d0e4d58ca3",
+        "severity": "high",
+        "path": "pkg/boundary.go",
+        "side": "RIGHT",
+        "start_line": 2,
+        "end_line": 2,
+        "title": "Possible shell injection",
+        "message": "Changed code may pass untrusted data to a shell command.",
+        "provider": "fixture",
+        "model": "jev-offline",
+        "evidence": {
+          "kind": "noul_probability",
+          "value": 0.95
+        }
+      }
+    ],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 1,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 0,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [
+      {
+        "rule_id": "security.shell-injection",
+        "work_item_id": "23de6ab11dfb468123ddb6875f69b412e6674c0448d9c13d38f8e4a292b11f9e",
+        "severity": "high",
+        "path": "pkg/command.go",
+        "side": "RIGHT",
+        "start_line": 2,
+        "end_line": 2,
+        "title": "Possible shell injection",
+        "message": "Changed code may pass untrusted data to a shell command.",
+        "provider": "fixture",
+        "model": "jev-offline",
+        "evidence": {
+          "kind": "noul_probability",
+          "value": 0.98
+        }
+      }
+    ],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 1,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "schema_version": "lintpal.report.v1",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diagnostics": [],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 0,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  }
+]

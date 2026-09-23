@@ -1,6 +1,6 @@
 # Privacy and current limits
 
-`jevlint lint` reads committed Git objects at the requested base and head. It
+`lintpal lint` reads committed Git objects at the requested base and head. It
 does not inspect uncommitted working-tree source for lint context. It sends
 bounded committed source context and rule questions to the **selected remote
 provider** when using a remote endpoint. Decide whether that transfer is
@@ -9,8 +9,8 @@ loopback endpoint can keep the provider exchange on the local machine.
 
 Provider presets read only their selected credential (`TYPESAFE_API_KEY` for
 `jev`, `OPENROUTER_API_KEY` for `openrouter`); `custom` reads the variable named
-by `--auth-token-env` (`JEVLINT_TOKEN` by default). Tokens are not accepted as
-CLI flag values. Before exporting a report, jevlint checks its complete JSON
+by `--auth-token-env` (`LINTPAL_TOKEN` by default). Tokens are not accepted as
+CLI flag values. Before exporting a report, lintpal checks its complete JSON
 and rendered output against the **selected credential value** and fails if it
 appears. This guard does not scan for unrelated process secrets, and it does
 not prevent source transfer to the chosen provider. Avoid putting secrets in

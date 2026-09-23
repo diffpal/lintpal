@@ -1,4 +1,4 @@
-module github.com/diffpal/jevlint
+module github.com/diffpal/lintpal
 
 go 1.26.6
 

@@ -7,5 +7,5 @@
 *.gate.lock*
 
 # Local binaries and Omnidist profile workspaces
-/jevlint
+/lintpal
 /.omnidist/*/

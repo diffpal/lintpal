@@ -2,8 +2,8 @@ profiles:
     default:
         enabled-distributions: [npm]
         tool:
-            name: jevlint
-            main: ./cmd/jevlint
+            name: lintpal
+            main: ./cmd/lintpal
         version:
             source: env
         targets:
@@ -23,11 +23,11 @@ profiles:
             cgo: false
         distributions:
             npm:
-                package: jevlint
+                package: lintpal
                 aliases:
-                    - '@diffpal/jevlint'
-                platform-package: '@diffpal/jevlint'
-                repository-url: https://github.com/diffpal/jevlint
+                    - '@diffpal/lintpal'
+                platform-package: '@diffpal/lintpal'
+                repository-url: https://github.com/diffpal/lintpal
                 license: MIT
                 registry: https://registry.npmjs.org
                 access: public

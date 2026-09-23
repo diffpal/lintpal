@@ -1,21 +1,21 @@
-# jevlint architecture
+# lintpal architecture
 
-The executable lives in `cmd/jevlint`. All application packages live under
-`internal/apps/jevlint`.
+The executable lives in `cmd/lintpal`. All application packages live under
+`internal/apps/lintpal`.
 
 ```text
-cmd/jevlint
-  -> internal/apps/jevlint/di (Fx composition)
-  -> internal/apps/jevlint/cli (Cobra commands)
-  -> internal/apps/jevlint/app (one-shot Linter)
-  -> internal/apps/jevlint/jev (typed decision port)
+cmd/lintpal
+  -> internal/apps/lintpal/di (Fx composition)
+  -> internal/apps/lintpal/cli (Cobra commands)
+  -> internal/apps/lintpal/app (one-shot Linter)
+  -> internal/apps/lintpal/jev (typed decision port)
 ```
 
 The arrows describe allowed dependency flow. Plain constructors in `app` and
 the typed Jev port can be used without Cobra, Fx, ADK, credentials, or a live
 provider. The DI package creates a run-scoped Fx graph after Cobra resolves
 trusted lint options.
-`internal/apps/jevlint/runtime/adk` owns local ADK telemetry providers; the
+`internal/apps/lintpal/runtime/adk` owns local ADK telemetry providers; the
 Fx module registers their shutdown hook. It does not install global providers,
 configure an exporter, run an ADK agent, or convert typed Jev decisions into
 ADK model requests. Its local observer records only fixed stage/status names,
@@ -25,17 +25,17 @@ source text, paths, questions, URLs, and errors do not enter telemetry.
 This foundation requires Go 1.26.6 because the pinned ADK v2.4.0 module
 declares that minimum. Cobra v1.10.2 and Fx v1.24.0 are pinned in `go.mod`.
 Build and verify locally with `go build ./...`, `go test ./...`, and
-`go vet ./...`. `go run ./cmd/jevlint --help` displays the command tree;
+`go vet ./...`. `go run ./cmd/lintpal --help` displays the command tree;
 `docs/cli.md` records its flags and exit contract.
 
 Git scope, bounded context, rules, the System One transport, lint orchestration,
-and reports now live under `internal/apps/jevlint`. The CLI Story binds their
+and reports now live under `internal/apps/lintpal`. The CLI Story binds their
 constructors in `di` and owns process options and exit behavior. The ADK runtime
 does not own Jev answers.
 
 ## Committed Git input
 
-`internal/apps/jevlint/git.NewRepository(dir, limits).Compare(ctx, base, head)`
+`internal/apps/lintpal/git.NewRepository(dir, limits).Compare(ctx, base, head)`
 resolves both revisions to commits, requires one merge base, and reads a
 bounded raw diff and patch. It returns ordered LEFT/RIGHT `WorkItem` values
 with stable IDs and changed-line spans. `Result.Source(item)` returns a copy of
@@ -49,7 +49,7 @@ into bounded hunk context. The CLI Story owns user-facing flags and exit codes.
 
 ## Bounded context and batching
 
-`internal/apps/jevlint/contextplan.Assemble` reads only `git.Result.Source` for
+`internal/apps/lintpal/contextplan.Assemble` reads only `git.Result.Source` for
 the committed work items. It sorts items by path, side, hunk, and line, renders
 numbered source lines with a two-line surrounding window, and retains each
 work-item ID and changed-line span in exactly one `Group`. Compatible hunks on
@@ -77,8 +77,8 @@ or question text. Source disclosure to a remote provider occurs when
 
 ## Declarative rules and policy
 
-`internal/apps/jevlint/rules` accepts one UTF-8 YAML document with
-`schema: jevlint.rules.v1` and a nonempty `rules` list. Each rule declares
+`internal/apps/lintpal/rules` accepts one UTF-8 YAML document with
+`schema: lintpal.rules.v1` and a nonempty `rules` list. Each rule declares
 `id`, `type` (`noul`, `choice`, or `score`), `instructions`, `threshold` in
 `[0,1]`, `severity` (`low`, `medium`, `high`, `critical`), fixed `title` and
 `message`, and optional `paths` and `sides`. Choice requires option
@@ -116,13 +116,13 @@ cannot choose a provider destination or credential source.
 
 ## System One provider
 
-`internal/apps/jevlint/jev.Provider` remains the native typed decision port.
+`internal/apps/lintpal/jev.Provider` remains the native typed decision port.
 Its Noul, Choice, and Score questions carry the criteria documented by the
 System One API; Choice and Score answers preserve distributions and confidence
 for later rule policy. `jev.ValidateRequest` and `jev.ValidateResponse` reject
 invalid or partial decisions without echoing state or question text.
 
-`internal/apps/jevlint/provider/systemone` implements the port with one
+`internal/apps/lintpal/provider/systemone` implements the port with one
 `POST /v1/systemone` transport. `TypeSafe()` fixes the native destination and
 `TYPESAFE_API_KEY`; `OpenRouter()` fixes its destination and
 `OPENROUTER_API_KEY`. `TrustedCustom(baseURL, tokenEnv)` must be called only
@@ -158,7 +158,7 @@ workers, ten minutes, and 64 MiB. Context limits are passed through to
 `contextplan`. Provider results occupy stable batch slots before final sorting;
 the first failure cancels siblings, and no partial findings are exposed.
 `report.New` checks decisions against the original Git work items and sorts
-diagnostics and skips. The versioned `jevlint.report.v1` artifact includes
+diagnostics and skips. The versioned `lintpal.report.v1` artifact includes
 resolved revisions, evidence, skips, and count/usage stats without source state,
 question text, or credentials.
 

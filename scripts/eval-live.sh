@@ -2,25 +2,25 @@
 set -euo pipefail
 umask 077
 
-# Optional, local-only evaluation. Requires Python 3, jq, git, and a built jevlint.
-: "${JEVLINT_EVAL_BIN:?set JEVLINT_EVAL_BIN to a built jevlint executable}"
-: "${JEVLINT_EVAL_PROVIDER:?set JEVLINT_EVAL_PROVIDER}"
-: "${JEVLINT_EVAL_MODEL:?set JEVLINT_EVAL_MODEL to a pinned model}"
-: "${JEVLINT_EVAL_OUTPUT:?set JEVLINT_EVAL_OUTPUT to a local JSON path}"
-if [[ "$JEVLINT_EVAL_MODEL" == "jev-latest" ]]; then
+# Optional, local-only evaluation. Requires Python 3, jq, git, and a built lintpal.
+: "${LINTPAL_EVAL_BIN:?set LINTPAL_EVAL_BIN to a built lintpal executable}"
+: "${LINTPAL_EVAL_PROVIDER:?set LINTPAL_EVAL_PROVIDER}"
+: "${LINTPAL_EVAL_MODEL:?set LINTPAL_EVAL_MODEL to a pinned model}"
+: "${LINTPAL_EVAL_OUTPUT:?set LINTPAL_EVAL_OUTPUT to a local JSON path}"
+if [[ "$LINTPAL_EVAL_MODEL" == "jev-latest" ]]; then
   echo 'a pinned model is required' >&2
   exit 2
 fi
-if [[ "$JEVLINT_EVAL_BIN" != /* ]]; then
-  echo 'JEVLINT_EVAL_BIN must be an absolute path' >&2
+if [[ "$LINTPAL_EVAL_BIN" != /* ]]; then
+  echo 'LINTPAL_EVAL_BIN must be an absolute path' >&2
   exit 2
 fi
-case "$JEVLINT_EVAL_PROVIDER" in
+case "$LINTPAL_EVAL_PROVIDER" in
   jev) token_env=TYPESAFE_API_KEY ;;
   openrouter) token_env=OPENROUTER_API_KEY ;;
   custom)
-    : "${JEVLINT_EVAL_BASE_URL:?custom evaluation requires JEVLINT_EVAL_BASE_URL}"
-    token_env="${JEVLINT_EVAL_AUTH_TOKEN_ENV:-JEVLINT_TOKEN}"
+    : "${LINTPAL_EVAL_BASE_URL:?custom evaluation requires LINTPAL_EVAL_BASE_URL}"
+    token_env="${LINTPAL_EVAL_AUTH_TOKEN_ENV:-LINTPAL_TOKEN}"
     ;;
   *) echo 'invalid evaluation provider' >&2; exit 2 ;;
 esac
@@ -33,13 +33,13 @@ if [[ -z "$token" ]]; then
   echo 'selected credential is missing' >&2
   exit 2
 fi
-if [[ ( -n "${JEVLINT_EVAL_INPUT_USD_PER_MILLION:-}" && -z "${JEVLINT_EVAL_OUTPUT_USD_PER_MILLION:-}" ) ||
-      ( -z "${JEVLINT_EVAL_INPUT_USD_PER_MILLION:-}" && -n "${JEVLINT_EVAL_OUTPUT_USD_PER_MILLION:-}" ) ]]; then
+if [[ ( -n "${LINTPAL_EVAL_INPUT_USD_PER_MILLION:-}" && -z "${LINTPAL_EVAL_OUTPUT_USD_PER_MILLION:-}" ) ||
+      ( -z "${LINTPAL_EVAL_INPUT_USD_PER_MILLION:-}" && -n "${LINTPAL_EVAL_OUTPUT_USD_PER_MILLION:-}" ) ]]; then
   echo 'provide both token prices or neither' >&2
   exit 2
 fi
-input_price="${JEVLINT_EVAL_INPUT_USD_PER_MILLION:-null}"
-output_price="${JEVLINT_EVAL_OUTPUT_USD_PER_MILLION:-null}"
+input_price="${LINTPAL_EVAL_INPUT_USD_PER_MILLION:-null}"
+output_price="${LINTPAL_EVAL_OUTPUT_USD_PER_MILLION:-null}"
 if ! jq -e -n --argjson input "$input_price" --argjson output "$output_price" \
   'if $input == null then $output == null else
      ($input|type) == "number" and ($output|type) == "number" and $input >= 0 and $output >= 0 end' >/dev/null; then
@@ -48,13 +48,13 @@ if ! jq -e -n --argjson input "$input_price" --argjson output "$output_price" \
 fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-corpus="$repo_root/internal/apps/jevlint/eval/testdata/corpus.json"
-if ! jq -e '.schema_version == "jevlint.eval.corpus.v1" and (.cases | type == "array" and length > 0 and length <= 128)' "$corpus" >/dev/null; then
+corpus="$repo_root/internal/apps/lintpal/eval/testdata/corpus.json"
+if ! jq -e '.schema_version == "lintpal.eval.corpus.v1" and (.cases | type == "array" and length > 0 and length <= 128)' "$corpus" >/dev/null; then
   echo 'invalid evaluation corpus' >&2
   exit 2
 fi
 corpus_hash="$(sha256sum "$corpus" | cut -d ' ' -f 1)"
-binary_hash="$(sha256sum "$JEVLINT_EVAL_BIN" | cut -d ' ' -f 1)"
+binary_hash="$(sha256sum "$LINTPAL_EVAL_BIN" | cut -d ' ' -f 1)"
 workdir="$(mktemp -d)"
 trap 'rm -rf -- "$workdir"' EXIT
 rows="$workdir/rows.jsonl"
@@ -80,7 +80,7 @@ while IFS= read -r case_json; do
   case_dir="$workdir/$case_id"
   mkdir -p "$case_dir/$(dirname "$case_path")"
   git -C "$case_dir" init -q
-  git -C "$case_dir" config user.name 'jevlint eval'
+  git -C "$case_dir" config user.name 'lintpal eval'
   git -C "$case_dir" config user.email 'eval@example.invalid'
   printf 'package fixture\n' >"$case_dir/$case_path"
   git -C "$case_dir" add -- "$case_path"
@@ -91,14 +91,14 @@ while IFS= read -r case_json; do
   git -C "$case_dir" commit -qm head
   head="$(git -C "$case_dir" rev-parse HEAD)"
 
-  args=(lint --base "$base" --head "$head" --provider "$JEVLINT_EVAL_PROVIDER"
-    --model "$JEVLINT_EVAL_MODEL" --rules "" --out "" --format json --fail-on none
+  args=(lint --base "$base" --head "$head" --provider "$LINTPAL_EVAL_PROVIDER"
+    --model "$LINTPAL_EVAL_MODEL" --rules "" --out "" --format json --fail-on none
     --timeout 2m --max-concurrency 4)
-  if [[ "$JEVLINT_EVAL_PROVIDER" == custom ]]; then
-    args+=(--base-url "$JEVLINT_EVAL_BASE_URL" --auth-token-env "$token_env")
+  if [[ "$LINTPAL_EVAL_PROVIDER" == custom ]]; then
+    args+=(--base-url "$LINTPAL_EVAL_BASE_URL" --auth-token-env "$token_env")
   fi
   started="$(python3 -c 'import time; print(time.monotonic_ns() // 1000000)')"
-  if ! (cd "$case_dir" && "$JEVLINT_EVAL_BIN" "${args[@]}") >"$case_dir/report.json" 2>"$case_dir/error.txt"; then
+  if ! (cd "$case_dir" && "$LINTPAL_EVAL_BIN" "${args[@]}") >"$case_dir/report.json" 2>"$case_dir/error.txt"; then
     echo "evaluation failed for case $case_id" >&2
     exit 1
   fi
@@ -116,10 +116,10 @@ while IFS= read -r case_json; do
     ' >>"$rows"
 done < <(jq -c '.cases[]' "$corpus")
 
-manifest="$(jq -s --arg provider "$JEVLINT_EVAL_PROVIDER" --arg model "$JEVLINT_EVAL_MODEL" \
+manifest="$(jq -s --arg provider "$LINTPAL_EVAL_PROVIDER" --arg model "$LINTPAL_EVAL_MODEL" \
   --arg corpus_hash "$corpus_hash" --arg binary_hash "$binary_hash" '
   sort_by(.id) as $cases |
-  {schema_version:"jevlint.eval.live.v1", corpus_version:"jevlint.eval.corpus.v1",
+  {schema_version:"lintpal.eval.live.v1", corpus_version:"lintpal.eval.corpus.v1",
    corpus_sha256:$corpus_hash, binary_sha256:$binary_hash,
    provider:$provider, model:$model, cases:$cases,
    true_positive:($cases|map(select(.truth == "buggy" and .predicted))|length),
@@ -135,8 +135,8 @@ if [[ "$manifest" == *"$token"* ]]; then
   echo 'evaluation manifest is unsafe' >&2
   exit 4
 fi
-output_dir="$(dirname "$JEVLINT_EVAL_OUTPUT")"
+output_dir="$(dirname "$LINTPAL_EVAL_OUTPUT")"
 mkdir -p "$output_dir"
-temp_output="$(mktemp "$output_dir/.jevlint-eval.XXXXXX")"
+temp_output="$(mktemp "$output_dir/.lintpal-eval.XXXXXX")"
 printf '%s\n' "$manifest" >"$temp_output"
-mv -f -- "$temp_output" "$JEVLINT_EVAL_OUTPUT"
+mv -f -- "$temp_output" "$LINTPAL_EVAL_OUTPUT"

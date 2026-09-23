@@ -1,21 +1,21 @@
-# jevlint CLI
+# lintpal CLI
 
-`jevlint lint` reads a committed Git comparison from the current repository.
+`lintpal lint` reads a committed Git comparison from the current repository.
 It never reads uncommitted source for lint context. The command writes one
 complete report to stdout; operational messages use stderr.
 
 ```bash
 export TYPESAFE_API_KEY='...'
-jevlint lint --base origin/main --head HEAD --provider jev
+lintpal lint --base origin/main --head HEAD --provider jev
 
 export OPENROUTER_API_KEY='...'
-jevlint lint --base origin/main --head HEAD --provider openrouter --format json
+lintpal lint --base origin/main --head HEAD --provider openrouter --format json
 
-export JEVLINT_TOKEN='...'
-mkdir -p .artifacts/jevlint
-jevlint lint --base origin/main --head HEAD --provider custom \
+export LINTPAL_TOKEN='...'
+mkdir -p .artifacts/lintpal
+lintpal lint --base origin/main --head HEAD --provider custom \
   --base-url https://jev.example.internal --model jev-latest \
-  --format json --out .artifacts/jevlint/report.json
+  --format json --out .artifacts/lintpal/report.json
 ```
 
 The default provider is `jev` (TypeSafe), format is `human`, model alias is
@@ -25,18 +25,18 @@ selected provider accepts. The CLI does not query the model catalog during lint.
 
 | Flag | Environment setting | Purpose |
 | --- | --- | --- |
-| `--base` | `JEVLINT_BASE` | Required base revision. |
-| `--head` | `JEVLINT_HEAD` | Required head revision. |
-| `--provider` | `JEVLINT_PROVIDER` | `jev`, `openrouter`, or `custom`. |
-| `--model` | `JEVLINT_MODEL` | System One model name or alias. |
-| `--rules` | `JEVLINT_RULES` | Explicit declarative YAML rule pack; built-ins otherwise. |
-| `--format` | `JEVLINT_FORMAT` | `human` or `json` on stdout. |
-| `--out` | `JEVLINT_OUT` | Additional atomic JSON artifact path. |
-| `--fail-on` | `JEVLINT_FAIL_ON` | `low`, `medium`, `high`, `critical`, or `none`. |
-| `--timeout` | `JEVLINT_TIMEOUT` | Whole-run deadline; default `2m`, maximum `10m`. |
-| `--max-concurrency` | `JEVLINT_MAX_CONCURRENCY` | Provider workers; default `4`, maximum `16`. |
-| `--base-url` | `JEVLINT_BASE_URL` | Required for `custom`; rejected for presets. |
-| `--auth-token-env` | `JEVLINT_AUTH_TOKEN_ENV` | Custom token variable name; defaults to `JEVLINT_TOKEN`. |
+| `--base` | `LINTPAL_BASE` | Required base revision. |
+| `--head` | `LINTPAL_HEAD` | Required head revision. |
+| `--provider` | `LINTPAL_PROVIDER` | `jev`, `openrouter`, or `custom`. |
+| `--model` | `LINTPAL_MODEL` | System One model name or alias. |
+| `--rules` | `LINTPAL_RULES` | Explicit declarative YAML rule pack; built-ins otherwise. |
+| `--format` | `LINTPAL_FORMAT` | `human` or `json` on stdout. |
+| `--out` | `LINTPAL_OUT` | Additional atomic JSON artifact path. |
+| `--fail-on` | `LINTPAL_FAIL_ON` | `low`, `medium`, `high`, `critical`, or `none`. |
+| `--timeout` | `LINTPAL_TIMEOUT` | Whole-run deadline; default `2m`, maximum `10m`. |
+| `--max-concurrency` | `LINTPAL_MAX_CONCURRENCY` | Provider workers; default `4`, maximum `16`. |
+| `--base-url` | `LINTPAL_BASE_URL` | Required for `custom`; rejected for presets. |
+| `--auth-token-env` | `LINTPAL_AUTH_TOKEN_ENV` | Custom token variable name; defaults to `LINTPAL_TOKEN`. |
 | `--metrics` | — | Print fixed local stage counts and durations to stderr. |
 
 An explicitly supplied flag wins over its environment setting; the setting
@@ -58,13 +58,13 @@ are fixed; the values are nonnegative counts and elapsed milliseconds. No
 source, path, question, endpoint, token, raw response, or error text enters
 the local recorder or its trace attributes. The recorder uses an in-process
 ADK/OpenTelemetry provider without an exporter or global registration, so it
-does not make telemetry requests. Metrics stay out of `jevlint.report.v1`.
+does not make telemetry requests. Metrics stay out of `lintpal.report.v1`.
 If the selected credential happens to match a metrics line, that snapshot is
 suppressed. Durations vary by run and are not a performance guarantee.
 
 `--out` writes JSON to a temporary file in the destination directory and
 renames it only after the complete artifact is written. With both sinks,
-jevlint writes the artifact, then stdout, then evaluates the severity gate.
+lintpal writes the artifact, then stdout, then evaluates the severity gate.
 `--fail-on none` keeps findings in the report and disables exit code 10.
 
 | Exit code | Meaning |
@@ -77,10 +77,10 @@ jevlint writes the artifact, then stdout, then evaluates the severity gate.
 | 10 | Complete report written; diagnostic met the gate. |
 | 130 | Interrupted or canceled. |
 
-`jevlint doctor` checks local Git/repository availability and whether the
+`lintpal doctor` checks local Git/repository availability and whether the
 selected provider's credential is present. It makes no provider request and
-prints no credential value. `jevlint version` prints the build version (`dev`
-in an unreleased build). `jevlint completion bash|zsh|fish|powershell`
+prints no credential value. `lintpal version` prints the build version (`dev`
+in an unreleased build). `lintpal completion bash|zsh|fish|powershell`
 generates a shell completion script. [Resource limits](resource-limits.md)
 records finite caps and their tests. [Privacy and limitations](privacy.md)
 explains provider transfer and the output guard.

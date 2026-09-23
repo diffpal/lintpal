@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: SemVer version for local staging (for example 0.1.0-dev.1)
+        description: SemVer version for local staging (for example 0.2.0-dev.1)
         required: true
         type: string
 
@@ -41,13 +41,13 @@ jobs:
       - name: Hash target binaries
         shell: bash
         run: |
-          find .omnidist/default/dist -type f -name 'jevlint*' -print0 |
+          find .omnidist/default/dist -type f -name 'lintpal*' -print0 |
             sort -z | xargs -0 sha256sum > .omnidist/default/dist/checksums.txt
           test "$(wc -l < .omnidist/default/dist/checksums.txt)" -eq 5
       - name: Store staged artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: jevlint-staged-${{ inputs.version }}
+          name: lintpal-staged-${{ inputs.version }}
           path: |
             .omnidist/default/dist/
             .omnidist/default/npm/
