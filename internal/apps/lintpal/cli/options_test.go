@@ -13,12 +13,15 @@ func TestResolvePrecedenceAndTrust(t *testing.T) {
 	env := map[string]string{"LINTPAL_BASE": "env-base", "LINTPAL_HEAD": "env-head", "LINTPAL_PROVIDER": "openrouter", "LINTPAL_FAIL_ON": "none", "LINTPAL_TIMEOUT": "3m"}
 	lookup := func(name string) (string, bool) { value, ok := env[name]; return value, ok }
 	o, err := Resolve(RawOptions{Base: "flag-base", Changed: map[string]bool{"base": true}}, lookup)
-	if err != nil || o.Base != "flag-base" || o.Head != "env-head" || o.Provider != "openrouter" || o.FailOn != report.None || o.Limits.Timeout != 3*time.Minute {
+	if err != nil || o.Base != "flag-base" || o.Head != "env-head" || o.Provider != "openrouter" || o.FailOn != report.None || !o.Gate || o.Limits.Timeout != 3*time.Minute {
 		t.Fatalf("precedence: %+v, %v", o, err)
 	}
 	o, err = Resolve(RawOptions{Base: "a", Head: "b", Changed: map[string]bool{"base": true, "head": true}}, nil)
-	if err != nil || o.Provider != "jev" || o.Model != "jev-latest" || o.FailOn != report.High || o.Limits.Concurrency != 4 {
+	if err != nil || o.Provider != "jev" || o.Model != "jev-latest" || o.FailOn != report.High || !o.Gate || o.Limits.Concurrency != 4 {
 		t.Fatalf("defaults: %+v, %v", o, err)
+	}
+	if o.Format != report.Markdown {
+		t.Fatalf("wrong default format: %s", o.Format)
 	}
 	for _, raw := range []RawOptions{
 		{Base: "", Head: "b", Changed: map[string]bool{"base": true, "head": true}},
@@ -26,6 +29,7 @@ func TestResolvePrecedenceAndTrust(t *testing.T) {
 		{Base: "a", Head: "b", BaseURL: "https://host.test", Changed: map[string]bool{"base": true, "head": true, "base-url": true}},
 		{Base: "a", Head: "b", AuthTokenEnv: "OTHER_TOKEN", Changed: map[string]bool{"base": true, "head": true, "auth-token-env": true}},
 		{Base: "a", Head: "b", FailOn: "fatal", Changed: map[string]bool{"base": true, "head": true, "fail-on": true}},
+		{Base: "a", Head: "b", Format: "human", Changed: map[string]bool{"base": true, "head": true, "format": true}},
 		{Base: "a", Head: "b", MaxConcurrency: "17", Changed: map[string]bool{"base": true, "head": true, "max-concurrency": true}},
 	} {
 		if _, err := Resolve(raw, lookup); !errors.Is(err, ErrInvalidOptions) {
@@ -38,6 +42,29 @@ func TestResolvePrecedenceAndTrust(t *testing.T) {
 	}
 	if _, err := Resolve(RawOptions{Base: "a", Head: "b", Out: t.TempDir(), Changed: map[string]bool{"base": true, "head": true, "out": true}}, nil); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("directory output accepted: %v", err)
+	}
+}
+
+func TestResolveBlockOn(t *testing.T) {
+	base := RawOptions{Base: "a", Head: "b", BlockOn: "medium", Changed: map[string]bool{"base": true, "head": true, "block-on": true}}
+	options, err := Resolve(base, func(name string) (string, bool) {
+		if name == "LINTPAL_FAIL_ON" {
+			return "critical", true
+		}
+		return "", false
+	})
+	if err != nil || options.FailOn != report.Medium || options.Gate {
+		t.Fatalf("block-on did not select deferred mode: %+v, %v", options, err)
+	}
+	base.FailOn = "high"
+	base.Changed["fail-on"] = true
+	if _, err := Resolve(base, nil); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("accepted conflicting flags: %v", err)
+	}
+	delete(base.Changed, "fail-on")
+	base.BlockOn = "bad"
+	if _, err := Resolve(base, nil); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("accepted invalid block-on: %v", err)
 	}
 }
 

@@ -36,7 +36,7 @@ Oversized or canceled runs fail without a partial report. The CLI reports a
 fixed error category instead of raw provider or source text.
 
 This MVP covers committed comparisons, changed-line diagnostics, built-in or
-declarative rules, and `human`/`json` reports. It does not analyze uncommitted
+declarative rules, and Markdown/JSON reports. It does not analyze uncommitted
 changes, apply fixes, emit SARIF, or integrate directly with a PR host. The
 offline [evaluation corpus](evaluation.md) checks policy plumbing with fake
 provider probabilities; its counts are not live model precision, latency, or

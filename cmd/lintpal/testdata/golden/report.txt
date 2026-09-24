@@ -1,4 +1,0 @@
-lintpal v5 base=<base> head=<head> merge_base=<base>
-medium RIGHT "example.go":2-2 rule="correctness/ignored-error.md" title="Possible rule violation" message="Changed code may violate correctness/ignored-error.md." evidence=noul_probability:0.99 provider="custom" model="jev-latest"
-medium RIGHT "example.go":2-2 rule="security/shell-injection.md" title="Possible rule violation" message="Changed code may violate security/shell-injection.md." evidence=noul_probability:0.99 provider="custom" model="jev-latest"
-stats work_items=1 skipped=0 groups=1 batches=1 questions=2 diagnostics=2 input_tokens=1 output_tokens=1

@@ -1,12 +1,13 @@
 # Shared findings v5
 
 `lintpal lint --format json` writes one UTF-8 JSON object followed by a
-newline. `--out PATH` writes the same complete object atomically. DiffPal also
+newline. `--out PATH` writes the complete JSON object atomically regardless of
+stdout format. DiffPal also
 writes a v5 findings bundle. The canonical contract is in DiffPal at
 `schemas/findings/v5.schema.json`; LintPal keeps a pinned
 [offline copy](schema/findings-v5.schema.json). The
 [JSON](../cmd/lintpal/testdata/golden/report.json) and
-[human](../cmd/lintpal/testdata/golden/report.txt) goldens show LintPal output.
+[Markdown](../cmd/lintpal/testdata/golden/report.md) goldens show LintPal output.
 
 Both tools use `version: "v5"`, `review_id`, `base_sha`, `head_sha`, and
 `findings`. LintPal also emits `merge_base_sha`, `skips`, and `stats`.
@@ -36,7 +37,8 @@ decision. It is not a calibrated probability that the code is wrong. Rule
 findings omit `confidence` and `impact`. Their message is fixed and includes
 the rule ID. Optional `model` and `work_item_id` identify the run and question.
 Severity comes from frontmatter or an explicit override. `blocking` indicates
-whether the finding meets the run's `--fail-on` gate.
+whether the finding meets the run's selected `--fail-on` or `--block-on`
+threshold. With `--block-on`, lint records the flag but does not gate.
 
 DiffPal code findings use `evidence.kind: "code"` with `anchor`,
 `reasoning_basis`, and `source`; they include structured `impact` and numeric
@@ -52,7 +54,10 @@ count does not prove the provider used no tokens.
 
 The gate runs after the complete report is written. The default
 `--fail-on high` returns exit code `10` for a high or critical finding;
-`--fail-on none` disables that exit code. See [CLI exit codes](cli.md).
+`--fail-on none` disables that exit code. `lint` writes Markdown to stdout by
+default; `feedback markdown --in PATH` renders stored v5 findings without
+changing their `blocking` values. Its optional `--gate` returns exit 10 after
+complete feedback output when any finding is blocking. See [CLI exit codes](cli.md).
 
 ## Migration
 

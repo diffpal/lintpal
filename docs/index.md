@@ -12,7 +12,7 @@ for the short overview.
 - [Configuration](configuration.md): providers, `.env`, rule selection, output,
   and common setup failures.
 - [CLI reference](cli.md): flags, environment settings, and exit codes.
-- [Report reference](report.md): JSON and human output contract.
+- [Report reference](report.md): shared JSON findings and Markdown feedback.
 - [Privacy and limitations](privacy.md): source transfer and current scope.
 
 ## Write and use rules

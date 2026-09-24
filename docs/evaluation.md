@@ -2,7 +2,7 @@
 
 The required evaluation is offline. Run `go test ./internal/apps/lintpal/eval -count=1` to check the frozen corpus in `internal/apps/lintpal/eval/testdata/corpus.json` against `summary.json` and `reports.json` in the same directory. These eight labeled examples use **fake Noul probabilities** with the real built-in rule selection, decision, and report code. The baseline has 3 true positives, 3 true negatives, 1 false positive, and 1 false negative. Those counts test the evaluator and threshold behavior; they are not measured model precision.
 
-The normal `go test ./...` run also checks the CLI JSON and human goldens, parser fuzz seeds, temporary Git repositories, fake System One transport, redaction, cancellation, and resource limits. The required CI workflow has no live provider secret or endpoint. To update an offline baseline after reviewing changed labels, source examples, and diagnostic diffs, run `UPDATE_EVAL_BASELINE=1 go test ./internal/apps/lintpal/eval -count=1` and review both resulting JSON files. This update is a source change that needs normal code review.
+The normal `go test ./...` run also checks the CLI JSON and Markdown goldens, parser fuzz seeds, temporary Git repositories, fake System One transport, redaction, cancellation, and resource limits. The required CI workflow has no live provider secret or endpoint. To update an offline baseline after reviewing changed labels, source examples, and diagnostic diffs, run `UPDATE_EVAL_BASELINE=1 go test ./internal/apps/lintpal/eval -count=1` and review both resulting JSON files. This update is a source change that needs normal code review.
 
 ## Optional live run
 

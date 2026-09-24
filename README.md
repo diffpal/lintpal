@@ -42,12 +42,12 @@ provider:
 ./lintpal doctor --provider jev
 mkdir -p .artifacts/lintpal
 ./lintpal lint --base HEAD~1 --head HEAD --provider jev \
-  --format json --fail-on high --out .artifacts/lintpal/report.json
+  --out .artifacts/lintpal/report.json
 ```
 
 Both revisions must be available commits in the repository where you run
 lintpal. Use an absolute path to the built binary when reviewing another
-repository. The report is printed to stdout and written to the artifact path;
+repository. Markdown feedback is printed to stdout and JSON findings are written to the artifact path;
 exit code `10` means a finding met the gate **after** the complete report was
 written. See [getting started](docs/getting-started.md) for shallow clones,
 other providers, and error handling. See [distribution](docs/distribution.md)

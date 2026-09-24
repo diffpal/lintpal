@@ -37,12 +37,32 @@ func TestProcessExitAndStreams(t *testing.T) {
 		strings.Contains(metricsErr, server.URL) {
 		t.Fatalf("metrics code=%d stdout=%q stderr=%q", metricsCode, metricsOut, metricsErr)
 	}
-	humanArgs := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--fail-on", "none"}
-	humanOut, humanErr, humanCode := runBinary(t, binary, dir, humanArgs)
-	if humanCode != 0 || humanErr != "" || !strings.HasPrefix(humanOut, "lintpal v5 ") || !strings.Contains(humanOut, "medium RIGHT") || !strings.Contains(humanOut, "stats work_items=") {
-		t.Fatalf("human code=%d stdout=%q stderr=%q", humanCode, humanOut, humanErr)
+	markdownArgs := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--fail-on", "none"}
+	markdownOut, markdownErr, markdownCode := runBinary(t, binary, dir, markdownArgs)
+	if markdownCode != 0 || markdownErr != "" || !strings.HasPrefix(markdownOut, "# LintPal findings\n") || !strings.Contains(markdownOut, "(RIGHT)") || !strings.Contains(markdownOut, "Rule:") {
+		t.Fatalf("markdown code=%d stdout=%q stderr=%q", markdownCode, markdownOut, markdownErr)
 	}
-	assertGoldenReport(t, "report.txt", humanOut, base, head)
+	assertGoldenReport(t, "report.md", markdownOut, base, head)
+	deferred := filepath.Join(dir, "deferred.json")
+	deferredArgs := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--block-on", "medium", "--out", deferred, "--format", "json"}
+	deferredOut, deferredErr, deferredCode := runBinary(t, binary, dir, deferredArgs)
+	deferredFile, readErr := os.ReadFile(deferred)
+	if deferredCode != 0 || deferredErr != "" || readErr != nil || !bytes.Equal([]byte(deferredOut), deferredFile) || !strings.Contains(deferredOut, `"blocking": true`) {
+		t.Fatalf("deferred lint: code=%d stdout=%q stderr=%q read=%v", deferredCode, deferredOut, deferredErr, readErr)
+	}
+	feedbackOut, feedbackErr, feedbackCode := runBinary(t, binary, dir, []string{"feedback", "markdown", "--in", deferred})
+	if feedbackCode != 0 || feedbackErr != "" || !strings.Contains(feedbackOut, "(blocking)") {
+		t.Fatalf("feedback: code=%d stdout=%q stderr=%q", feedbackCode, feedbackOut, feedbackErr)
+	}
+	markdownLintArgs := append(append([]string{}, deferredArgs[:len(deferredArgs)-2]...), "--format", "markdown")
+	markdownLintOut, markdownLintErr, markdownLintCode := runBinary(t, binary, dir, markdownLintArgs)
+	if markdownLintCode != 0 || markdownLintErr != "" || markdownLintOut != feedbackOut {
+		t.Fatalf("one-step Markdown differs from feedback: code=%d stdout=%q feedback=%q stderr=%q", markdownLintCode, markdownLintErr, feedbackOut, markdownLintErr)
+	}
+	gateOut, gateErr, gateCode := runBinary(t, binary, dir, []string{"feedback", "markdown", "--in", deferred, "--gate"})
+	if gateCode != 10 || gateOut != feedbackOut || !strings.Contains(gateErr, "severity gate") {
+		t.Fatalf("deferred gate: code=%d stdout=%q stderr=%q", gateCode, gateOut, gateErr)
+	}
 	artifact := filepath.Join(dir, "report.json")
 	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, common...), "--out", artifact, "--fail-on", "medium"))
 	body, err := os.ReadFile(artifact)
@@ -50,6 +70,10 @@ func TestProcessExitAndStreams(t *testing.T) {
 		t.Fatalf("gate code=%d artifact=%q stdout=%q stderr=%q err=%v", code, body, stdout, stderr, err)
 	}
 	before := calls.Load()
+	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, markdownArgs...), "--format", "human"))
+	if code != 2 || stdout != "" || calls.Load() != before {
+		t.Fatalf("obsolete human format accepted: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
 	stdout, stderr, code = runBinary(t, binary, dir, []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--fail-on", "bad"})
 	if code != 2 || stdout != "" || calls.Load() != before || strings.Contains(stderr, "secret-sentinel") {
 		t.Fatalf("invalid options code=%d stdout=%q stderr=%q", code, stdout, stderr)
@@ -183,16 +207,16 @@ func TestProcessPackImportAndLockedLint(t *testing.T) {
 		t.Fatalf("locked lint: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
 	}
 	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, args...), "--rule-threshold", "1"))
-	if code != 0 || !strings.Contains(stdout, "diagnostics=0") || stderr != "" {
+	if code != 0 || !strings.Contains(stdout, "No findings.") || stderr != "" {
 		t.Fatalf("threshold override: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
 	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, args...), "--rule-severity", "critical"))
-	if code != 0 || !strings.Contains(stdout, "critical RIGHT") || stderr != "" {
+	if code != 0 || !strings.Contains(stdout, "**critical**") || !strings.Contains(stdout, "(RIGHT)") || stderr != "" {
 		t.Fatalf("severity override: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
 	beforeFilter := calls.Load()
 	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, args...), "--exclude", "*.go"))
-	if code != 0 || calls.Load() != beforeFilter || !strings.Contains(stdout, "diagnostics=0") || stderr != "" {
+	if code != 0 || calls.Load() != beforeFilter || !strings.Contains(stdout, "No findings.") || stderr != "" {
 		t.Fatalf("exclude: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
 	}
 	updatedRule := "Changed code must return meaningful errors.\n"

@@ -49,7 +49,7 @@ func ExitCode(err error) int {
 		errors.Is(err, packs.ErrLock) || errors.Is(err, packs.ErrLegacyFormat) || errors.Is(err, packs.ErrConflict) ||
 		errors.Is(err, packs.ErrDrift) || errors.Is(err, packs.ErrStorage) ||
 		errors.Is(err, git.ErrInvalidRevision) ||
-		errors.Is(err, report.ErrInvalidFormat) || errors.Is(err, report.ErrInvalidThreshold) ||
+		errors.Is(err, report.ErrInvalidReport) || errors.Is(err, report.ErrInvalidFormat) || errors.Is(err, report.ErrInvalidThreshold) ||
 		errors.Is(err, git.ErrAmbiguousBase) || errors.Is(err, git.ErrInvalidLimits) ||
 		errors.Is(err, git.ErrLimit) || errors.Is(err, contextplan.ErrInvalidLimits) ||
 		errors.Is(err, contextplan.ErrLimit) || errors.Is(err, systemone.ErrInvalidEndpoint) ||

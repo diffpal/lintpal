@@ -30,10 +30,11 @@ Optional frontmatter sets per-rule severity, threshold, and title. An explicit
 `--rule-severity` or `--rule-threshold` overrides frontmatter for all rules;
 `--include` and `--exclude` filter changed source paths for the whole run.
 
-The default human report goes to stdout. `--format json` selects JSON stdout;
+The default Markdown feedback goes to stdout. `--format json` selects JSON stdout;
 `--out PATH` also writes a complete JSON artifact. Create the destination
 directory first. `--fail-on high` is the default gate; `--fail-on none` reports
-findings without turning them into exit code `10`. Other nonzero codes signal
+findings without turning them into exit code `10`. `--block-on` records the
+threshold for a later `feedback markdown --gate` command. Other nonzero codes signal
 configuration, provider, or output errors. See [report fields](report.md) and
 [exit codes](cli.md).
 

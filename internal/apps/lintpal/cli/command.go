@@ -49,9 +49,10 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 	flags.StringArrayVar(&raw.Exclude, "exclude", nil, "Exclude changed source paths matching glob (repeatable)")
 	flags.StringVar(&raw.RuleThreshold, "rule-threshold", "", "Minimum violation probability, 0 to 1 (default 0.95)")
 	flags.StringVar(&raw.RuleSeverity, "rule-severity", "", "Finding severity: low, medium, high, or critical (default medium)")
-	flags.StringVar(&raw.Format, "format", "", "Stdout format: human or json")
+	flags.StringVar(&raw.Format, "format", "", "Stdout format: markdown or json (default markdown)")
 	flags.StringVar(&raw.Out, "out", "", "Additional JSON artifact path")
 	flags.StringVar(&raw.FailOn, "fail-on", "", "Gate threshold: low, medium, high, critical, or none")
+	flags.StringVar(&raw.BlockOn, "block-on", "", "Mark blocking findings without failing lint: low, medium, high, critical, or none")
 	flags.StringVar(&raw.Timeout, "timeout", "", "Whole-run timeout")
 	flags.StringVar(&raw.MaxConcurrency, "max-concurrency", "", "Maximum provider concurrency")
 	flags.StringVar(&raw.BaseURL, "base-url", "", "Trusted custom provider base URL")
@@ -83,6 +84,7 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 		return lint(cmd.Context(), options, cmd.OutOrStdout(), cmd.ErrOrStderr())
 	}
 	root.AddCommand(command)
+	root.AddCommand(newFeedbackCommand())
 	root.AddCommand(newDoctorCommand())
 	root.AddCommand(newPackCommand())
 	if version == "" {

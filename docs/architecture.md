@@ -159,10 +159,14 @@ diagnostics and skips. The shared v5 findings artifact includes
 resolved revisions, evidence, skips, and count/usage stats without source state,
 question text, or credentials.
 
-`report.WriteJSON` and `report.WriteHuman` validate and write the same artifact.
+`report.WriteJSON` writes shared findings v5; `report.WriteMarkdown` renders
+the same validated findings for people. `feedback markdown` reads and validates
+a stored v5 bundle before rendering it with the same Markdown formatter.
 `report.WriteAndGate(writer, artifact, format, threshold)` writes the complete
 output first, then returns `report.ErrGate` for a finding at or above the
-inclusive severity threshold. `none` disables the gate. A writer failure
+inclusive severity threshold. `--block-on` writes the blocking flags without
+gating lint, and `feedback markdown --gate` evaluates the stored flags after
+output. `none` disables the threshold. A writer failure
 returns `report.ErrExport` before gate evaluation. The CLI maps these errors
 to process exit codes, writes the optional JSON artifact before stdout, and
 binds the Linter through Fx. The executable uses `cli.NewRoot` and

@@ -18,7 +18,7 @@ lintpal lint --base origin/main --head HEAD --provider custom \
   --format json --out .artifacts/lintpal/report.json
 ```
 
-The default provider is `jev` (TypeSafe), format is `human`, model alias is
+The default provider is `jev` (TypeSafe), format is `markdown`, model alias is
 `jev-latest`, and gate is `high`. TypeSafe's [System One API](https://api.typesafe.ai/docs)
 documents model discovery through `/v1/models`; set `--model` to an alias your
 selected provider accepts. The CLI does not query the model catalog during lint.
@@ -34,9 +34,10 @@ selected provider accepts. The CLI does not query the model catalog during lint.
 | `--exclude` | — | Exclude changed source paths matching a glob; repeatable. |
 | `--rule-threshold` | `LINTPAL_RULE_THRESHOLD` | Override every rule's true-probability threshold, 0–1; default 0.95. |
 | `--rule-severity` | `LINTPAL_RULE_SEVERITY` | Override every rule's severity; default medium. |
-| `--format` | `LINTPAL_FORMAT` | `human` or `json` on stdout. |
+| `--format` | `LINTPAL_FORMAT` | `markdown` or `json` on stdout; default `markdown`. |
 | `--out` | `LINTPAL_OUT` | Additional atomic JSON artifact path. |
 | `--fail-on` | `LINTPAL_FAIL_ON` | `low`, `medium`, `high`, `critical`, or `none`. |
+| `--block-on` | — | Mark findings `blocking` at this threshold without failing `lint`; same values as `--fail-on`. Cannot be combined with explicit `--fail-on`. |
 | `--timeout` | `LINTPAL_TIMEOUT` | Whole-run deadline; default `2m`, maximum `10m`. |
 | `--max-concurrency` | `LINTPAL_MAX_CONCURRENCY` | Provider workers; default `4`, maximum `16`. |
 | `--base-url` | `LINTPAL_BASE_URL` | Required for `custom`; rejected for presets. |
@@ -84,6 +85,29 @@ suppressed. Durations vary by run and are not a performance guarantee.
 renames it only after the complete artifact is written. With both sinks,
 lintpal writes the artifact, then stdout, then evaluates the severity gate.
 `--fail-on none` keeps findings in the report and disables exit code 10.
+`--block-on` sets the same `blocking` field but returns success after lint,
+allowing a later feedback command to apply the gate.
+
+For a single command with Markdown stdout and the default high gate:
+
+```bash
+lintpal lint --base origin/main --head HEAD --out .artifacts/lintpal/findings.json
+```
+
+For a two-command CI flow, first write findings, then render and gate them:
+
+```bash
+lintpal lint --base origin/main --head HEAD --block-on high \
+  --format json --out .artifacts/lintpal/findings.json
+lintpal feedback markdown --in .artifacts/lintpal/findings.json \
+  --out .artifacts/lintpal/feedback.md --gate
+```
+
+`feedback markdown` reads only the stored findings v5 file. It makes no provider
+request and needs no provider credential. Without `--out`, it writes Markdown to
+stdout. Without `--gate`, blocking findings do not change its exit status.
+With `--gate`, it returns exit code 10 after the Markdown is written if any
+stored finding has `blocking: true`. An invalid report fails before output.
 
 | Exit code | Meaning |
 | ---: | --- |
@@ -92,7 +116,7 @@ lintpal writes the artifact, then stdout, then evaluates the severity gate.
 | 3 | Retryable provider failure or timeout. |
 | 4 | Report or artifact export failure. |
 | 5 | Internal, protocol, or unclassified local failure. |
-| 10 | Complete report written; finding met the gate. |
+| 10 | Complete lint report or feedback written; a finding met the gate. |
 | 130 | Interrupted or canceled. |
 
 `lintpal doctor` checks local Git/repository availability and whether the

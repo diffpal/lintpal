@@ -37,15 +37,16 @@ configuration without contacting the provider:
 ./lintpal doctor --provider jev
 ```
 
-Then review a committed comparison in this repository:
+Then lint a committed comparison in this repository:
 
 ```bash
 mkdir -p .artifacts/lintpal
 ./lintpal lint --base HEAD~1 --head HEAD --provider jev \
-  --format json --fail-on high --out .artifacts/lintpal/report.json
+  --out .artifacts/lintpal/report.json
 ```
 
-The report is printed to stdout and written as JSON to the artifact path.
+Markdown feedback is printed to stdout and the findings v5 report is written
+as JSON to the artifact path.
 Exit code `10` means a finding reached the severity gate after a complete
 report was written. Other nonzero codes indicate setup, provider, or export
 failure; see the [CLI reference](cli.md). A remote provider receives bounded

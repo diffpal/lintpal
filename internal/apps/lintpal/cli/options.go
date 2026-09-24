@@ -20,12 +20,12 @@ var ErrInvalidOptions = errors.New("invalid lint options")
 // RawOptions contains only process-owned flag values. Changed distinguishes an
 // explicit empty flag from an absent flag when environment values are present.
 type RawOptions struct {
-	Base, Head, Provider, Model, Rules, Format, Out, FailOn string
-	Timeout, MaxConcurrency, BaseURL, AuthTokenEnv          string
-	RuleThreshold, RuleSeverity                             string
-	Include, Exclude                                        []string
-	Metrics                                                 bool
-	Changed                                                 map[string]bool
+	Base, Head, Provider, Model, Rules, Format, Out, FailOn, BlockOn string
+	Timeout, MaxConcurrency, BaseURL, AuthTokenEnv                   string
+	RuleThreshold, RuleSeverity                                      string
+	Include, Exclude                                                 []string
+	Metrics                                                          bool
+	Changed                                                          map[string]bool
 }
 
 type Options struct {
@@ -35,6 +35,7 @@ type Options struct {
 	CredentialResolved                      bool
 	Format                                  report.Format
 	FailOn                                  report.Threshold
+	Gate                                    bool
 	RuleThreshold                           float64
 	RuleSeverity                            rules.Severity
 	RuleThresholdSet, RuleSeveritySet       bool
@@ -71,6 +72,15 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		}
 		return fallback, false
 	}
+	if raw.Changed["block-on"] && raw.Changed["fail-on"] {
+		return Options{}, ErrInvalidOptions
+	}
+	threshold := choose("fail-on", raw.FailOn, "LINTPAL_FAIL_ON", "high")
+	gate := true
+	if raw.Changed["block-on"] {
+		threshold = raw.BlockOn
+		gate = false
+	}
 	severity, severitySet := choosePolicy("rule-severity", raw.RuleSeverity, "LINTPAL_RULE_SEVERITY", "medium")
 	thresholdText, thresholdSet := choosePolicy("rule-threshold", raw.RuleThreshold, "LINTPAL_RULE_THRESHOLD", "0.95")
 	o := Options{
@@ -82,8 +92,9 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		Out:              choose("out", raw.Out, "LINTPAL_OUT", ""),
 		BaseURL:          choose("base-url", raw.BaseURL, "LINTPAL_BASE_URL", ""),
 		AuthTokenEnv:     choose("auth-token-env", raw.AuthTokenEnv, "LINTPAL_AUTH_TOKEN_ENV", ""),
-		Format:           report.Format(choose("format", raw.Format, "LINTPAL_FORMAT", "human")),
-		FailOn:           report.Threshold(choose("fail-on", raw.FailOn, "LINTPAL_FAIL_ON", "high")),
+		Format:           report.Format(choose("format", raw.Format, "LINTPAL_FORMAT", "markdown")),
+		FailOn:           report.Threshold(threshold),
+		Gate:             gate,
 		Metrics:          raw.Metrics,
 		RuleSeverity:     rules.Severity(severity),
 		RuleSeveritySet:  severitySet,
@@ -91,11 +102,11 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		Include:          append([]string(nil), raw.Include...),
 		Exclude:          append([]string(nil), raw.Exclude...),
 	}
-	threshold, err := strconv.ParseFloat(thresholdText, 64)
-	if err != nil || math.IsNaN(threshold) || math.IsInf(threshold, 0) || threshold < 0 || threshold > 1 {
+	ruleThreshold, err := strconv.ParseFloat(thresholdText, 64)
+	if err != nil || math.IsNaN(ruleThreshold) || math.IsInf(ruleThreshold, 0) || ruleThreshold < 0 || ruleThreshold > 1 {
 		return Options{}, ErrInvalidOptions
 	}
-	o.RuleThreshold = threshold
+	o.RuleThreshold = ruleThreshold
 	switch o.RuleSeverity {
 	case rules.Low, rules.Medium, rules.High, rules.Critical:
 	default:
@@ -114,7 +125,7 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		return Options{}, ErrInvalidOptions
 	}
 	switch o.Format {
-	case report.JSON, report.Human:
+	case report.JSON, report.Markdown:
 	default:
 		return Options{}, ErrInvalidOptions
 	}

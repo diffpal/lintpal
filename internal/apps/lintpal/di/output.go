@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -57,8 +56,8 @@ func ExecuteLint(ctx context.Context, dir string, options cli.Options, stdout, s
 	switch options.Format {
 	case report.JSON:
 		err = report.WriteJSON(&preview, artifact)
-	case report.Human:
-		err = report.WriteHuman(&preview, artifact)
+	case report.Markdown:
+		err = report.WriteMarkdown(&preview, artifact)
 	default:
 		return cli.ErrInvalidOptions
 	}
@@ -83,6 +82,16 @@ func ExecuteLint(ctx context.Context, dir string, options cli.Options, stdout, s
 		if err := writeArtifact(options.Out, output); err != nil {
 			return err
 		}
+	}
+	if !options.Gate {
+		if stdout == nil {
+			return report.ErrExport
+		}
+		written, writeErr := stdout.Write(preview.Bytes())
+		if writeErr != nil || written != preview.Len() {
+			return fmt.Errorf("%w: write stdout", report.ErrExport)
+		}
+		return nil
 	}
 	return report.WriteAndGate(stdout, artifact, options.Format, options.FailOn)
 }
@@ -137,27 +146,5 @@ func writeArtifact(path string, payload []byte) error {
 	if existing, err := os.Stat(path); err == nil && existing.IsDir() {
 		return cli.ErrInvalidOptions
 	}
-	dir := filepath.Dir(path)
-	file, err := os.CreateTemp(dir, ".lintpal-report-*")
-	if err != nil {
-		return fmt.Errorf("%w: create artifact", report.ErrExport)
-	}
-	defer func() { _ = os.Remove(file.Name()) }()
-	var written int
-	written, err = file.Write(payload)
-	if err != nil || written != len(payload) {
-		_ = file.Close()
-		return fmt.Errorf("%w: write artifact", report.ErrExport)
-	}
-	if err = file.Sync(); err != nil {
-		_ = file.Close()
-		return fmt.Errorf("%w: sync artifact", report.ErrExport)
-	}
-	if err = file.Close(); err != nil {
-		return fmt.Errorf("%w: close artifact", report.ErrExport)
-	}
-	if err = os.Rename(file.Name(), path); err != nil {
-		return fmt.Errorf("%w: rename artifact", report.ErrExport)
-	}
-	return nil
+	return report.WriteArtifact(path, payload)
 }
