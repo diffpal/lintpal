@@ -1,0 +1,49 @@
+# Configuration
+
+lintpal selects settings in this order: explicit CLI flag, process environment,
+worktree-root `.env`, then built-in default. For a selected provider's key,
+process environment takes precedence over `.env`. Both `lint` and `doctor`
+read the optional root `.env` automatically. Use `--env-file PATH` to choose a
+file or `--no-env-file` to disable file loading. A missing default file is
+fine; a missing explicit file is an error. See [`.env.example`](../.env.example)
+and the full [CLI reference](cli.md).
+
+| Provider | Credential | Additional setting |
+| --- | --- | --- |
+| `jev` (default) | `TYPESAFE_API_KEY` | Preset endpoint; optional model alias |
+| `openrouter` | `OPENROUTER_API_KEY` | Preset endpoint; optional model alias |
+| `custom` | `LINTPAL_TOKEN` by default | Required `--base-url` or `LINTPAL_BASE_URL` |
+
+The model defaults to `jev-latest`; use `--model` or `LINTPAL_MODEL` for a
+model your provider accepts. A custom loopback endpoint may use HTTP; remote
+custom endpoints require HTTPS. `doctor` checks local Git and credential
+presence without contacting a provider. `lint` makes provider requests.
+
+## Rules and reports
+
+Built-in rules are selected when `--rules` is absent. Use `--rules PATH` for a
+local unmanaged YAML file or `--rules @NAME` for a pack installed through
+`lintpal pack import`. Installed packs are checked against their
+[lockfile](rule-packs.md) before a provider request. A changed installed copy
+fails verification; use an explicit update and review the resulting lockfile.
+
+The default human report goes to stdout. `--format json` selects JSON stdout;
+`--out PATH` also writes a complete JSON artifact. Create the destination
+directory first. `--fail-on high` is the default gate; `--fail-on none` reports
+findings without turning them into exit code `10`. Other nonzero codes signal
+configuration, provider, or output errors. See [report fields](report.md) and
+[exit codes](cli.md).
+
+## Common failures
+
+- Missing base or head: provide two locally available committed Git revisions
+  with `--base` and `--head`.
+- Missing credential: select a provider and set only its key in process env or
+  `.env`; run `lintpal doctor` to check presence.
+- Lock drift: run `lintpal pack verify`, then explicitly re-import or update
+  the pack and review the local copy plus lockfile.
+- Report path failure: create the parent directory and ensure it is writable.
+
+Credentials should stay out of Git, shell traces, rule files, and report
+paths. The selected provider receives bounded committed source and questions;
+see [privacy](privacy.md).

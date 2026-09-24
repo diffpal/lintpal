@@ -16,6 +16,13 @@ appears. This guard does not scan for unrelated process secrets, and it does
 not prevent source transfer to the chosen provider. Avoid putting secrets in
 source, rule files, paths, or CI command lines.
 
+`lint` and `doctor` can read a worktree-root `.env` file, or one selected with
+`--env-file`. Process environment values take priority, and `--no-env-file`
+disables local file loading. lintpal does not export these values into the
+process environment. Keep the file untracked; the repository `.gitignore`
+excludes `.env` and `.env.*`. The selected credential from either source is
+used by both the provider and the report-output guard.
+
 `--metrics` prints fixed stage counts and durations to stderr. The in-process
 ADK/OpenTelemetry recorder has no exporter or global registration by default,
 so it makes no telemetry request. Metrics are excluded from reports. The

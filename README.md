@@ -1,77 +1,128 @@
 # lintpal
 
-`lintpal` reviews a **committed Git comparison** with declarative rules and a
-selected System One provider. It prints a deterministic report of diagnostics
-anchored to changed lines. The current MVP reads committed blobs only; save and
-commit the revision you want to inspect before running it.
+**Review committed code changes with questions you control.** lintpal compares
+two Git revisions, asks a selected System One provider focused questions, and
+reports findings on changed lines. Rules are declarative YAML, so a team can
+keep review policy beside its code, pin imported rule packs, and revisit the
+same committed inputs.
 
-The first lintpal release is planned as `v0.2.0` under the [MIT license](LICENSE).
-Once publication is verified, users will be able to install either npm identity:
+lintpal is a CLI for review, not an auto-fixer. It reads committed Git objects;
+unsaved and uncommitted working-tree changes are outside the comparison.
+
+## Start in a few commands
+
+Install the current public release through npm:
 
 ```bash
-npm install -g lintpal@0.2.0
-# or
-npm install -g @diffpal/lintpal@0.2.0
+npm install -g lintpal
 lintpal version
 ```
 
-These registry commands become available only after the release Story finishes;
-the local build below works now.
-
-The earlier `jevlint` v0.1.0 tag and six scoped npm packages remain available
-for existing installs. npm rejected the unscoped `jevlint` name, so that release
-did not receive a GitHub release.
-
-## Build and try locally
-
-Go 1.26.6 or newer is required by `go.mod`. From the repository root:
+To use features from this source revision before they reach npm, build it with
+Go 1.26.6 or newer:
 
 ```bash
 go build -o ./lintpal ./cmd/lintpal
 ./lintpal version
-./lintpal --help
-go test ./cmd/lintpal -run TestProcessExitAndStreams -count=1
 ```
 
-The process test creates temporary committed Git repositories and a local fake
-System One server, so the last command needs no provider secret or network
-account. A plain local build reports version `dev`. Omnidist staging can embed
-an explicit version; see [distribution staging](docs/distribution.md).
-
-To lint a real comparison, run these commands **inside the repository being
-reviewed** after both revisions are committed:
+Choose a provider credential. For the default `jev` provider, set
+`TYPESAFE_API_KEY` in your environment or copy [`.env.example`](.env.example)
+to `.env` and fill in the key. The local `doctor` check does not contact the
+provider:
 
 ```bash
-export TYPESAFE_API_KEY='your-token'
 ./lintpal doctor --provider jev
 mkdir -p .artifacts/lintpal
-./lintpal lint --base origin/main --head HEAD --provider jev \
+./lintpal lint --base HEAD~1 --head HEAD --provider jev \
   --format json --fail-on high --out .artifacts/lintpal/report.json
 ```
 
-Use an absolute path to the built executable when linting another repository.
-The default provider is `jev`; `openrouter` reads `OPENROUTER_API_KEY`, and
-`custom` reads `LINTPAL_TOKEN` by default and requires `--base-url`. `doctor`
-checks the local Git repository and presence of the selected credential; it
-does not contact the provider. A real `lint` sends bounded committed source
-context and rule questions to the selected provider. See the [CLI guide](docs/cli.md)
-for flags, environment settings, output formats, and exit codes. Exit code `10`
-means the complete report was written and a finding met `--fail-on`; it can be
-used as a CI gate.
+Both revisions must be available commits in the repository where you run
+lintpal. Use an absolute path to the built binary when reviewing another
+repository. The report is printed to stdout and written to the artifact path;
+exit code `10` means a finding met the gate **after** the complete report was
+written. See [getting started](docs/getting-started.md) for shallow clones,
+other providers, and error handling. See [distribution](docs/distribution.md)
+for the published package layout and release status.
 
-## CI and reports
+## Make the review yours
 
-The checked-in [CI workflow](.github/workflows/ci.yml) builds and tests on
-Linux, macOS, and Windows without provider credentials. For a repository using
-`lintpal` as a quality gate, install a locally built or separately approved
-binary in the job, fetch the base revision, provide the selected credential as
-a CI secret, then run the `lint` command above with `--base` and `--head` set to
-commits available in that checkout. Handle exit code `10` as a lint failure;
-other nonzero codes indicate setup, provider, or export failure. Never print
-the credential or enable shell tracing around it.
+A rule pairs a question with a decision threshold and fixed diagnostic text.
+For example, a `noul` rule can ask whether changed Go code drops a meaningful
+error:
 
-The [report reference](docs/report.md) defines the versioned JSON and human
-formats. [Privacy and limitations](docs/privacy.md) explains source transfer,
-local metrics, bounded inputs, and the current quality evidence. The
-[evaluation guide](docs/evaluation.md) describes the offline corpus and an
-optional, explicit live procedure.
+```yaml
+schema: lintpal.rules.v1
+rules:
+  - id: go.unchecked-error
+    type: noul
+    instructions: Does the changed Go code discard an error whose failure should be handled?
+    threshold: 0.95
+    severity: high
+    title: Possible unchecked error
+    message: Review whether this error needs handling.
+    paths: ['*.go']
+    sides: [RIGHT]
+```
+
+The checked-in [Go review pack](examples/rules/go-review/rules.yaml) also shows
+`choice` and `score` rules. The
+[documentation review pack](examples/rules/docs-review/rules.yaml) shows a
+focused Markdown rule. These are authoring examples, not claims of measured
+model accuracy. See [rule authoring](docs/rule-authoring.md) to write and
+calibrate rules.
+
+Import a pack explicitly from a local directory, verify its lockfile, and
+select it for a review:
+
+```bash
+./lintpal pack import go-review ./examples/rules/go-review
+./lintpal pack verify go-review
+./lintpal lint --base HEAD~1 --head HEAD --rules @go-review
+```
+
+GitHub imports require an explicit ref. lintpal resolves it to a commit,
+stores a local copy, and records the exact content hash in
+`.lintpal/packs.lock.json`. Normal lint runs use the local copy offline; see
+[rule packs](docs/rule-packs.md) for source syntax and updates.
+
+## Use it in development
+
+[Task](https://taskfile.dev/docs/installation) runs routine checks from
+`Taskfile.yml`:
+
+```bash
+task --list
+task check
+task self-review-smoke
+```
+
+`task check` builds, tests, vets, checks formatting, evaluates the frozen
+offline corpus, and verifies docs and installed packs without a provider key.
+The [CI workflow](.github/workflows/ci.yml) keeps these checks credential-free
+on Linux, macOS, and Windows as appropriate. To review lintpal itself with a
+real provider, use explicit committed refs:
+
+```bash
+BASE=origin/main HEAD=HEAD task self-review
+```
+
+This opt-in command writes `.artifacts/lintpal/self-review.json`. Read the
+[self-review guide](docs/self-review.md) for provider setup, rule selection,
+and gate behavior.
+
+## Documentation
+
+Start at the [documentation index](docs/index.md), or jump to:
+
+| Use lintpal | Extend and maintain it |
+| --- | --- |
+| [Getting started](docs/getting-started.md) · [Configuration](docs/configuration.md) · [CLI](docs/cli.md) | [Rule authoring](docs/rule-authoring.md) · [Rule packs](docs/rule-packs.md) |
+| [Reports](docs/report.md) · [Privacy and limits](docs/privacy.md) | [Development tasks](docs/development.md) · [Self-review](docs/self-review.md) · [Evaluation](docs/evaluation.md) |
+
+When a remote provider is selected, lintpal sends bounded committed source
+context and rule questions to it. Review the [privacy guide](docs/privacy.md)
+before running a live review. The current CLI does not inspect uncommitted
+changes, apply fixes, or report measured model precision. lintpal is available
+under the [MIT license](LICENSE).

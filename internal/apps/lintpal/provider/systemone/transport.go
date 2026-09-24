@@ -15,10 +15,10 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
 )
 
-var ErrMissingCredential = errors.New("System One credential is required")
-var ErrTransport = errors.New("System One transport failed")
+var ErrMissingCredential = errors.New("system one credential is required")
+var ErrTransport = errors.New("system one transport failed")
 var ErrProtocol = errors.New("invalid System One response")
-var ErrBodyLimit = errors.New("System One body limit exceeded")
+var ErrBodyLimit = errors.New("system one body limit exceeded")
 
 const maxRequestBytes = 1 << 20
 const maxResponseBytes = 2 << 20
@@ -37,6 +37,7 @@ type Provider struct {
 	target   *url.URL
 	client   *http.Client
 	timeout  time.Duration
+	token    *string
 }
 
 var _ jev.Provider = (*Provider)(nil)
@@ -47,6 +48,17 @@ func New(endpoint Endpoint, client *http.Client) (*Provider, error) {
 		return nil, err
 	}
 	return &Provider{endpoint: endpoint, target: target, client: secureClient(client), timeout: attemptTimeout}, nil
+}
+
+// NewWithToken binds one trusted credential for this run without changing the
+// process environment. An empty token still fails for credentialed endpoints.
+func NewWithToken(endpoint Endpoint, client *http.Client, token string) (*Provider, error) {
+	provider, err := New(endpoint, client)
+	if err != nil {
+		return nil, err
+	}
+	provider.token = &token
+	return provider, nil
 }
 
 func (p *Provider) Evaluate(ctx context.Context, request jev.Request) (jev.Response, error) {
@@ -68,7 +80,12 @@ func (p *Provider) Evaluate(ctx context.Context, request jev.Request) (jev.Respo
 	if len(body) > maxRequestBytes {
 		return jev.Response{}, ErrBodyLimit
 	}
-	token := p.endpoint.token()
+	var token string
+	if p.token != nil {
+		token = *p.token
+	} else {
+		token = p.endpoint.token()
+	}
 	if p.endpoint.tokenEnv != "" && token == "" {
 		return jev.Response{}, ErrMissingCredential
 	}
@@ -112,7 +129,7 @@ func (p *Provider) doOnce(ctx context.Context, body []byte, token string, reques
 	}
 	httpResponse, err := p.client.Do(httpRequest)
 	if httpResponse != nil {
-		defer httpResponse.Body.Close()
+		defer func() { _ = httpResponse.Body.Close() }()
 	}
 	if ctx.Err() != nil {
 		return jev.Response{}, false, 0, ctx.Err()

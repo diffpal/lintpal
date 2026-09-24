@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -92,6 +93,30 @@ func TestCredentialNeverFollowsRedirect(t *testing.T) {
 	var status HTTPError
 	if !errors.As(err, &status) || status.Status != http.StatusTemporaryRedirect || forwarded {
 		t.Fatalf("redirect error = %v, forwarded = %v", err, forwarded)
+	}
+}
+
+func TestBoundTokenOverridesProcessEnvironment(t *testing.T) {
+	t.Setenv("LINTPAL_TOKEN", "process-secret")
+	var receivedAuth string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedAuth = r.Header.Get("Authorization")
+		_, _ = io.WriteString(w, validResponse)
+	}))
+	defer server.Close()
+	endpoint, err := TrustedCustom(server.URL, "LINTPAL_TOKEN")
+	if err != nil {
+		t.Fatal(err)
+	}
+	provider, err := NewWithToken(endpoint, server.Client(), "file-secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := provider.Evaluate(t.Context(), typedRequest()); err != nil {
+		t.Fatal(err)
+	}
+	if receivedAuth != "Bearer file-secret" || os.Getenv("LINTPAL_TOKEN") != "process-secret" {
+		t.Fatalf("bound token not used or process environment changed: auth matched = %v", receivedAuth == "Bearer file-secret")
 	}
 }
 

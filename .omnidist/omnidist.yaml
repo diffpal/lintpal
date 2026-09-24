@@ -27,9 +27,9 @@ profiles:
                 aliases:
                     - '@diffpal/lintpal'
                 platform-package: '@diffpal/lintpal'
-                repository-url: https://github.com/diffpal/lintpal
+                repository-url: git+https://github.com/diffpal/lintpal.git
                 license: MIT
                 registry: https://registry.npmjs.org
                 access: public
-                publish-auth: token
+                publish-auth: trusted
                 include-readme: true

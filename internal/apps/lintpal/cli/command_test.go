@@ -69,3 +69,21 @@ func TestLintProviderSelection(t *testing.T) {
 		}
 	}
 }
+
+func TestEnvFileFlagConflict(t *testing.T) {
+	for _, command := range []string{"lint", "doctor"} {
+		for _, flags := range [][]string{{"--env-file", ""}, {"--env-file", "example.env", "--no-env-file"}} {
+			root := NewRoot(func(context.Context, Options, io.Writer, io.Writer) error { return nil }, "dev")
+			args := append([]string{command}, flags...)
+			if command == "lint" {
+				args = append(args, "--base", "a", "--head", "b")
+			}
+			root.SetArgs(args)
+			root.SetOut(io.Discard)
+			root.SetErr(io.Discard)
+			if err := root.ExecuteContext(t.Context()); !errors.Is(err, ErrInvalidOptions) {
+				t.Fatalf("%s %v: %v", command, flags, err)
+			}
+		}
+	}
+}

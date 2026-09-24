@@ -77,7 +77,9 @@ func TestSecureClientNeverFollowsRedirect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	response.Body.Close()
+	if err := response.Body.Close(); err != nil {
+		t.Fatal(err)
+	}
 	if redirected || response.StatusCode != http.StatusFound {
 		t.Fatalf("redirected = %v, status = %d", redirected, response.StatusCode)
 	}

@@ -27,6 +27,8 @@ type RawOptions struct {
 type Options struct {
 	Base, Head, Provider, Model, Rules, Out string
 	BaseURL, AuthTokenEnv                   string
+	Credential                              string
+	CredentialResolved                      bool
 	Format                                  report.Format
 	FailOn                                  report.Threshold
 	Limits                                  app.Limits
@@ -94,6 +96,15 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 	} else if o.BaseURL != "" || o.AuthTokenEnv != "" {
 		return Options{}, ErrInvalidOptions
 	}
+	switch o.Provider {
+	case "jev":
+		o.Credential, _ = lookup("TYPESAFE_API_KEY")
+	case "openrouter":
+		o.Credential, _ = lookup("OPENROUTER_API_KEY")
+	case "custom":
+		o.Credential, _ = lookup(o.AuthTokenEnv)
+	}
+	o.CredentialResolved = true
 	if o.Out == "-" || strings.ContainsRune(o.Out, 0) || o.Rules == "-" || strings.ContainsRune(o.Rules, 0) {
 		return Options{}, ErrInvalidOptions
 	}

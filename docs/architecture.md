@@ -114,6 +114,15 @@ calibrate the pack on a frozen corpus. `app.Linter` takes an already selected
 pack, executes batches, and constructs anchored reports. Repository rules
 cannot choose a provider destination or credential source.
 
+`internal/apps/lintpal/packs` acquires one declarative `rules.yaml` per named
+pack through explicit `pack import`/`pack update` commands. It validates source
+bytes with the same rule loader, stores content-addressed copies under
+`.lintpal/packs/`, and atomically switches `.lintpal/packs.lock.json` after the
+copy is ready. A GitHub source is resolved to a commit before fetching the YAML.
+`pack verify` and `--rules @NAME` check the lock hash and rule validity offline;
+direct paths into managed storage are rejected. The legacy `--rules PATH` path
+and built-in default remain available. See [rule packs](rule-packs.md).
+
 ## System One provider
 
 `internal/apps/lintpal/jev.Provider` remains the native typed decision port.
@@ -180,7 +189,7 @@ selected credentials at the output boundary; they do not scan unrelated
 environment variables. The selected provider still receives committed source
 context and rule instructions to perform linting.
 
-The executable exposes only `lint`, `doctor`, `version`, and `completion`.
+The executable exposes `lint`, `doctor`, `pack`, `version`, and `completion`.
 Its core packages import neither Cobra, Fx, nor ADK LLM APIs. There is no
 PR-host publisher, working-tree analysis, SARIF writer, autofix, RAG, general
 chat path, or embedded Laya sidecar. [Resource limits](resource-limits.md)

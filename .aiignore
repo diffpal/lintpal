@@ -1,0 +1,21 @@
+# Local state, credentials, and generated output
+.git/
+.beads/
+.dolt/
+.env
+.env.*
+!.env.example
+.artifacts/
+.omnidist/
+bin/
+dist/
+coverage.out
+*.coverprofile
+*.log
+
+# Editor and tool caches
+.idea/
+.vscode/
+.cache/
+.gocache/
+.gomodcache/

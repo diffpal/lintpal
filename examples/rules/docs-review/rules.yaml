@@ -1,0 +1,14 @@
+schema: lintpal.rules.v1
+rules:
+  - id: docs.command-drift
+    type: noul
+    instructions: Does a changed documentation command name a lintpal flag or subcommand that the current CLI does not support?
+    criteria:
+      "true": The command names a flag or subcommand that does not exist in the current CLI.
+      "false": The command uses supported CLI syntax or contains no lintpal command.
+    threshold: 0.95
+    severity: medium
+    title: Possible outdated CLI example
+    message: Check this command against lintpal help output.
+    paths: ['*.md']
+    sides: [RIGHT]

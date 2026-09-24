@@ -4,8 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 workspace=.omnidist/default
 version=$(cat "$workspace/dist/VERSION")
-if [[ $version != 0.2.0 ]]; then
-  echo "Expected staged version 0.2.0, got $version" >&2
+if [[ -z ${OMNIDIST_VERSION:-} || $version != "$OMNIDIST_VERSION" ]]; then
+  echo "Expected staged version ${OMNIDIST_VERSION:-<unset>}, got $version" >&2
   exit 1
 fi
 

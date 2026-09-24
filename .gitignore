@@ -9,3 +9,44 @@
 # Local binaries and Omnidist profile workspaces
 /lintpal
 /.omnidist/*/
+
+# Local credentials and generated reports
+.env
+.env.*
+!.env.example
+.artifacts/
+
+# Go build, test, and tool outputs
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+*.test
+coverage.out
+cover.out
+*.coverprofile
+.cache/
+.gocache/
+.gomodcache/
+
+# Editors and operating systems
+.idea/
+*.iml
+.vscode/
+.fleet/
+.zed/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local logs and temporary directories
+*.log
+tmp/
+temp/

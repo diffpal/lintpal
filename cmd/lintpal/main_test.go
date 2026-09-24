@@ -60,8 +60,8 @@ func TestProcessExitAndStreams(t *testing.T) {
 	}
 	before = calls.Load()
 	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, common...), "--out", dir))
-	if code != 2 || stdout != "" || calls.Load() != before {
-		t.Fatalf("directory output called provider: code=%d stdout=%q", code, stdout)
+	if code != 2 || stdout != "" || calls.Load() != before || stderr == "" {
+		t.Fatalf("directory output called provider: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
 	badRules := filepath.Join(dir, "bad.rules.yaml")
 	if err := os.WriteFile(badRules, []byte("schema: lintpal.rules.v1\nprovider: https://attacker.invalid\nrules: []\n"), 0600); err != nil {
@@ -94,6 +94,119 @@ func TestProcessExitAndStreams(t *testing.T) {
 	stdout, stderr, code = runBinary(t, binary, dir, []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", invalid.URL})
 	if code != 5 || stdout != "" || !strings.Contains(stderr, "lint failed") {
 		t.Fatalf("protocol code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+}
+
+func TestProcessEnvFileCredential(t *testing.T) {
+	binary := buildBinary(t)
+	dir, base, head := committedRepo(t)
+	server, calls := modelServer(t, http.StatusOK, false, nil)
+	defer server.Close()
+	secret := "secret-sentinel"
+	file := "LINTPAL_PROVIDER=custom\nLINTPAL_BASE_URL=" + server.URL + "\nLINTPAL_TOKEN=" + secret + "\n"
+	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(file), 0600); err != nil {
+		t.Fatal(err)
+	}
+	env := make([]string, 0)
+	for _, entry := range testEnv() {
+		if !strings.HasPrefix(entry, "LINTPAL_TOKEN=") && !strings.HasPrefix(entry, "LINTPAL_PROVIDER=") && !strings.HasPrefix(entry, "LINTPAL_BASE_URL=") {
+			env = append(env, entry)
+		}
+	}
+	run := func(args ...string) (string, string, int) {
+		t.Helper()
+		command := exec.Command(binary, args...)
+		command.Dir = dir
+		command.Env = env
+		var stdout, stderr bytes.Buffer
+		command.Stdout = &stdout
+		command.Stderr = &stderr
+		err := command.Run()
+		return stdout.String(), stderr.String(), processCode(err)
+	}
+	args := []string{"lint", "--base", base, "--head", head, "--fail-on", "none"}
+	stdout, stderr, code := run(args...)
+	if code != 0 || calls.Load() == 0 || strings.Contains(stdout+stderr, secret) {
+		t.Fatalf("env file lint: code=%d calls=%d output contains secret=%v", code, calls.Load(), strings.Contains(stdout+stderr, secret))
+	}
+	stdout, stderr, code = run("doctor")
+	if code != 0 || !strings.Contains(stdout, "provider: custom") || !strings.Contains(stdout, "credential: present") || strings.Contains(stdout+stderr, secret) {
+		t.Fatalf("env file doctor: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	before := calls.Load()
+	stdout, stderr, code = run(append(args, "--no-env-file")...)
+	if code != 2 || before != calls.Load() || strings.Contains(stdout+stderr, secret) {
+		t.Fatalf("disabled env file: code=%d calls=%d", code, calls.Load())
+	}
+	stdout, stderr, code = run(append(args, "--env-file", "missing.env")...)
+	if code != 2 || before != calls.Load() || strings.Contains(stdout+stderr, secret) {
+		t.Fatalf("missing explicit env file: code=%d calls=%d", code, calls.Load())
+	}
+}
+
+func TestProcessPackImportAndLockedLint(t *testing.T) {
+	binary := buildBinary(t)
+	dir, base, head := committedRepo(t)
+	server, calls := modelServer(t, http.StatusOK, false, nil)
+	defer server.Close()
+	source := filepath.Join(dir, "rule-source")
+	if err := os.Mkdir(source, 0700); err != nil {
+		t.Fatal(err)
+	}
+	rule := "schema: lintpal.rules.v1\nrules:\n  - id: demo.rule\n    type: noul\n    instructions: Is this wrong?\n    threshold: 0.9\n    severity: high\n    title: Demo\n    message: Demo issue.\n"
+	if err := os.WriteFile(filepath.Join(source, "rules.yaml"), []byte(rule), 0600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, code := runBinary(t, binary, dir, []string{"pack", "import", "demo", "rule-source"})
+	if code != 0 || !strings.Contains(stdout, "imported pack demo sha256:") || stderr != "" {
+		t.Fatalf("pack import: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	lock, err := os.ReadFile(filepath.Join(dir, ".lintpal", "packs.lock.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var data struct {
+		Packs []struct {
+			Path string `json:"path"`
+		} `json:"packs"`
+	}
+	if err := json.Unmarshal(lock, &data); err != nil || len(data.Packs) != 1 {
+		t.Fatalf("pack lock: %v, %s", err, lock)
+	}
+	stdout, stderr, code = runBinary(t, binary, dir, []string{"pack", "verify", "demo"})
+	if code != 0 || stdout != "verified 1 pack(s)\n" || stderr != "" {
+		t.Fatalf("pack verify: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	args := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--rules", "@demo", "--fail-on", "none"}
+	stdout, stderr, code = runBinary(t, binary, dir, args)
+	if code != 0 || !strings.Contains(stdout, "demo.rule") || stderr != "" || calls.Load() == 0 {
+		t.Fatalf("locked lint: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
+	}
+	updatedRule := strings.Replace(rule, "Demo issue.", "Updated issue.", 1)
+	if err := os.WriteFile(filepath.Join(source, "rules.yaml"), []byte(updatedRule), 0600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, code = runBinary(t, binary, dir, []string{"pack", "update", "demo"})
+	if code != 0 || !strings.Contains(stdout, "updated pack demo sha256:") || stderr != "" {
+		t.Fatalf("pack update: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	updatedLock, err := os.ReadFile(filepath.Join(dir, ".lintpal", "packs.lock.json"))
+	if err != nil || json.Unmarshal(updatedLock, &data) != nil || len(data.Packs) != 1 {
+		t.Fatalf("updated lock: %v", err)
+	}
+	copyPath := filepath.Join(dir, ".lintpal", filepath.FromSlash(data.Packs[0].Path))
+	if err := os.WriteFile(copyPath, []byte(updatedRule+"# drift\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	before := calls.Load()
+	stdout, stderr, code = runBinary(t, binary, dir, args)
+	if code != 2 || stdout != "" || calls.Load() != before {
+		t.Fatalf("drift lint: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
+	}
+	args[len(args)-3] = copyPath
+	stdout, stderr, code = runBinary(t, binary, dir, args)
+	if code != 2 || stdout != "" || calls.Load() != before {
+		t.Fatalf("managed path bypass: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
 	}
 }
 
@@ -143,7 +256,7 @@ func TestProcessInterrupt(t *testing.T) {
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
-		command.Process.Kill()
+		_ = command.Process.Kill()
 		t.Fatal("provider call did not start")
 	}
 	if err := command.Process.Signal(os.Interrupt); err != nil {
@@ -407,7 +520,7 @@ func modelServer(t *testing.T, status int, malformed bool, entered chan<- struct
 			return
 		}
 		if malformed {
-			io.WriteString(w, "not-json")
+			_, _ = io.WriteString(w, "not-json")
 			return
 		}
 		var request struct {

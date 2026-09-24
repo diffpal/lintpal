@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"go.uber.org/fx"
@@ -14,6 +16,7 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/cli"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/git"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/packs"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
@@ -36,7 +39,7 @@ func lintWithRuntime(ctx context.Context, dir string, options cli.Options, runti
 		fx.Provide(func() context.Context { return ctx }),
 		fx.Provide(func() *http.Client { return http.DefaultClient }),
 		fx.Provide(fx.Annotate(func() (*git.Repository, error) { return git.NewRepository(dir, git.Limits{}) }, fx.As(new(app.Comparer)))),
-		fx.Provide(loadPack),
+		fx.Provide(func(ctx context.Context, options cli.Options) (rules.Pack, error) { return loadPack(ctx, dir, options) }),
 		fx.Provide(fx.Annotate(newProvider, fx.As(new(jev.Provider)))),
 		fx.Provide(func(runtime *adkruntime.Runtime) app.Observer { return runtime }),
 		fx.Provide(app.NewObservedLinter),
@@ -65,16 +68,42 @@ func lintWithRuntime(ctx context.Context, dir string, options cli.Options, runti
 	return artifact, nil
 }
 
-func loadPack(ctx context.Context, options cli.Options) (rules.Pack, error) {
+func loadPack(ctx context.Context, dir string, options cli.Options) (rules.Pack, error) {
 	if options.Rules == "" {
 		return rules.BuiltIn(), nil
+	}
+	root, err := packs.RepositoryRoot(ctx, dir)
+	if err != nil {
+		return rules.Pack{}, err
+	}
+	if strings.HasPrefix(options.Rules, "@") {
+		return packs.Load(ctx, root, strings.TrimPrefix(options.Rules, "@"))
+	}
+	managed := filepath.Join(root, ".lintpal", "packs")
+	selected, err := filepath.Abs(options.Rules)
+	if err != nil {
+		return rules.Pack{}, packs.ErrSource
+	}
+	if isManagedPath(managed, selected) {
+		return rules.Pack{}, packs.ErrDrift
+	}
+	if resolved, err := filepath.EvalSymlinks(selected); err == nil {
+		selected = resolved
+	}
+	if isManagedPath(managed, selected) {
+		return rules.Pack{}, packs.ErrDrift
 	}
 	file, err := os.Open(options.Rules)
 	if err != nil {
 		return rules.Pack{}, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	return rules.LoadContext(ctx, file)
+}
+
+func isManagedPath(managed, selected string) bool {
+	relative, err := filepath.Rel(managed, selected)
+	return err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
 }
 
 func newProvider(options cli.Options, client *http.Client) (*systemone.Provider, error) {
@@ -92,6 +121,9 @@ func newProvider(options cli.Options, client *http.Client) (*systemone.Provider,
 		}
 	default:
 		return nil, cli.ErrInvalidOptions
+	}
+	if options.CredentialResolved {
+		return systemone.NewWithToken(endpoint, client, options.Credential)
 	}
 	return systemone.New(endpoint, client)
 }

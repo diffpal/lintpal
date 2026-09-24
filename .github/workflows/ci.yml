@@ -21,12 +21,18 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
-      - run: go build ./...
-      - run: go test ./...
-      - run: go vet ./...
-      - name: Format and race
+      - uses: go-task/setup-task@v2
+        with:
+          version: 3.44.0
+      - run: task build
+      - run: task test
+      - run: task vet
+      - name: Format, offline validation, and race
         if: matrix.os == 'ubuntu-latest'
-        shell: bash
         run: |
-          test -z "$(git ls-files -z '*.go' | xargs -0 gofmt -l)"
-          go test -race ./...
+          task format
+          task eval
+          task pack-verify
+          task docs-verify
+          task self-review-smoke
+          task race

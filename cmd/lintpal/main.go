@@ -31,7 +31,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	err := root.ExecuteContext(ctx)
 	code := cli.ExitCode(err)
 	if code != 0 {
-		fmt.Fprintln(stderr, cli.ExitMessage(code))
+		_, _ = fmt.Fprintln(stderr, cli.ExitMessage(code))
 	}
 	return code
 }

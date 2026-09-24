@@ -66,3 +66,15 @@ func TestSelectedCredentialCannotEnterReport(t *testing.T) {
 		}
 	}
 }
+
+func TestSelectedCredentialUsesBoundValue(t *testing.T) {
+	t.Setenv("TYPESAFE_API_KEY", "process-secret")
+	options := cli.Options{Provider: "jev", Credential: "file-secret", CredentialResolved: true}
+	if selectedCredential(options) != "file-secret" {
+		t.Fatal("output guard did not use bound credential")
+	}
+	artifact := report.Report{Diagnostics: []report.Diagnostic{{Title: "file-secret"}}}
+	if !containsCredential(artifact, selectedCredential(options)) {
+		t.Fatal("bound credential was not rejected")
+	}
+}

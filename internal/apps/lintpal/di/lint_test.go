@@ -2,6 +2,7 @@ package di
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/diffpal/lintpal/internal/apps/lintpal/cli"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/packs"
 )
 
 func TestLintFxCommittedRoundTrip(t *testing.T) {
@@ -67,5 +69,26 @@ func TestLintFxCommittedRoundTrip(t *testing.T) {
 	artifact, err := Lint(t.Context(), dir, opts)
 	if err != nil || len(artifact.Diagnostics) != 2 || artifact.Stats.InputTokens != 3 {
 		t.Fatalf("Fx lint: %+v, %v", artifact, err)
+	}
+}
+
+func TestManagedPathCannotBypassLockThroughSymlink(t *testing.T) {
+	root := t.TempDir()
+	if err := exec.Command("git", "-C", root, "init", "-q").Run(); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "rules.yaml"), []byte("invalid"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(root, ".lintpal"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, ".lintpal", "packs")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	path := filepath.Join(root, ".lintpal", "packs", "rules.yaml")
+	if _, err := loadPack(t.Context(), root, cli.Options{Rules: path}); !errors.Is(err, packs.ErrDrift) {
+		t.Fatalf("managed path bypassed lock: %v", err)
 	}
 }

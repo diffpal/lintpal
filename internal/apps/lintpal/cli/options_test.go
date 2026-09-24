@@ -39,3 +39,21 @@ func TestResolvePrecedenceAndTrust(t *testing.T) {
 		t.Fatalf("directory output accepted: %v", err)
 	}
 }
+
+func TestResolveCredentialFromLayeredLookup(t *testing.T) {
+	raw := RawOptions{Base: "a", Head: "b", Changed: map[string]bool{"base": true, "head": true}}
+	lookup := LayeredLookup(func(name string) (string, bool) {
+		if name == "TYPESAFE_API_KEY" {
+			return "process-secret", true
+		}
+		return "", false
+	}, map[string]string{"TYPESAFE_API_KEY": "file-secret"})
+	options, err := Resolve(raw, lookup)
+	if err != nil || !options.CredentialResolved || options.Credential != "process-secret" {
+		t.Fatalf("process credential did not win: resolved = %v, err = %v", options.CredentialResolved, err)
+	}
+	options, err = Resolve(raw, LayeredLookup(nil, map[string]string{"TYPESAFE_API_KEY": "file-secret"}))
+	if err != nil || options.Credential != "file-secret" {
+		t.Fatalf("file credential unavailable: resolved = %v, err = %v", options.CredentialResolved, err)
+	}
+}

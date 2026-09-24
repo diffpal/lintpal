@@ -18,7 +18,6 @@ type groupInfo struct {
 type stateBucket struct {
 	state    string
 	bindings []Binding
-	groups   []string
 }
 
 // Plan creates bounded System One requests. Every binding appears once, and

@@ -13,6 +13,8 @@ import (
 
 func newDoctorCommand() *cobra.Command {
 	var provider, baseURL, tokenEnv string
+	var envFile string
+	var noEnvFile bool
 	command := &cobra.Command{Use: "doctor", Short: "Check local lintpal prerequisites", Args: func(_ *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			return ErrInvalidOptions
@@ -23,12 +25,25 @@ func newDoctorCommand() *cobra.Command {
 	flags.StringVar(&provider, "provider", "", "Provider to check: jev, openrouter, or custom")
 	flags.StringVar(&baseURL, "base-url", "", "Trusted custom provider base URL")
 	flags.StringVar(&tokenEnv, "auth-token-env", "", "Trusted custom token environment name")
+	flags.StringVar(&envFile, "env-file", "", "Load settings from this .env file")
+	flags.BoolVar(&noEnvFile, "no-env-file", false, "Do not load a .env file")
 	command.RunE = func(cmd *cobra.Command, _ []string) error {
+		if flags.Changed("env-file") && (envFile == "" || noEnvFile) {
+			return ErrInvalidOptions
+		}
+		dir, err := os.Getwd()
+		if err != nil {
+			return ErrInvalidOptions
+		}
+		lookup, err := LoadEnv(cmd.Context(), dir, envFile, noEnvFile)
+		if err != nil {
+			return err
+		}
 		choose := func(name, value, env, fallback string) string {
 			if flags.Changed(name) {
 				return value
 			}
-			if candidate, ok := os.LookupEnv(env); ok {
+			if candidate, ok := lookup(env); ok {
 				return candidate
 			}
 			return fallback
@@ -57,7 +72,7 @@ func newDoctorCommand() *cobra.Command {
 		default:
 			return ErrInvalidOptions
 		}
-		return Doctor(cmd.Context(), cmd.OutOrStdout(), selected, name)
+		return doctorWithLookup(cmd.Context(), cmd.OutOrStdout(), selected, name, lookup)
 	}
 	return command
 }
@@ -65,6 +80,10 @@ func newDoctorCommand() *cobra.Command {
 // Doctor checks local Git and credential presence. It never makes HTTP calls
 // or prints token values, source, endpoint URLs, or repository content.
 func Doctor(ctx context.Context, output io.Writer, provider, tokenEnv string) error {
+	return doctorWithLookup(ctx, output, provider, tokenEnv, os.LookupEnv)
+}
+
+func doctorWithLookup(ctx context.Context, output io.Writer, provider, tokenEnv string, lookup LookupEnv) error {
 	if _, err := exec.LookPath("git"); err != nil {
 		return ErrInvalidOptions
 	}
@@ -81,7 +100,8 @@ func Doctor(ctx context.Context, output io.Writer, provider, tokenEnv string) er
 		}
 		return ErrInvalidOptions
 	}
-	present := os.Getenv(tokenEnv) != ""
+	credential, _ := lookup(tokenEnv)
+	present := credential != ""
 	status := "missing"
 	if present {
 		status = "present"

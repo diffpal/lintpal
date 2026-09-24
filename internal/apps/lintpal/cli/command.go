@@ -31,6 +31,8 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 		return nil
 	}
 	var raw RawOptions
+	var envFile string
+	var noEnvFile bool
 	command := &cobra.Command{Use: "lint", Short: "Lint a committed Git diff", Args: func(_ *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			return ErrInvalidOptions
@@ -51,13 +53,26 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 	flags.StringVar(&raw.BaseURL, "base-url", "", "Trusted custom provider base URL")
 	flags.StringVar(&raw.AuthTokenEnv, "auth-token-env", "", "Trusted custom provider token environment name")
 	flags.BoolVar(&raw.Metrics, "metrics", false, "Print local run metrics to stderr")
+	flags.StringVar(&envFile, "env-file", "", "Load settings from this .env file")
+	flags.BoolVar(&noEnvFile, "no-env-file", false, "Do not load a .env file")
 	command.RunE = func(cmd *cobra.Command, _ []string) error {
 		if lint == nil {
 			return ErrInvalidOptions
 		}
+		if flags.Changed("env-file") && (envFile == "" || noEnvFile) {
+			return ErrInvalidOptions
+		}
 		raw.Changed = make(map[string]bool)
 		flags.Visit(func(flag *pflag.Flag) { raw.Changed[flag.Name] = true })
-		options, err := Resolve(raw, os.LookupEnv)
+		dir, err := os.Getwd()
+		if err != nil {
+			return ErrInvalidOptions
+		}
+		lookup, err := LoadEnv(cmd.Context(), dir, envFile, noEnvFile)
+		if err != nil {
+			return err
+		}
+		options, err := Resolve(raw, lookup)
 		if err != nil {
 			return err
 		}
@@ -65,6 +80,7 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 	}
 	root.AddCommand(command)
 	root.AddCommand(newDoctorCommand())
+	root.AddCommand(newPackCommand())
 	if version == "" {
 		version = "dev"
 	}

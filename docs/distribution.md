@@ -1,23 +1,20 @@
-# Local distribution staging
+# Distribution
 
 Omnidist builds the same `./cmd/lintpal` executable for Linux amd64/arm64,
 macOS amd64/arm64, and Windows amd64. The npm meta packages `lintpal` and
 `@diffpal/lintpal` both point to one set of five `@diffpal/lintpal-*`
 platform packages. The configured version comes from `OMNIDIST_VERSION` and
-is embedded in `lintpal version`. The first lintpal release is planned as
-`v0.2.0` under MIT with Alexey Samoylov as copyright holder. Registry package
-publication has not yet been verified; the example below stages locally. The
-earlier `jevlint` v0.1.0 tag and six scoped npm packages are historical and
-will not be overwritten.
+is embedded in `lintpal version`. The first public lintpal release was
+[v0.2.0](https://github.com/diffpal/lintpal/releases/tag/v0.2.0); both npm meta
+packages and all five platform packages were published. See
+[GitHub Releases](https://github.com/diffpal/lintpal/releases) for the latest version.
 
-From the repository root, with Go, Node, and npm available:
+Install the current release with `npm install -g lintpal`. To stage the next
+release locally from the repository root, with Go, Node, and npm available:
 
 ```bash
-export OMNIDIST_VERSION=0.2.0-dev.1
-npx -y @omnidist/omnidist@latest build
-npx -y @omnidist/omnidist@latest stage
-npx -y @omnidist/omnidist@latest verify
-bash scripts/verify-staging.sh
+OMNIDIST_VERSION=0.3.0 task release-stage
+OMNIDIST_VERSION=0.3.0 task release-dry-run
 ```
 
 The script compares the two meta-package manifests, checks all five platform
@@ -30,17 +27,14 @@ does not contact a registry. The local install smoke requires Linux amd64;
 cross-built macOS, Windows, and Linux arm64 binaries are staged and verified
 as files, but cannot be executed on that host.
 
-The manual [stage workflow](../.github/workflows/stage.yml) accepts an explicit
-SemVer input, pins Omnidist 0.1.37, and stores build and npm artifacts for
-review. It has read-only repository permission and no publication step. The
-regular [CI workflow](../.github/workflows/ci.yml) remains the offline
-build/test gate. Generated Omnidist release workflows include publication jobs
-and are not used here.
+The [release workflow](../.github/workflows/omnidist-release.yml) is generated
+by `omnidist ci` and customized for lintpal's source checks and version source.
+Pushing a `v*` tag runs those checks, builds and verifies all npm packages,
+publishes with npm trusted publishing, then creates a GitHub Release with the
+five binaries and checksums. The [manual stage workflow](../.github/workflows/stage.yml)
+stores build and npm artifacts without publishing.
 
-Staging does not establish availability of `lintpal` or `@diffpal/lintpal` in
-npm. The release Story will verify registry rights, publish both names and a
-matching GitHub release after separate authorization, then test fresh public
-installs. Until those checks pass, the Epic remains open.
-
-The [v0.2.0 release runbook](release-v0.2.0.md) records the exact package and
-asset set, preflight commands, and public verification gates.
+Staging and the dry run do not publish. The [v0.3.0 release runbook](release-v0.3.0.md)
+records the exact package and asset set, preflight commands, and public
+verification gates. The [v0.2.0 runbook](release-v0.2.0.md) is kept as release
+history.

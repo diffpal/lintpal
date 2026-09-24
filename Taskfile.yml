@@ -1,0 +1,89 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build all Go packages
+    cmds:
+      - go build ./...
+
+  test:
+    desc: Run the Go test suite
+    cmds:
+      - go test ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  format:
+    desc: Check Go formatting without changing files
+    cmds:
+      - go run ./scripts/verify-format
+
+  race:
+    desc: Run Go tests with the race detector
+    cmds:
+      - go test -race ./...
+
+  eval:
+    desc: Run the frozen offline evaluation corpus
+    cmds:
+      - go test ./internal/apps/lintpal/eval -run TestFrozenCorpusBaseline -count=1
+
+  pack-verify:
+    desc: Verify local rule packs against their lockfile
+    cmds:
+      - go run ./scripts/verify-packs
+
+  docs-verify:
+    desc: Verify local documentation links and rule examples
+    cmds:
+      - go run ./scripts/verify-docs
+
+  self-review:
+    desc: Review committed BASE and HEAD in this repository with a selected provider
+    cmds:
+      - go run ./scripts/self-review
+
+  self-review-smoke:
+    desc: Exercise self-review against a local fake provider
+    cmds:
+      - go test ./scripts/self-review -run TestSelfReviewSmoke -count=1
+
+  lint:
+    desc: Run static and format checks
+    cmds:
+      - task: vet
+      - task: format
+
+  lint-go:
+    desc: Run the module-pinned golangci-lint gate
+    cmds:
+      - go tool golangci-lint run ./...
+
+  check:
+    desc: Run all routine offline checks
+    cmds:
+      - task: build
+      - task: test
+      - task: lint
+      - task: eval
+      - task: pack-verify
+      - task: docs-verify
+
+  release-stage:
+    desc: Build and verify a local Omnidist release candidate (set OMNIDIST_VERSION)
+    cmds:
+      - test -n "$OMNIDIST_VERSION"
+      - npx -y @omnidist/omnidist@latest build
+      - npx -y @omnidist/omnidist@latest stage
+      - npx -y @omnidist/omnidist@latest verify
+      - bash scripts/verify-staging.sh
+      - bash scripts/prepare-release-assets.sh
+
+  release-dry-run:
+    desc: Inspect staged npm packages without publishing
+    cmds:
+      - test -n "$OMNIDIST_VERSION"
+      - npx -y @omnidist/omnidist@latest publish --dry-run

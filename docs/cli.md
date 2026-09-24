@@ -29,7 +29,7 @@ selected provider accepts. The CLI does not query the model catalog during lint.
 | `--head` | `LINTPAL_HEAD` | Required head revision. |
 | `--provider` | `LINTPAL_PROVIDER` | `jev`, `openrouter`, or `custom`. |
 | `--model` | `LINTPAL_MODEL` | System One model name or alias. |
-| `--rules` | `LINTPAL_RULES` | Explicit declarative YAML rule pack; built-ins otherwise. |
+| `--rules` | `LINTPAL_RULES` | Unmanaged YAML path or installed `@NAME` pack; built-ins otherwise. |
 | `--format` | `LINTPAL_FORMAT` | `human` or `json` on stdout. |
 | `--out` | `LINTPAL_OUT` | Additional atomic JSON artifact path. |
 | `--fail-on` | `LINTPAL_FAIL_ON` | `low`, `medium`, `high`, `critical`, or `none`. |
@@ -38,9 +38,23 @@ selected provider accepts. The CLI does not query the model catalog during lint.
 | `--base-url` | `LINTPAL_BASE_URL` | Required for `custom`; rejected for presets. |
 | `--auth-token-env` | `LINTPAL_AUTH_TOKEN_ENV` | Custom token variable name; defaults to `LINTPAL_TOKEN`. |
 | `--metrics` | — | Print fixed local stage counts and durations to stderr. |
+| `--env-file` | — | Read settings and selected credential from an explicit `.env` file. |
+| `--no-env-file` | — | Disable automatic `.env` loading. |
 
-An explicitly supplied flag wins over its environment setting; the setting
-wins over the default. A rule file is untrusted declarative input and cannot
+`lint` and `doctor` automatically read `.env` at the Git worktree root when it
+exists, including when run from a subdirectory. Both accept `--env-file PATH` to
+select another file or `--no-env-file` to disable loading; these options cannot
+be combined. A missing default file is harmless; a missing explicit file or
+invalid file fails before contacting the provider. The file accepts UTF-8
+`KEY=VALUE` lines, blank lines, full-line `#` comments, and single or double
+quoted values. It does not evaluate shell syntax or expand variables. Files
+larger than 64 KiB, duplicate or malformed keys, and symlinks are rejected.
+Start from [`.env.example`](../.env.example) and fill in your own credential.
+
+An explicitly supplied flag wins over its process environment setting; that
+setting wins over `.env`, which wins over the default. The selected provider's
+key follows process environment over `.env`. Put `.env` in `.gitignore` and keep
+it out of committed source. A rule file is untrusted declarative input and cannot
 select provider, endpoint, or token source. Presets always read
 `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY` respectively. Custom HTTP endpoints
 are restricted to loopback; remote custom endpoints require HTTPS. Raw token
@@ -88,3 +102,6 @@ explains provider transfer and the output guard.
 [Quality evaluation](evaluation.md) describes the offline baseline, optional
 local live procedure, and model-upgrade comparison. [Report reference](report.md)
 defines the versioned output contract.
+
+[Rule packs](rule-packs.md) documents local and GitHub import, the project
+lockfile, offline verification, and example rules.

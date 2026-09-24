@@ -85,9 +85,12 @@ func ExecuteLint(ctx context.Context, dir string, options cli.Options, stdout, s
 	return report.WriteAndGate(stdout, artifact, options.Format, options.FailOn)
 }
 
-// selectedCredential reads only the token source fixed by the preset or the
-// custom process option. Repository rule content cannot name this variable.
+// selectedCredential uses the exact run credential passed to the provider.
+// Legacy callers without a bound credential use the trusted endpoint's env key.
 func selectedCredential(options cli.Options) string {
+	if options.CredentialResolved {
+		return options.Credential
+	}
 	switch options.Provider {
 	case "jev":
 		return os.Getenv("TYPESAFE_API_KEY")
@@ -132,15 +135,15 @@ func writeArtifact(path string, payload []byte) error {
 	if err != nil {
 		return fmt.Errorf("%w: create artifact", report.ErrExport)
 	}
-	defer os.Remove(file.Name())
+	defer func() { _ = os.Remove(file.Name()) }()
 	var written int
 	written, err = file.Write(payload)
 	if err != nil || written != len(payload) {
-		file.Close()
+		_ = file.Close()
 		return fmt.Errorf("%w: write artifact", report.ErrExport)
 	}
 	if err = file.Sync(); err != nil {
-		file.Close()
+		_ = file.Close()
 		return fmt.Errorf("%w: sync artifact", report.ErrExport)
 	}
 	if err = file.Close(); err != nil {
