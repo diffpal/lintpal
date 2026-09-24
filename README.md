@@ -35,6 +35,12 @@ complete output. Use `--out .artifacts/lintpal/findings.json` for a JSON
 artifact, or `--format json` for JSON on stdout. See the [CLI reference](docs/cli.md)
 for provider options, filters, and two-command CI feedback.
 
+Stored findings can also be published to a GitHub pull request without another
+model call. `lintpal feedback github` posts a deterministic blocking-status
+result and inline rule findings; it does not generate a semantic code review or
+change summary. See the [CLI reference](docs/cli.md#lintpal-cli) for flags and
+the required pull-request permission.
+
 ## Work with rules
 
 Each `.md` file is one mandate; its path beneath `.lintpal/rules/` is its ID.

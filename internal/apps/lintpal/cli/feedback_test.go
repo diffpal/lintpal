@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,5 +75,108 @@ func TestFeedbackOutputFailurePrecedesGate(t *testing.T) {
 	root.SetErr(&bytes.Buffer{})
 	if err := root.Execute(); !errors.Is(err, report.ErrExport) || errors.Is(err, report.ErrGate) {
 		t.Fatalf("output failure confused with gate: %v", err)
+	}
+}
+
+func TestFeedbackGitHubDryRunRendersGateAndInlineWithoutToken(t *testing.T) {
+	input := filepath.Join("..", "..", "..", "..", "docs", "schema", "testdata", "diffpal-left.json")
+	bundle, err := report.ReadBundle(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GITHUB_TOKEN", "")
+	var output bytes.Buffer
+	root := NewRoot(nil, "test")
+	root.SetArgs([]string{"feedback", "github", "--in", input, "--repo", "owner/repo", "--pr-number", "7",
+		"--base", bundle.BaseSHA, "--head", bundle.HeadSHA, "--dry-run", "--gate"})
+	root.SetOut(&output)
+	root.SetErr(&bytes.Buffer{})
+	if err := root.Execute(); !errors.Is(err, report.ErrGate) {
+		t.Fatalf("dry-run gate: %v", err)
+	}
+	text := output.String()
+	if !strings.Contains(text, "1 blocking finding") || !strings.Contains(text, "LEFT") || !strings.Contains(text, "deleted check allowed an invalid input") {
+		t.Fatalf("incomplete preview: %s", text)
+	}
+}
+
+func TestFeedbackGitHubPublishesBeforeGate(t *testing.T) {
+	input := filepath.Join("..", "..", "..", "..", "docs", "schema", "testdata", "diffpal-left.json")
+	bundle, err := report.ReadBundle(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	posts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch {
+		case request.URL.Path == "/graphql":
+			_, _ = writer.Write([]byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":""}}}}}}`))
+		case request.Method == http.MethodGet && strings.HasSuffix(request.URL.Path, "/reviews"):
+			_, _ = writer.Write([]byte(`[]`))
+		case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/reviews"):
+			posts++
+			writer.WriteHeader(http.StatusCreated)
+		default:
+			t.Fatalf("unexpected request: %s %s", request.Method, request.URL.Path)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("GITHUB_API_URL", server.URL)
+	t.Setenv("GITHUB_TOKEN", "secret-token")
+	root := NewRoot(nil, "test")
+	root.SetArgs([]string{"feedback", "github", "--in", input, "--repo", "owner/repo", "--pr-number", "7",
+		"--base", bundle.BaseSHA, "--head", bundle.HeadSHA, "--gate"})
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	if err := root.Execute(); !errors.Is(err, report.ErrGate) || posts != 1 {
+		t.Fatalf("publication did not precede gate: posts=%d err=%v", posts, err)
+	}
+}
+
+func TestFeedbackGitHubRejectsInvalidReportBeforeNetwork(t *testing.T) {
+	invalid := filepath.Join(t.TempDir(), "invalid.json")
+	if err := os.WriteFile(invalid, []byte(`{"version":"v5","findings":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { requests++ }))
+	defer server.Close()
+	t.Setenv("GITHUB_API_URL", server.URL)
+	t.Setenv("GITHUB_TOKEN", "token")
+	root := NewRoot(nil, "test")
+	root.SetArgs([]string{"feedback", "github", "--in", invalid, "--repo", "owner/repo", "--pr-number", "7", "--base", "a", "--head", "b"})
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	if err := root.Execute(); !errors.Is(err, report.ErrInvalidReport) || requests != 0 {
+		t.Fatalf("invalid input reached network: requests=%d err=%v", requests, err)
+	}
+}
+
+func TestFeedbackGitHubRejectsTokenInStoredBundle(t *testing.T) {
+	source := filepath.Join("..", "..", "..", "..", "docs", "schema", "testdata", "lintpal-right.json")
+	data, err := os.ReadFile(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data = bytes.Replace(data, []byte("Changed code may violate go/errors.md."), []byte("contains secret-token-value"), 1)
+	input := filepath.Join(t.TempDir(), "findings.json")
+	if err := os.WriteFile(input, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bundle, err := report.ReadBundle(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { requests++ }))
+	defer server.Close()
+	t.Setenv("GITHUB_API_URL", server.URL)
+	t.Setenv("GITHUB_TOKEN", "secret-token-value")
+	root := NewRoot(nil, "test")
+	root.SetArgs([]string{"feedback", "github", "--in", input, "--repo", "owner/repo", "--pr-number", "7", "--base", bundle.BaseSHA, "--head", bundle.HeadSHA})
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	if err := root.Execute(); !errors.Is(err, report.ErrExport) || requests != 0 {
+		t.Fatalf("secret-bearing bundle reached network: requests=%d err=%v", requests, err)
 	}
 }

@@ -158,13 +158,18 @@ resolved revisions, evidence, skips, and count/usage stats without source state,
 question text, or credentials.
 
 `report.WriteJSON` writes shared findings v5; `report.WriteMarkdown` renders
-the same validated findings for people. `feedback markdown` reads and validates
-a stored v5 bundle before rendering it with the same Markdown formatter.
+the same validated findings for people. Both feedback commands validate a
+stored v5 bundle before using it. `feedback markdown` uses the local formatter;
+`feedback github` sends a deterministic gate/count result and inline rule
+findings through `githubfeedback`. That package owns Actions event resolution,
+fork safety, channel/head/finding markers, content digests, LEFT/RIGHT comment
+planning, active-thread reconciliation, bounded REST/GraphQL calls, and
+same-origin pagination. It does not invoke Jev or generate review prose.
 `report.WriteAndGate(writer, artifact, format, threshold)` writes the complete
 output first, then returns `report.ErrGate` for a finding at or above the
 inclusive severity threshold. `--block-on` writes the blocking flags without
-gating lint, and `feedback markdown --gate` evaluates the stored flags after
-output. `none` disables the threshold. A writer failure
+gating lint, and either feedback command's `--gate` evaluates the stored flags
+after output or successful publication. `none` disables the threshold. A writer failure
 returns `report.ErrExport` before gate evaluation. The CLI maps these errors
 to process exit codes, writes the optional JSON artifact before stdout, and
 binds the Linter through Fx. The executable uses `cli.NewRoot` and

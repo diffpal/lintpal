@@ -35,7 +35,7 @@ The default Markdown feedback goes to stdout. `--format json` selects JSON stdou
 `--out PATH` also writes a complete JSON artifact. Create the destination
 directory first. `--fail-on high` is the default gate; `--fail-on none` reports
 findings without turning them into exit code `10`. `--block-on` records the
-threshold for a later `feedback markdown --gate` command. Other nonzero codes signal
+threshold for a later `feedback markdown --gate` or `feedback github --gate` command. Other nonzero codes signal
 configuration, provider, or output errors. See [report fields](report.md) and
 [exit codes](cli.md).
 

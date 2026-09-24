@@ -114,6 +114,36 @@ stdout. Without `--gate`, blocking findings do not change its exit status.
 With `--gate`, it returns exit code 10 after the Markdown is written if any
 stored finding has `blocking: true`. An invalid report fails before output.
 
+`feedback github` publishes that same validated artifact to a pull request. It
+creates a GitHub `COMMENT` review containing a deterministic run result and one
+inline comment per anchorable finding. The result includes `No blocking
+findings`, `1 blocking finding`, or `N blocking findings`; this text is computed
+from stored `blocking` fields. Jev is not called, and LintPal does not generate
+a semantic code review, change summary, remediation, or other prose.
+
+```bash
+export GITHUB_TOKEN='...'
+lintpal feedback github --in .artifacts/lintpal/findings.json \
+  --repo owner/repository --pr-number 42 \
+  --base "$BASE_SHA" --head "$HEAD_SHA" --gate
+```
+
+Inside GitHub Actions, `--repo`, `--pr-number`, `--base`, and `--head` can be
+resolved from `GITHUB_REPOSITORY` and `GITHUB_EVENT_PATH`. Explicit flags take
+priority and must match the stored report commits. The token comes from
+`GITHUB_TOKEN` by default; `--auth-token-env NAME` selects another environment
+variable without putting its value in arguments. `--review-channel` isolates
+independent publication streams. Repeated runs update the marked result and
+skip unchanged active inline findings; a changed finding body is republished.
+Cross-origin pagination and malformed API responses fail closed.
+
+`--dry-run` writes the intended result and inline bodies to stdout without
+reading a GitHub token or making an API request. Fork pull requests are skipped
+before token use. `--gate` is evaluated only after preview, successful
+publication, or a safe fork skip, and returns exit 10 when the stored artifact
+contains a blocking finding. GitHub publication needs `pull-requests: write`;
+the workflow otherwise needs only `contents: read`.
+
 | Exit code | Meaning |
 | ---: | --- |
 | 0 | Completed without a gate failure. |
@@ -121,7 +151,7 @@ stored finding has `blocking: true`. An invalid report fails before output.
 | 3 | Retryable provider failure or timeout. |
 | 4 | Report or artifact export failure. |
 | 5 | Internal, protocol, or unclassified local failure. |
-| 10 | Complete lint report or feedback written; a finding met the gate. |
+| 10 | Complete lint report or feedback published/written; a finding met the gate. |
 | 130 | Interrupted or canceled. |
 
 `lintpal doctor` checks local Git/repository availability and whether the

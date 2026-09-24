@@ -54,9 +54,12 @@ count does not prove the provider used no tokens.
 The gate runs after the complete report is written. The default
 `--fail-on high` returns exit code `10` for a high or critical finding;
 `--fail-on none` disables that exit code. `lint` writes Markdown to stdout by
-default; `feedback markdown --in PATH` renders stored v5 findings without
-changing their `blocking` values. Its optional `--gate` returns exit 10 after
-complete feedback output when any finding is blocking. See [CLI exit codes](cli.md).
+default; both feedback commands consume stored v5 findings without changing
+their `blocking` values. `feedback markdown --in PATH` renders local Markdown.
+`feedback github --in PATH` computes a gate-status/count block and inline
+finding bodies from the same fields, without a provider call or semantic
+summary. Their optional `--gate` returns exit 10 only after complete output or
+successful publication when any finding is blocking. See [CLI exit codes](cli.md).
 
 ## Migration
 

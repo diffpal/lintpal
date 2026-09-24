@@ -18,19 +18,28 @@ import (
 const MaxBundleBytes = 64 << 20
 
 type Bundle struct {
-	Version  string    `json:"version"`
-	ReviewID string    `json:"review_id"`
-	BaseSHA  string    `json:"base_sha"`
-	HeadSHA  string    `json:"head_sha"`
-	Findings []Finding `json:"findings"`
+	Version      string    `json:"version"`
+	ReviewID     string    `json:"review_id"`
+	BaseSHA      string    `json:"base_sha"`
+	HeadSHA      string    `json:"head_sha"`
+	MergeBaseSHA string    `json:"merge_base_sha"`
+	Findings     []Finding `json:"findings"`
+	Skips        []Skip    `json:"skips"`
+	Stats        Stats     `json:"stats"`
 }
 
 type Finding struct {
+	ID          string `json:"id"`
+	ReviewID    string `json:"review_id"`
+	Category    string `json:"category"`
 	Severity    string `json:"severity"`
 	Title       string `json:"title"`
 	Message     string `json:"message"`
 	Path        string `json:"path"`
+	StartLine   int    `json:"start_line"`
+	EndLine     int    `json:"end_line"`
 	ChangedSpan struct {
+		Path      string `json:"path"`
 		StartLine int    `json:"start_line"`
 		EndLine   int    `json:"end_line"`
 		Side      string `json:"side"`
@@ -40,7 +49,14 @@ type Finding struct {
 		RuleID string `json:"rule_id"`
 		Anchor string `json:"anchor"`
 	} `json:"evidence"`
-	Blocking bool `json:"blocking"`
+	Decision struct {
+		Kind  string  `json:"kind"`
+		Value float64 `json:"value"`
+	} `json:"decision"`
+	Blocking   bool   `json:"blocking"`
+	Provider   string `json:"provider"`
+	Model      string `json:"model"`
+	WorkItemID string `json:"work_item_id"`
 }
 
 var (
@@ -141,6 +157,84 @@ func RenderMarkdown(bundle Bundle) []byte {
 		fmt.Fprintf(&out, "  - Message: %s\n", markdownText(finding.Message))
 	}
 	return out.Bytes()
+}
+
+// RenderGitHubResult builds the deterministic top-level GitHub feedback body.
+// unanchoredIDs contains validated findings that the GitHub transport could not
+// attach to a diff line. Unknown or duplicate IDs are rejected.
+func RenderGitHubResult(bundle Bundle, unanchoredIDs []string) ([]byte, error) {
+	unanchored := make(map[string]struct{}, len(unanchoredIDs))
+	known := make(map[string]struct{}, len(bundle.Findings))
+	for _, finding := range bundle.Findings {
+		known[finding.ID] = struct{}{}
+	}
+	for _, id := range unanchoredIDs {
+		if _, ok := known[id]; !ok {
+			return nil, ErrInvalidReport
+		}
+		if _, exists := unanchored[id]; exists {
+			return nil, ErrInvalidReport
+		}
+		unanchored[id] = struct{}{}
+	}
+
+	var out bytes.Buffer
+	fmt.Fprintf(&out, "# LintPal findings\n\n- Base: %s\n- Head: %s\n\n", markdownText(bundle.BaseSHA), markdownText(bundle.HeadSHA))
+	out.WriteString("## Gate status\n\n")
+	fmt.Fprintf(&out, "%s\n\n", blockingStatus(BlockingCount(bundle)))
+	out.WriteString("## Publication\n\n")
+	fmt.Fprintf(&out, "- Findings: %d\n- Inline: %d\n- Not attached inline: %d\n",
+		len(bundle.Findings), len(bundle.Findings)-len(unanchored), len(unanchored))
+	if len(unanchored) == 0 {
+		return out.Bytes(), nil
+	}
+	out.WriteString("\n### Not attached inline\n\n")
+	for _, finding := range bundle.Findings {
+		if _, ok := unanchored[finding.ID]; !ok {
+			continue
+		}
+		fmt.Fprintf(&out, "- %s — %s (%s:%d-%d, %s)\n",
+			markdownText(finding.ID), markdownText(finding.Title), markdownText(finding.ChangedSpan.Path),
+			finding.ChangedSpan.StartLine, finding.ChangedSpan.EndLine, markdownText(finding.ChangedSpan.Side))
+	}
+	return out.Bytes(), nil
+}
+
+// RenderGitHubFinding builds one deterministic inline body from validated
+// finding fields. It does not add semantic analysis or remediation text.
+func RenderGitHubFinding(finding Finding) []byte {
+	var out bytes.Buffer
+	status := "nonblocking"
+	if finding.Blocking {
+		status = "blocking"
+	}
+	fmt.Fprintf(&out, "**%s** (%s): %s\n\n%s\n", markdownText(finding.Severity), status,
+		markdownText(finding.Title), markdownText(finding.Message))
+	if finding.Evidence.Kind == "rule" {
+		fmt.Fprintf(&out, "\nRule: %s\n", markdownText(finding.Evidence.RuleID))
+	}
+	return out.Bytes()
+}
+
+func BlockingCount(bundle Bundle) int {
+	count := 0
+	for _, finding := range bundle.Findings {
+		if finding.Blocking {
+			count++
+		}
+	}
+	return count
+}
+
+func blockingStatus(count int) string {
+	switch count {
+	case 0:
+		return "No blocking findings"
+	case 1:
+		return "1 blocking finding"
+	default:
+		return fmt.Sprintf("%d blocking findings", count)
+	}
 }
 
 func markdownText(value string) string {

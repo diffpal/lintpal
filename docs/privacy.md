@@ -35,9 +35,18 @@ report sizes have finite limits documented in [resource limits](resource-limits.
 Oversized or canceled runs fail without a partial report. The CLI reports a
 fixed error category instead of raw provider or source text.
 
+`lintpal feedback github` reads an already stored findings v5 artifact and sends
+only its deterministic result plus finding text and locations to the selected
+GitHub pull request. It reads the GitHub token from an environment variable,
+never a value flag, and does not send source context to Jev or any other model.
+Fork pull requests are skipped before token use. GitHub event files, API
+responses, and pagination links are bounded and treated as untrusted; pagination
+must remain on the configured API origin. API errors do not include response
+bodies or tokens.
+
 This MVP covers committed comparisons, changed-line diagnostics, repository
-Markdown rules, and Markdown/JSON reports. It does not analyze uncommitted
-changes, apply fixes, emit SARIF, or integrate directly with a PR host. The
+Markdown rules, Markdown/JSON reports, and GitHub findings publication. It does
+not analyze uncommitted changes, apply fixes, or emit SARIF. The
 offline [evaluation corpus](evaluation.md) checks policy plumbing with fake
 provider probabilities; its counts are not live model precision, latency, or
 cost guarantees. Live evaluation is an optional operator action.
