@@ -133,3 +133,23 @@ func TestPublishedExamplePack(t *testing.T) {
 		t.Fatalf("published example: %v", err)
 	}
 }
+
+func TestImportThroughSymlinkedParent(t *testing.T) {
+	real := t.TempDir()
+	alias := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(real, alias); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	root := filepath.Join(alias, "repo")
+	if err := os.Mkdir(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(root, "source")
+	writeLocalPack(t, source, validRules)
+	if _, err := ImportLocal(t.Context(), root, "demo", source, false); err != nil {
+		t.Fatalf("import through parent alias: %v", err)
+	}
+	if _, err := Verify(t.Context(), root, "demo"); err != nil {
+		t.Fatalf("verify through parent alias: %v", err)
+	}
+}

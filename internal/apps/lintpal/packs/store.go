@@ -64,11 +64,11 @@ func ImportLocal(ctx context.Context, root, name, dir string, update bool) (Entr
 		abs = filepath.Join(root, abs)
 	}
 	abs = filepath.Clean(abs)
-	if err := checkPath(abs, true); err != nil {
+	if err := checkPath(abs, abs, true); err != nil {
 		return Entry{}, ErrSource
 	}
 	file := filepath.Join(abs, "rules.yaml")
-	if err := checkPath(file, false); err != nil {
+	if err := checkPath(abs, file, false); err != nil {
 		return Entry{}, ErrSource
 	}
 	data, err := readBounded(ctx, file, maxPackBytes)
@@ -124,7 +124,7 @@ func Install(ctx context.Context, root, name string, data []byte, source Source,
 		return Entry{}, err
 	}
 	file := filepath.Join(base, filepath.FromSlash(entry.Path))
-	created, err := writeContent(file, data, update)
+	created, err := writeContent(root, file, data, update)
 	if err != nil {
 		return Entry{}, err
 	}
@@ -134,7 +134,7 @@ func Install(ctx context.Context, root, name string, data []byte, source Source,
 		lock.Packs[index] = entry
 	}
 	sort.Slice(lock.Packs, func(i, j int) bool { return lock.Packs[i].Name < lock.Packs[j].Name })
-	if err := writeLock(base, lock); err != nil {
+	if err := writeLock(root, base, lock); err != nil {
 		if created {
 			_ = os.Remove(file)
 		}
@@ -193,7 +193,7 @@ func Load(ctx context.Context, root, name string) (rules.Pack, error) {
 
 func verifyEntry(ctx context.Context, root string, entry Entry) (rules.Pack, error) {
 	file := filepath.Join(root, ".lintpal", filepath.FromSlash(entry.Path))
-	if err := checkPath(file, false); err != nil {
+	if err := checkPath(root, file, false); err != nil {
 		return rules.Pack{}, ErrDrift
 	}
 	data, err := readBounded(ctx, file, maxPackBytes)
@@ -219,7 +219,7 @@ func verifyEntry(ctx context.Context, root string, entry Entry) (rules.Pack, err
 
 func readLock(root string, missingAllowed bool) (lockfile, error) {
 	file := filepath.Join(root, ".lintpal", "packs.lock.json")
-	if err := checkPath(file, false); err != nil {
+	if err := checkPath(root, file, false); err != nil {
 		if missingAllowed && errors.Is(err, os.ErrNotExist) {
 			return lockfile{Schema: lockSchema}, nil
 		}
@@ -294,9 +294,17 @@ func readBounded(ctx context.Context, file string, limit int64) ([]byte, error) 
 	return data, nil
 }
 
-func checkPath(path string, directory bool) error {
+func checkPath(root, path string, directory bool) error {
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return ErrSource
+	}
 	clean, err := filepath.Abs(path)
 	if err != nil {
+		return ErrSource
+	}
+	relative, err := filepath.Rel(root, clean)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
 		return ErrSource
 	}
 	for part := clean; ; part = filepath.Dir(part) {
@@ -310,7 +318,7 @@ func checkPath(path string, directory bool) error {
 		if part == clean && info.IsDir() != directory {
 			return ErrSource
 		}
-		if parent := filepath.Dir(part); parent == part {
+		if part == root {
 			break
 		}
 	}
@@ -318,21 +326,21 @@ func checkPath(path string, directory bool) error {
 }
 
 func ensureDirectory(root, dir string) error {
-	if err := checkPath(root, true); err != nil {
+	if err := checkPath(root, root, true); err != nil {
 		return ErrStorage
 	}
 	if err := os.Mkdir(dir, 0700); err != nil && !errors.Is(err, os.ErrExist) {
 		return ErrStorage
 	}
-	if err := checkPath(dir, true); err != nil {
+	if err := checkPath(root, dir, true); err != nil {
 		return ErrStorage
 	}
 	return nil
 }
 
-func writeContent(path string, data []byte, repair bool) (bool, error) {
+func writeContent(root, path string, data []byte, repair bool) (bool, error) {
 	hadExisting := false
-	if err := checkPath(path, false); err == nil {
+	if err := checkPath(root, path, false); err == nil {
 		hadExisting = true
 		existing, err := os.ReadFile(path)
 		if err != nil {
@@ -369,9 +377,9 @@ func writeContent(path string, data []byte, repair bool) (bool, error) {
 	return !hadExisting, nil
 }
 
-func writeLock(base string, lock lockfile) error {
+func writeLock(root, base string, lock lockfile) error {
 	path := filepath.Join(base, "packs.lock.json")
-	if err := checkPath(path, false); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := checkPath(root, path, false); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return ErrLock
 	}
 	data, err := json.MarshalIndent(lock, "", "  ")

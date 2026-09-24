@@ -84,6 +84,9 @@ func loadPack(ctx context.Context, dir string, options cli.Options) (rules.Pack,
 	if err != nil {
 		return rules.Pack{}, packs.ErrSource
 	}
+	if isManagedPath(filepath.Join(dir, ".lintpal", "packs"), selected) {
+		return rules.Pack{}, packs.ErrDrift
+	}
 	if isManagedPath(managed, selected) {
 		return rules.Pack{}, packs.ErrDrift
 	}

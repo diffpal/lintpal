@@ -35,6 +35,7 @@ func LoadEnv(ctx context.Context, cwd, explicitPath string, disabled bool) (Look
 		return LayeredLookup(os.LookupEnv, nil), nil
 	}
 	path := explicitPath
+	boundary := cwd
 	if path == "" {
 		command := exec.CommandContext(ctx, "git", "-C", cwd, "rev-parse", "--show-toplevel")
 		command.Stderr = io.Discard
@@ -45,11 +46,12 @@ func LoadEnv(ctx context.Context, cwd, explicitPath string, disabled bool) (Look
 			}
 			return LayeredLookup(os.LookupEnv, nil), nil
 		}
-		path = filepath.Join(strings.TrimSpace(string(root)), ".env")
+		boundary = strings.TrimSpace(string(root))
+		path = filepath.Join(boundary, ".env")
 	} else if !filepath.IsAbs(path) {
 		path = filepath.Join(cwd, path)
 	}
-	data, err := readEnvFile(ctx, path, explicitPath == "")
+	data, err := readEnvFile(ctx, path, boundary, explicitPath == "")
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +79,16 @@ func LayeredLookup(process LookupEnv, file map[string]string) LookupEnv {
 	}
 }
 
-func readEnvFile(ctx context.Context, path string, optional bool) ([]byte, error) {
+func readEnvFile(ctx context.Context, path, boundary string, optional bool) ([]byte, error) {
 	clean := filepath.Clean(path)
+	boundary, err := filepath.Abs(boundary)
+	if err != nil {
+		return nil, ErrInvalidEnvFile
+	}
+	relative, err := filepath.Rel(boundary, clean)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		boundary = filepath.Dir(clean)
+	}
 	for part := clean; ; part = filepath.Dir(part) {
 		info, err := os.Lstat(part)
 		if err != nil {
@@ -93,7 +103,7 @@ func readEnvFile(ctx context.Context, path string, optional bool) ([]byte, error
 		if part == clean && !info.Mode().IsRegular() {
 			return nil, ErrInvalidEnvFile
 		}
-		if parent := filepath.Dir(part); parent == part {
+		if part == boundary {
 			break
 		}
 	}

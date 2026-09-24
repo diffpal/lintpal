@@ -103,6 +103,29 @@ func TestLoadEnvInvalidInputs(t *testing.T) {
 	}
 }
 
+func TestLoadEnvThroughSymlinkedParent(t *testing.T) {
+	real := t.TempDir()
+	alias := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(real, alias); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	cwd := filepath.Join(alias, "repo")
+	if err := os.Mkdir(cwd, 0700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(cwd, ".env")
+	if err := os.WriteFile(path, []byte("LINTPAL_PARENT_ALIAS_TEST=ok\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	lookup, err := LoadEnv(t.Context(), cwd, path, false)
+	if err != nil {
+		t.Fatalf("load through parent alias: %v", err)
+	}
+	if value, ok := lookup("LINTPAL_PARENT_ALIAS_TEST"); !ok || value != "ok" {
+		t.Fatalf("value = %q, present = %v", value, ok)
+	}
+}
+
 func TestLayeredLookupCopiesFileValues(t *testing.T) {
 	file := map[string]string{"A": "file", "B": "file"}
 	lookup := LayeredLookup(func(key string) (string, bool) {
