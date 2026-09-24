@@ -3,6 +3,7 @@ package rules
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"path"
 	"sort"
 	"strings"
@@ -15,6 +16,8 @@ import (
 const maxSelections = 100_000
 const maxSelectedRuleBytes = 16 << 20
 
+var ErrInvalidSelector = errors.New("invalid rule path selector")
+
 // Selection binds one validated rule to one immutable Git work item.
 type Selection struct {
 	GroupID    string
@@ -25,11 +28,20 @@ type Selection struct {
 
 // Select applies declarative path/side selectors in canonical item/rule order.
 func Select(ctx context.Context, pack Pack, groups []contextplan.Group) ([]Selection, error) {
+	return SelectWithPaths(ctx, pack, groups, nil, nil)
+}
+
+// SelectWithPaths applies run-level source-path filters before rule selection.
+// A matching exclude takes precedence over every include.
+func SelectWithPaths(ctx context.Context, pack Pack, groups []contextplan.Group, includes, excludes []string) ([]Selection, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	if len(pack.rules) == 0 {
 		return nil, ErrInvalidPack
+	}
+	if err := ValidateSelectors(includes, excludes); err != nil {
+		return nil, err
 	}
 	orderedGroups := append([]contextplan.Group(nil), groups...)
 	for i, group := range orderedGroups {
@@ -68,6 +80,9 @@ func Select(ctx context.Context, pack Pack, groups []contextplan.Group) ([]Selec
 				return nil, ErrInvalidRule
 			}
 			seenItems[item.ID] = true
+			if !selectedPath(item.Path, includes, excludes) {
+				continue
+			}
 			for _, rule := range rules {
 				if !applies(rule, item) {
 					continue
@@ -86,6 +101,43 @@ func Select(ctx context.Context, pack Pack, groups []contextplan.Group) ([]Selec
 		}
 	}
 	return selections, nil
+}
+
+// ValidateSelectors checks the same safe glob subset used by rule selection.
+func ValidateSelectors(includes, excludes []string) error {
+	if len(includes) > 32 || len(excludes) > 32 {
+		return ErrInvalidSelector
+	}
+	for _, pattern := range append(append([]string(nil), includes...), excludes...) {
+		if pattern == "" || len(pattern) > maxPattern || strings.Contains(pattern, "\\") ||
+			strings.HasPrefix(pattern, "/") || strings.Contains(pattern, "..") {
+			return ErrInvalidSelector
+		}
+		if _, err := path.Match(pattern, "example.go"); err != nil {
+			return ErrInvalidSelector
+		}
+	}
+	return nil
+}
+
+func selectedPath(target string, includes, excludes []string) bool {
+	if len(includes) > 0 && !matchesAny(target, includes) {
+		return false
+	}
+	return !matchesAny(target, excludes)
+}
+
+func matchesAny(target string, patterns []string) bool {
+	for _, pattern := range patterns {
+		candidate := target
+		if !strings.Contains(pattern, "/") {
+			candidate = path.Base(target)
+		}
+		if match, _ := path.Match(pattern, candidate); match {
+			return true
+		}
+	}
+	return false
 }
 
 func itemLess(a, b git.WorkItem) bool {

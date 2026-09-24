@@ -6,7 +6,7 @@
       "path": "pkg/command.go",
       "line": 2,
       "source": "package command\nvar args = []string{\"--version\"}\n",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "safe",
       "probability": 0.02
     },
@@ -15,7 +15,7 @@
       "path": "pkg/command.go",
       "line": 2,
       "source": "package command\nvar args = []string{userInput}\n",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "buggy",
       "probability": 0.98
     },
@@ -24,7 +24,7 @@
       "path": "pkg/worker.go",
       "line": 2,
       "source": "package worker\nvar result = handleError(err)\n",
-      "rule_id": "correctness.ignored-error",
+      "rule_id": "correctness/ignored-error.md",
       "truth": "safe",
       "probability": 0.04
     },
@@ -33,7 +33,7 @@
       "path": "pkg/worker.go",
       "line": 2,
       "source": "package worker\nvar _ = doWork()\n",
-      "rule_id": "correctness.ignored-error",
+      "rule_id": "correctness/ignored-error.md",
       "truth": "buggy",
       "probability": 0.97
     },
@@ -42,7 +42,7 @@
       "path": "pkg/boundary.go",
       "line": 2,
       "source": "package boundary\nvar command = fixedCommand\n",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "safe",
       "probability": 0.949
     },
@@ -51,7 +51,7 @@
       "path": "pkg/boundary.go",
       "line": 2,
       "source": "package boundary\nvar command = userCommand\n",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "buggy",
       "probability": 0.95
     },
@@ -60,7 +60,7 @@
       "path": "pkg/false_positive.go",
       "line": 2,
       "source": "package example\nvar command = fixedCommand\n",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "safe",
       "probability": 0.96
     },
@@ -69,7 +69,7 @@
       "path": "pkg/false_negative.go",
       "line": 2,
       "source": "package example\nvar command = userCommand\n",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "buggy",
       "probability": 0.30
     }

@@ -46,7 +46,7 @@ func ExitCode(err error) int {
 	}
 	if errors.Is(err, ErrInvalidOptions) || errors.Is(err, ErrInvalidEnvFile) ||
 		errors.Is(err, ErrEnvFileLimit) || errors.Is(err, packs.ErrSource) ||
-		errors.Is(err, packs.ErrLock) || errors.Is(err, packs.ErrConflict) ||
+		errors.Is(err, packs.ErrLock) || errors.Is(err, packs.ErrLegacyFormat) || errors.Is(err, packs.ErrConflict) ||
 		errors.Is(err, packs.ErrDrift) || errors.Is(err, packs.ErrStorage) ||
 		errors.Is(err, git.ErrInvalidRevision) ||
 		errors.Is(err, report.ErrInvalidFormat) || errors.Is(err, report.ErrInvalidThreshold) ||
@@ -60,6 +60,14 @@ func ExitCode(err error) int {
 		return 2
 	}
 	return 5
+}
+
+// ExitMessageFor renders a specific safe migration hint for legacy YAML packs.
+func ExitMessageFor(err error) string {
+	if errors.Is(err, packs.ErrLegacyFormat) {
+		return packs.ErrLegacyFormat.Error()
+	}
+	return ExitMessage(ExitCode(err))
 }
 
 func ExitMessage(code int) string {

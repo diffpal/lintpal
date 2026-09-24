@@ -21,12 +21,12 @@ func TestVerifyRejectsBrokenLinkAndRuleExample(t *testing.T) {
 	}
 	write("README.md", "[docs](docs/guide.md)\n")
 	write("docs/guide.md", "[missing](missing.md)\n")
-	write("examples/rules/sample/rules.yaml", "invalid: yaml\n")
+	write("examples/rules/sample/rule.md", " \n")
 	if err := verify(root); err == nil || !strings.Contains(err.Error(), "missing.md") {
 		t.Fatalf("want broken link error, got %v", err)
 	}
 	write("docs/guide.md", "# Guide\n")
-	if err := verify(root); err == nil || !strings.Contains(err.Error(), "rules.yaml") {
+	if err := verify(root); err == nil || !strings.Contains(err.Error(), "sample") {
 		t.Fatalf("want invalid rule error, got %v", err)
 	}
 }

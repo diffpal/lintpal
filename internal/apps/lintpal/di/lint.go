@@ -58,7 +58,8 @@ func lintWithRuntime(ctx context.Context, dir string, options cli.Options, runti
 	if err != nil {
 		return report.Report{}, err
 	}
-	artifact, runErr := linter.Lint(ctx, app.Request{Base: options.Base, Head: options.Head, Model: options.Model, ProviderName: options.Provider, Limits: options.Limits})
+	artifact, runErr := linter.Lint(ctx, app.Request{Base: options.Base, Head: options.Head, Model: options.Model, ProviderName: options.Provider,
+		Include: options.Include, Exclude: options.Exclude, Limits: options.Limits})
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), lifecycleTimeout)
 	stopErr := graph.Stop(stopCtx)
 	cancelStop()
@@ -69,15 +70,30 @@ func lintWithRuntime(ctx context.Context, dir string, options cli.Options, runti
 }
 
 func loadPack(ctx context.Context, dir string, options cli.Options) (rules.Pack, error) {
+	applyPolicy := func(pack rules.Pack) (rules.Pack, error) {
+		var threshold *float64
+		var severity *rules.Severity
+		if options.RuleThresholdSet {
+			threshold = &options.RuleThreshold
+		}
+		if options.RuleSeveritySet {
+			severity = &options.RuleSeverity
+		}
+		return rules.WithOverrides(pack, threshold, severity)
+	}
 	if options.Rules == "" {
-		return rules.BuiltIn(), nil
+		return applyPolicy(rules.BuiltInMarkdown())
 	}
 	root, err := packs.RepositoryRoot(ctx, dir)
 	if err != nil {
 		return rules.Pack{}, err
 	}
 	if strings.HasPrefix(options.Rules, "@") {
-		return packs.Load(ctx, root, strings.TrimPrefix(options.Rules, "@"))
+		pack, err := packs.LoadMarkdown(ctx, root, strings.TrimPrefix(options.Rules, "@"))
+		if err != nil {
+			return rules.Pack{}, err
+		}
+		return applyPolicy(pack)
 	}
 	managed := filepath.Join(root, ".lintpal", "packs")
 	selected, err := filepath.Abs(options.Rules)
@@ -96,12 +112,18 @@ func loadPack(ctx context.Context, dir string, options cli.Options) (rules.Pack,
 	if isManagedPath(managed, selected) {
 		return rules.Pack{}, packs.ErrDrift
 	}
-	file, err := os.Open(options.Rules)
+	info, err := os.Stat(selected)
 	if err != nil {
 		return rules.Pack{}, err
 	}
-	defer func() { _ = file.Close() }()
-	return rules.LoadContext(ctx, file)
+	if info.IsDir() {
+		pack, err := rules.LoadDirectory(ctx, selected)
+		if err != nil {
+			return rules.Pack{}, err
+		}
+		return applyPolicy(pack)
+	}
+	return rules.Pack{}, packs.ErrLegacyFormat
 }
 
 func isManagedPath(managed, selected string) bool {

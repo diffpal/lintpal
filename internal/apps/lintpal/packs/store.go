@@ -23,6 +23,7 @@ var ErrLock = errors.New("invalid pack lockfile")
 var ErrConflict = errors.New("pack name conflict")
 var ErrDrift = errors.New("installed pack differs from lockfile")
 var ErrStorage = errors.New("pack storage failed")
+var ErrLegacyFormat = errors.New("YAML rule packs are no longer supported; convert rules.yaml to Markdown files and re-import")
 
 const lockSchema = "lintpal.packs.lock.v1"
 const maxPackBytes = 256 << 10

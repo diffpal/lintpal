@@ -9,7 +9,7 @@
 
 **Review committed code changes with questions you control.** lintpal compares
 two Git revisions, asks a selected System One provider focused questions, and
-reports findings on changed lines. Rules are declarative YAML, so a team can
+reports findings on changed lines. Rules are Markdown requirements, so a team can
 keep review policy beside its code, pin imported rule packs, and revisit the
 same committed inputs.
 
@@ -55,30 +55,24 @@ for the published package layout and release status.
 
 ## Make the review yours
 
-A rule pairs a question with a decision threshold and fixed diagnostic text.
-For example, a `noul` rule can ask whether changed Go code drops a meaningful
-error:
+A rule is a Markdown file whose relative path is its ID. Its body is a
+requirement for changed code. Optional frontmatter sets severity, threshold,
+and title. For example, `go/unchecked-error.md` can contain:
 
-```yaml
-schema: lintpal.rules.v1
-rules:
-  - id: go.unchecked-error
-    type: noul
-    instructions: Does the changed Go code discard an error whose failure should be handled?
-    threshold: 0.95
-    severity: high
-    title: Possible unchecked error
-    message: Review whether this error needs handling.
-    paths: ['*.go']
-    sides: [RIGHT]
+```markdown
+---
+severity: high
+title: Possible unchecked error
+---
+
+Handle errors returned by calls when failure changes the result or behavior.
 ```
 
-The checked-in [Go review pack](examples/rules/go-review/rules.yaml) also shows
-`choice` and `score` rules. The
-[documentation review pack](examples/rules/docs-review/rules.yaml) shows a
-focused Markdown rule. These are authoring examples, not claims of measured
-model accuracy. See [rule authoring](docs/rule-authoring.md) to write and
-calibrate rules.
+The checked-in [Go review directory](examples/rules/go-review/unchecked-error.md)
+and [documentation review rule](examples/rules/docs-review/command-drift.md)
+show authoring examples. These are not claims of measured model accuracy.
+See [rule authoring](docs/rule-authoring.md) for defaults, overrides, and
+source path filters.
 
 Import a pack explicitly from a local directory, verify its lockfile, and
 select it for a review:

@@ -1,10 +1,12 @@
-// Package report defines the validated, deterministic lintpal.report.v1 artifact.
+// Package report defines LintPal's validated, deterministic findings artifact.
 package report
 
 import (
 	"encoding/hex"
 	"errors"
+	"io/fs"
 	"math"
+	"path"
 	"sort"
 	"strings"
 
@@ -12,7 +14,7 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
 )
 
-const SchemaVersion = "lintpal.report.v1"
+const SchemaVersion = "v5"
 
 var ErrInvalidReport = errors.New("invalid lint report")
 
@@ -62,12 +64,15 @@ type Report struct {
 	Diagnostics   []Diagnostic `json:"diagnostics"`
 	Skips         []Skip       `json:"skips"`
 	Stats         Stats        `json:"stats"`
+	gate          Threshold
+	identitySalt  string
 }
 
 // New checks every decision against the original changed-line work items.
-func New(result git.Result, decisions []rules.Decision, provider, model string, stats Stats) (Report, error) {
+func New(result git.Result, decisions []rules.Decision, provider, model string, stats Stats, identitySalt ...string) (Report, error) {
 	if !commitID(result.Revisions.Base) || !commitID(result.Revisions.Head) ||
 		!commitID(result.Revisions.MergeBase) || !safeName(provider) || !safeName(model) ||
+		len(identitySalt) > 1 || len(identitySalt) == 1 && !commitID(identitySalt[0]) ||
 		stats.WorkItems != len(result.Items) || stats.Skipped != len(result.Skips) ||
 		stats.Groups < 0 || stats.Batches < 0 || stats.Questions < 0 ||
 		stats.InputTokens < 0 || stats.OutputTokens < 0 {
@@ -87,13 +92,16 @@ func New(result git.Result, decisions []rules.Decision, provider, model string, 
 	report := Report{SchemaVersion: SchemaVersion, BaseSHA: result.Revisions.Base,
 		HeadSHA: result.Revisions.Head, MergeBaseSHA: result.Revisions.MergeBase,
 		Diagnostics: make([]Diagnostic, 0, len(decisions)), Skips: make([]Skip, 0, len(result.Skips))}
+	if len(identitySalt) == 1 {
+		report.identitySalt = identitySalt[0]
+	}
 	seen := make(map[string]bool, len(decisions))
 	for _, decision := range decisions {
 		item, ok := items[decision.WorkItemID]
 		key := decision.WorkItemID + "/" + decision.RuleID
 		if !ok || seen[key] || decision.Path != item.Path || decision.Side != item.Side ||
 			decision.StartLine != item.StartLine || decision.EndLine != item.EndLine ||
-			strings.TrimSpace(decision.RuleID) == "" || strings.TrimSpace(decision.Title) == "" ||
+			!validRuleID(decision.RuleID) || strings.TrimSpace(decision.Title) == "" ||
 			strings.TrimSpace(decision.Message) == "" || !validSeverity(decision.Severity) ||
 			!validEvidence(decision.Kind, decision.Value, decision.Confidence) {
 			return Report{}, ErrInvalidReport
@@ -134,6 +142,14 @@ func New(result git.Result, decisions []rules.Decision, provider, model string, 
 // Validate checks the public artifact before it is rendered or gated.
 // Exact changed-line provenance is checked by New, which has the Git work items.
 func Validate(report Report) error {
+	if report.identitySalt != "" && !commitID(report.identitySalt) {
+		return ErrInvalidReport
+	}
+	if report.gate != "" {
+		if _, err := rank(report.gate); err != nil {
+			return ErrInvalidReport
+		}
+	}
 	if report.SchemaVersion != SchemaVersion || !commitID(report.BaseSHA) ||
 		!commitID(report.HeadSHA) || !commitID(report.MergeBaseSHA) ||
 		report.Diagnostics == nil || report.Skips == nil ||
@@ -146,7 +162,7 @@ func Validate(report Report) error {
 	seen := make(map[string]bool, len(report.Diagnostics))
 	for i, d := range report.Diagnostics {
 		key := d.WorkItemID + "/" + d.RuleID
-		if seen[key] || d.RuleID == "" || d.WorkItemID == "" || d.Path == "" ||
+		if seen[key] || !validRuleID(d.RuleID) || d.WorkItemID == "" || d.Path == "" ||
 			(d.Side != git.Left && d.Side != git.Right) || d.StartLine < 1 || d.EndLine < d.StartLine ||
 			strings.TrimSpace(d.Title) == "" || strings.TrimSpace(d.Message) == "" ||
 			!safeName(d.Provider) || !safeName(d.Model) || !validSeverity(d.Severity) ||
@@ -204,13 +220,25 @@ func validSeverity(value rules.Severity) bool {
 }
 
 func validEvidence(kind string, value float64, confidence *float64) bool {
-	if kind != "noul_probability" && kind != "selected_probability" && kind != "normalized_score" {
+	if kind != "noul_probability" || confidence != nil {
 		return false
 	}
 	if !finite(value) || value < 0 || value > 1 {
 		return false
 	}
-	return confidence == nil || finite(*confidence) && *confidence >= 0 && *confidence <= 1
+	return true
+}
+
+func validRuleID(id string) bool {
+	if len(id) == 0 || len(id) > 63 || !fs.ValidPath(id) || !strings.HasSuffix(id, ".md") || path.Base(id) == ".md" || strings.ContainsRune(id, '\\') {
+		return false
+	}
+	for _, char := range id {
+		if char < ' ' || char == 0x7f {
+			return false
+		}
+	}
+	return true
 }
 
 func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }

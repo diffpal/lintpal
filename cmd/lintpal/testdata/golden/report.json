@@ -1,42 +1,67 @@
 {
-  "schema_version": "lintpal.report.v1",
+  "version": "v5",
+  "review_id": "<item>",
   "base_sha": "<base>",
   "head_sha": "<head>",
   "merge_base_sha": "<base>",
-  "diagnostics": [
+  "findings": [
     {
-      "rule_id": "correctness.ignored-error",
-      "work_item_id": "<item>",
+      "id": "<item>",
+      "review_id": "<item>",
+      "category": "rule_violation",
       "severity": "medium",
       "path": "example.go",
-      "side": "RIGHT",
       "start_line": 2,
       "end_line": 2,
-      "title": "Possible ignored error",
-      "message": "Changed code may ignore a meaningful error.",
-      "provider": "custom",
-      "model": "jev-latest",
+      "changed_span": {
+        "path": "example.go",
+        "start_line": 2,
+        "end_line": 2,
+        "side": "RIGHT"
+      },
+      "title": "Possible rule violation",
+      "message": "Changed code may violate correctness/ignored-error.md.",
       "evidence": {
+        "kind": "rule",
+        "rule_id": "correctness/ignored-error.md"
+      },
+      "decision": {
         "kind": "noul_probability",
         "value": 0.99
-      }
+      },
+      "blocking": false,
+      "provider": "custom",
+      "model": "jev-latest",
+      "work_item_id": "<item>"
     },
     {
-      "rule_id": "security.shell-injection",
-      "work_item_id": "<item>",
-      "severity": "high",
+      "id": "<item>",
+      "review_id": "<item>",
+      "category": "rule_violation",
+      "severity": "medium",
       "path": "example.go",
-      "side": "RIGHT",
       "start_line": 2,
       "end_line": 2,
-      "title": "Possible shell injection",
-      "message": "Changed code may pass untrusted data to a shell command.",
-      "provider": "custom",
-      "model": "jev-latest",
+      "changed_span": {
+        "path": "example.go",
+        "start_line": 2,
+        "end_line": 2,
+        "side": "RIGHT"
+      },
+      "title": "Possible rule violation",
+      "message": "Changed code may violate security/shell-injection.md.",
       "evidence": {
+        "kind": "rule",
+        "rule_id": "security/shell-injection.md"
+      },
+      "decision": {
         "kind": "noul_probability",
         "value": 0.99
-      }
+      },
+      "blocking": false,
+      "provider": "custom",
+      "model": "jev-latest",
+      "work_item_id": "<item>"
     }
   ],
   "skips": [],

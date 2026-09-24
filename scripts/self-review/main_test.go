@@ -95,7 +95,7 @@ func TestSelfReviewSmoke(t *testing.T) {
 		code int
 	}{
 		{"none", 0},
-		{"high", 10},
+		{"medium", 10},
 	} {
 		var stdout, stderr bytes.Buffer
 		code := run(sourceRoot, root, getenv(tc.gate), &stdout, &stderr)
@@ -105,13 +105,13 @@ func TestSelfReviewSmoke(t *testing.T) {
 			t.Fatal(err)
 		}
 		var decoded struct {
-			SchemaVersion string            `json:"schema_version"`
-			Diagnostics   []json.RawMessage `json:"diagnostics"`
+			Version  string            `json:"version"`
+			Findings []json.RawMessage `json:"findings"`
 		}
 		if err := json.Unmarshal(report, &decoded); err != nil {
 			t.Fatal(err)
 		}
-		if code != tc.code || decoded.SchemaVersion != "lintpal.report.v1" || len(decoded.Diagnostics) == 0 ||
+		if code != tc.code || decoded.Version != "v5" || len(decoded.Findings) == 0 ||
 			!bytes.Equal(report, stdout.Bytes()) || strings.Contains(stdout.String()+stderr.String(), "smoke-secret") {
 			t.Fatalf("gate=%s code=%d report=%s stderr=%q", tc.gate, code, report, stderr.String())
 		}

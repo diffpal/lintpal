@@ -1,10 +1,11 @@
 [
   {
-    "schema_version": "lintpal.report.v1",
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
     "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [],
+    "findings": [],
     "skips": [],
     "stats": {
       "work_items": 1,
@@ -18,27 +19,40 @@
     }
   },
   {
-    "schema_version": "lintpal.report.v1",
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
     "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [
+    "findings": [
       {
-        "rule_id": "correctness.ignored-error",
-        "work_item_id": "5b312c5953923bd43e8cbdc3c7c297c468ff016c17e0e135fb14ed1af2d731e0",
+        "id": "ddef521b03ba8fe37a184d3c8f08cbe5e10367c1c55f7d3083fcea76c359443a",
+        "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
+        "category": "rule_violation",
         "severity": "medium",
         "path": "pkg/worker.go",
-        "side": "RIGHT",
         "start_line": 2,
         "end_line": 2,
-        "title": "Possible ignored error",
-        "message": "Changed code may ignore a meaningful error.",
-        "provider": "fixture",
-        "model": "jev-offline",
+        "changed_span": {
+          "path": "pkg/worker.go",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "RIGHT"
+        },
+        "title": "Possible rule violation",
+        "message": "Changed code may violate correctness/ignored-error.md.",
         "evidence": {
+          "kind": "rule",
+          "rule_id": "correctness/ignored-error.md"
+        },
+        "decision": {
           "kind": "noul_probability",
           "value": 0.97
-        }
+        },
+        "blocking": false,
+        "provider": "fixture",
+        "model": "jev-offline",
+        "work_item_id": "5b312c5953923bd43e8cbdc3c7c297c468ff016c17e0e135fb14ed1af2d731e0"
       }
     ],
     "skips": [],
@@ -54,11 +68,12 @@
     }
   },
   {
-    "schema_version": "lintpal.report.v1",
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
     "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [],
+    "findings": [],
     "skips": [],
     "stats": {
       "work_items": 1,
@@ -72,63 +87,40 @@
     }
   },
   {
-    "schema_version": "lintpal.report.v1",
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
     "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [
+    "findings": [
       {
-        "rule_id": "security.shell-injection",
-        "work_item_id": "64f34b88681ed4f1cad7c9f405ceeee031d74f718780327b227eb4b078905240",
-        "severity": "high",
+        "id": "11cc1e03454c2a51b62ef2faf56b7becac32254d0d3986b97151b60e97969c59",
+        "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
+        "category": "rule_violation",
+        "severity": "medium",
         "path": "pkg/false_positive.go",
-        "side": "RIGHT",
         "start_line": 2,
         "end_line": 2,
-        "title": "Possible shell injection",
-        "message": "Changed code may pass untrusted data to a shell command.",
-        "provider": "fixture",
-        "model": "jev-offline",
+        "changed_span": {
+          "path": "pkg/false_positive.go",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "RIGHT"
+        },
+        "title": "Possible rule violation",
+        "message": "Changed code may violate security/shell-injection.md.",
         "evidence": {
+          "kind": "rule",
+          "rule_id": "security/shell-injection.md"
+        },
+        "decision": {
           "kind": "noul_probability",
           "value": 0.96
-        }
-      }
-    ],
-    "skips": [],
-    "stats": {
-      "work_items": 1,
-      "skipped": 0,
-      "groups": 1,
-      "batches": 1,
-      "questions": 2,
-      "diagnostics": 1,
-      "input_tokens": 0,
-      "output_tokens": 0
-    }
-  },
-  {
-    "schema_version": "lintpal.report.v1",
-    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [
-      {
-        "rule_id": "security.shell-injection",
-        "work_item_id": "0a5817bc4ad05afa47f62a82f2461cb447f356971771640dbe8ff7d0e4d58ca3",
-        "severity": "high",
-        "path": "pkg/boundary.go",
-        "side": "RIGHT",
-        "start_line": 2,
-        "end_line": 2,
-        "title": "Possible shell injection",
-        "message": "Changed code may pass untrusted data to a shell command.",
+        },
+        "blocking": false,
         "provider": "fixture",
         "model": "jev-offline",
-        "evidence": {
-          "kind": "noul_probability",
-          "value": 0.95
-        }
+        "work_item_id": "64f34b88681ed4f1cad7c9f405ceeee031d74f718780327b227eb4b078905240"
       }
     ],
     "skips": [],
@@ -144,11 +136,61 @@
     }
   },
   {
-    "schema_version": "lintpal.report.v1",
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
     "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [],
+    "findings": [
+      {
+        "id": "2aef229e4f6ee347549a347ba48dcf9078ba439d2a692472f1e4252c6cbff70b",
+        "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
+        "category": "rule_violation",
+        "severity": "medium",
+        "path": "pkg/boundary.go",
+        "start_line": 2,
+        "end_line": 2,
+        "changed_span": {
+          "path": "pkg/boundary.go",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "RIGHT"
+        },
+        "title": "Possible rule violation",
+        "message": "Changed code may violate security/shell-injection.md.",
+        "evidence": {
+          "kind": "rule",
+          "rule_id": "security/shell-injection.md"
+        },
+        "decision": {
+          "kind": "noul_probability",
+          "value": 0.95
+        },
+        "blocking": false,
+        "provider": "fixture",
+        "model": "jev-offline",
+        "work_item_id": "0a5817bc4ad05afa47f62a82f2461cb447f356971771640dbe8ff7d0e4d58ca3"
+      }
+    ],
+    "skips": [],
+    "stats": {
+      "work_items": 1,
+      "skipped": 0,
+      "groups": 1,
+      "batches": 1,
+      "questions": 2,
+      "diagnostics": 1,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  {
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "findings": [],
     "skips": [],
     "stats": {
       "work_items": 1,
@@ -162,27 +204,40 @@
     }
   },
   {
-    "schema_version": "lintpal.report.v1",
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
     "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [
+    "findings": [
       {
-        "rule_id": "security.shell-injection",
-        "work_item_id": "23de6ab11dfb468123ddb6875f69b412e6674c0448d9c13d38f8e4a292b11f9e",
-        "severity": "high",
+        "id": "8693c754ce22b7f8aad3bdf76f6f36f1917804c95529033a14b42086e7b81915",
+        "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
+        "category": "rule_violation",
+        "severity": "medium",
         "path": "pkg/command.go",
-        "side": "RIGHT",
         "start_line": 2,
         "end_line": 2,
-        "title": "Possible shell injection",
-        "message": "Changed code may pass untrusted data to a shell command.",
-        "provider": "fixture",
-        "model": "jev-offline",
+        "changed_span": {
+          "path": "pkg/command.go",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "RIGHT"
+        },
+        "title": "Possible rule violation",
+        "message": "Changed code may violate security/shell-injection.md.",
         "evidence": {
+          "kind": "rule",
+          "rule_id": "security/shell-injection.md"
+        },
+        "decision": {
           "kind": "noul_probability",
           "value": 0.98
-        }
+        },
+        "blocking": false,
+        "provider": "fixture",
+        "model": "jev-offline",
+        "work_item_id": "23de6ab11dfb468123ddb6875f69b412e6674c0448d9c13d38f8e4a292b11f9e"
       }
     ],
     "skips": [],
@@ -198,11 +253,12 @@
     }
   },
   {
-    "schema_version": "lintpal.report.v1",
+    "version": "v5",
+    "review_id": "b72c8224e847c7022a443f41f860e50019d16b71a2b51b43ad63f033c6547b33",
     "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "merge_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "diagnostics": [],
+    "findings": [],
     "skips": [],
     "stats": {
       "work_items": 1,

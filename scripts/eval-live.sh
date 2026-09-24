@@ -109,7 +109,7 @@ while IFS= read -r case_json; do
     --slurpfile report "$case_dir/report.json" '
       ($report[0]) as $r |
       {id:$id, rule_id:$rule, truth:$truth,
-       predicted:any($r.diagnostics[]; .rule_id == $rule and .side == "RIGHT"), elapsed_ms:$elapsed,
+       predicted:any($r.findings[]; .evidence.kind == "rule" and .evidence.rule_id == $rule and .changed_span.side == "RIGHT"), elapsed_ms:$elapsed,
        input_tokens:$r.stats.input_tokens, output_tokens:$r.stats.output_tokens,
        cost_usd:(if $input_price == null then null else
          (($r.stats.input_tokens * $input_price + $r.stats.output_tokens * $output_price) / 1000000) end)}

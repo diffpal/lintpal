@@ -13,6 +13,7 @@ import (
 
 	"github.com/diffpal/lintpal/internal/apps/lintpal/cli"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/packs"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
 )
 
 func TestLintFxCommittedRoundTrip(t *testing.T) {
@@ -69,6 +70,40 @@ func TestLintFxCommittedRoundTrip(t *testing.T) {
 	artifact, err := Lint(t.Context(), dir, opts)
 	if err != nil || len(artifact.Diagnostics) != 2 || artifact.Stats.InputTokens != 3 {
 		t.Fatalf("Fx lint: %+v, %v", artifact, err)
+	}
+}
+
+func TestMarkdownFrontmatterPolicyPrecedence(t *testing.T) {
+	root := t.TempDir()
+	if err := exec.Command("git", "-C", root, "init", "-q").Run(); err != nil {
+		t.Fatal(err)
+	}
+	ruleRoot := filepath.Join(root, "rules")
+	if err := os.Mkdir(ruleRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ruleRoot, "rule.md"), []byte("---\nseverity: high\nthreshold: 0.8\ntitle: Check cleanup\n---\nChanged code must clean up.\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	raw := cli.RawOptions{Base: "a", Head: "b", Rules: ruleRoot,
+		Changed: map[string]bool{"base": true, "head": true, "rules": true}}
+	options, err := cli.Resolve(raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pack, err := loadPack(t.Context(), root, options)
+	if err != nil || pack.Rules()[0].Severity != rules.High || pack.Rules()[0].Threshold != .8 || pack.Rules()[0].Title != "Check cleanup" {
+		t.Fatalf("frontmatter policy: %+v, %v", pack.Rules(), err)
+	}
+	raw.RuleSeverity, raw.RuleThreshold = "critical", "0.6"
+	raw.Changed["rule-severity"], raw.Changed["rule-threshold"] = true, true
+	options, err = cli.Resolve(raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pack, err = loadPack(t.Context(), root, options)
+	if err != nil || pack.Rules()[0].Severity != rules.Critical || pack.Rules()[0].Threshold != .6 || pack.Rules()[0].Title != "Check cleanup" {
+		t.Fatalf("CLI policy: %+v, %v", pack.Rules(), err)
 	}
 }
 

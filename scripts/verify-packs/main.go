@@ -28,7 +28,7 @@ func verify(root string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	entries, err := packs.Verify(context.Background(), root, "")
+	entries, err := packs.VerifyMarkdown(context.Background(), root, "")
 	if err != nil {
 		return 0, err
 	}

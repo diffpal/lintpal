@@ -4,56 +4,56 @@
   "cases": [
     {
       "id": "buggy-low-signal",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "buggy",
       "predicted": false,
       "diagnostics": 0
     },
     {
       "id": "error-buggy",
-      "rule_id": "correctness.ignored-error",
+      "rule_id": "correctness/ignored-error.md",
       "truth": "buggy",
       "predicted": true,
       "diagnostics": 1
     },
     {
       "id": "error-safe",
-      "rule_id": "correctness.ignored-error",
+      "rule_id": "correctness/ignored-error.md",
       "truth": "safe",
       "predicted": false,
       "diagnostics": 0
     },
     {
       "id": "safe-high-signal",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "safe",
       "predicted": true,
       "diagnostics": 1
     },
     {
       "id": "shell-boundary-buggy",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "buggy",
       "predicted": true,
       "diagnostics": 1
     },
     {
       "id": "shell-boundary-safe",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "safe",
       "predicted": false,
       "diagnostics": 0
     },
     {
       "id": "shell-buggy",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "buggy",
       "predicted": true,
       "diagnostics": 1
     },
     {
       "id": "shell-safe",
-      "rule_id": "security.shell-injection",
+      "rule_id": "security/shell-injection.md",
       "truth": "safe",
       "predicted": false,
       "diagnostics": 0

@@ -25,7 +25,7 @@ Run `task --list` from the repository root to see the available targets.
 `task pack-verify` reports `verified 0 pack(s)` when the project has no pack
 lockfile. If the lockfile exists, a malformed lock or changed installed copy
 fails the target. `task docs-verify` checks relative file links in `README.md`
-and `docs/*.md` and loads every `examples/rules/*/rules.yaml` through the same
+and `docs/*.md` and loads every Markdown example rule directory through the same
 rule parser used by lintpal. Both targets use local files only.
 
 The test matrix runs build, test, and vet through Task on Linux, macOS, and

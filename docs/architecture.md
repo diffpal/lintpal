@@ -77,51 +77,39 @@ or question text. Source disclosure to a remote provider occurs when
 
 ## Declarative rules and policy
 
-`internal/apps/lintpal/rules` accepts one UTF-8 YAML document with
-`schema: lintpal.rules.v1` and a nonempty `rules` list. Each rule declares
-`id`, `type` (`noul`, `choice`, or `score`), `instructions`, `threshold` in
-`[0,1]`, `severity` (`low`, `medium`, `high`, `critical`), fixed `title` and
-`message`, and optional `paths` and `sides`. Choice requires option
-`criteria` and `trigger_choices`; Score requires an ordered criteria list;
-Noul may provide quoted `"true"` and `"false"` criteria. Unknown fields,
-duplicate keys/IDs, aliases, merge keys, custom tags, malformed selectors,
-and executable fields are rejected. The loader caps a file at 256 KiB and a
-pack at 256 rules. `LoadContext` supports cancellation; `Load` is the
-background-context convenience call.
+`internal/apps/lintpal/rules` loads a directory of UTF-8 `.md` files. A
+relative Markdown path is the rule ID and the body is a mandate. Optional
+frontmatter accepts only `severity`, `threshold`, and `title`. Defaults are
+medium severity, 0.95 threshold, and a fixed title. Unknown or duplicate
+fields, unsafe paths, symlinks, malformed metadata, and oversized content
+are rejected. The loader is cancellable and returns no partial pack.
 
-For applicability, a pattern without `/` matches the path basename, so
-`*.go` covers Go files at any depth. A pattern with `/` matches the full
-repo-relative path using Go `path.Match` semantics. Empty `paths` or `sides`
-means all paths or both LEFT and RIGHT. `Select` orders work items and rules
-deterministically; `Questions` generates native Jev questions with IDs of the
-form `<work-item-id>/<rule-id>` for `contextplan.Plan`. The total selected
-rule text is capped at 16 MiB before question construction.
+All rules consider both changed sides. Process-level `--include` and
+`--exclude` selectors filter changed source paths for the whole run. A pattern
+without `/` matches the basename, so `*.go` covers Go files at any depth.
+`Select` orders work items and rules deterministically; `Questions` generates
+native Jev question IDs from the work item and rule ID for `contextplan.Plan`.
+The total selected rule text is capped before question construction.
 
-`Decide` first validates the complete typed Jev response against its batch.
-Noul triggers when its yes probability is at least the rule threshold. Choice
-triggers only for a declared trigger option whose selected probability reaches
-the threshold. Score triggers when `score / (number of levels - 1)` reaches
-the threshold. Equality triggers. A decision gets its title, message, severity
-and rule ID from the rule, and path, side and changed lines from the Git work
-item. Numeric evidence is labeled as a Noul probability, selected Choice
-probability, or normalized Score. The model cannot supply free-form diagnostic
-text or an anchor.
+`Decide` validates the complete typed response. A rule triggers when the Noul
+true probability reaches its threshold; equality triggers. The rule supplies
+title, fixed message, severity, and ID. The Git work item supplies path, side,
+and changed lines. The model cannot supply finding text or an anchor.
 
-`BuiltIn()` contains two conservative Go Noul examples for possible shell
+`BuiltIn()` contains two conservative Go mandate examples for possible shell
 injection and ignored errors, each at a 0.95 threshold. Hermetic examples
-verify policy behavior; they do not measure model precision. Story .9 must
-calibrate the pack on a frozen corpus. `app.Linter` takes an already selected
+verify policy behavior; they do not measure model precision. `app.Linter` takes an already selected
 pack, executes batches, and constructs anchored reports. Repository rules
 cannot choose a provider destination or credential source.
 
-`internal/apps/lintpal/packs` acquires one declarative `rules.yaml` per named
-pack through explicit `pack import`/`pack update` commands. It validates source
-bytes with the same rule loader, stores content-addressed copies under
+`internal/apps/lintpal/packs` acquires a Markdown directory per named pack
+through explicit `pack import`/`pack update` commands. It validates the files
+with the same rule loader, stores content-addressed directory copies under
 `.lintpal/packs/`, and atomically switches `.lintpal/packs.lock.json` after the
-copy is ready. A GitHub source is resolved to a commit before fetching the YAML.
+copy is ready. A GitHub source is resolved to a commit before fetching files.
 `pack verify` and `--rules @NAME` check the lock hash and rule validity offline;
-direct paths into managed storage are rejected. The legacy `--rules PATH` path
-and built-in default remain available. See [rule packs](rule-packs.md).
+direct paths into managed storage are rejected. Local `--rules PATH` directories
+and the built-in default remain available. See [rule packs](rule-packs.md).
 
 ## System One provider
 
@@ -167,7 +155,7 @@ workers, ten minutes, and 64 MiB. Context limits are passed through to
 `contextplan`. Provider results occupy stable batch slots before final sorting;
 the first failure cancels siblings, and no partial findings are exposed.
 `report.New` checks decisions against the original Git work items and sorts
-diagnostics and skips. The versioned `lintpal.report.v1` artifact includes
+diagnostics and skips. The shared v5 findings artifact includes
 resolved revisions, evidence, skips, and count/usage stats without source state,
 question text, or credentials.
 

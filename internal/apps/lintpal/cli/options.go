@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/diffpal/lintpal/internal/apps/lintpal/app"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
 )
 
 var ErrInvalidOptions = errors.New("invalid lint options")
@@ -20,6 +22,8 @@ var ErrInvalidOptions = errors.New("invalid lint options")
 type RawOptions struct {
 	Base, Head, Provider, Model, Rules, Format, Out, FailOn string
 	Timeout, MaxConcurrency, BaseURL, AuthTokenEnv          string
+	RuleThreshold, RuleSeverity                             string
+	Include, Exclude                                        []string
 	Metrics                                                 bool
 	Changed                                                 map[string]bool
 }
@@ -31,6 +35,10 @@ type Options struct {
 	CredentialResolved                      bool
 	Format                                  report.Format
 	FailOn                                  report.Threshold
+	RuleThreshold                           float64
+	RuleSeverity                            rules.Severity
+	RuleThresholdSet, RuleSeveritySet       bool
+	Include, Exclude                        []string
 	Limits                                  app.Limits
 	Metrics                                 bool
 }
@@ -39,7 +47,7 @@ type LookupEnv func(string) (string, bool)
 
 var modelName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._~/:@-]{0,127}$`)
 
-// Resolve uses flag > LINTPAL_* environment > default precedence. Rule YAML
+// Resolve uses flag > LINTPAL_* environment > default precedence. Rule content
 // never enters this function, so it cannot choose an endpoint or token source.
 func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 	if lookup == nil {
@@ -54,18 +62,47 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		}
 		return fallback
 	}
+	choosePolicy := func(flag, value, env, fallback string) (string, bool) {
+		if raw.Changed[flag] {
+			return value, true
+		}
+		if candidate, ok := lookup(env); ok {
+			return candidate, true
+		}
+		return fallback, false
+	}
+	severity, severitySet := choosePolicy("rule-severity", raw.RuleSeverity, "LINTPAL_RULE_SEVERITY", "medium")
+	thresholdText, thresholdSet := choosePolicy("rule-threshold", raw.RuleThreshold, "LINTPAL_RULE_THRESHOLD", "0.95")
 	o := Options{
-		Base:         choose("base", raw.Base, "LINTPAL_BASE", ""),
-		Head:         choose("head", raw.Head, "LINTPAL_HEAD", ""),
-		Provider:     choose("provider", raw.Provider, "LINTPAL_PROVIDER", "jev"),
-		Model:        choose("model", raw.Model, "LINTPAL_MODEL", "jev-latest"),
-		Rules:        choose("rules", raw.Rules, "LINTPAL_RULES", ""),
-		Out:          choose("out", raw.Out, "LINTPAL_OUT", ""),
-		BaseURL:      choose("base-url", raw.BaseURL, "LINTPAL_BASE_URL", ""),
-		AuthTokenEnv: choose("auth-token-env", raw.AuthTokenEnv, "LINTPAL_AUTH_TOKEN_ENV", ""),
-		Format:       report.Format(choose("format", raw.Format, "LINTPAL_FORMAT", "human")),
-		FailOn:       report.Threshold(choose("fail-on", raw.FailOn, "LINTPAL_FAIL_ON", "high")),
-		Metrics:      raw.Metrics,
+		Base:             choose("base", raw.Base, "LINTPAL_BASE", ""),
+		Head:             choose("head", raw.Head, "LINTPAL_HEAD", ""),
+		Provider:         choose("provider", raw.Provider, "LINTPAL_PROVIDER", "jev"),
+		Model:            choose("model", raw.Model, "LINTPAL_MODEL", "jev-latest"),
+		Rules:            choose("rules", raw.Rules, "LINTPAL_RULES", ""),
+		Out:              choose("out", raw.Out, "LINTPAL_OUT", ""),
+		BaseURL:          choose("base-url", raw.BaseURL, "LINTPAL_BASE_URL", ""),
+		AuthTokenEnv:     choose("auth-token-env", raw.AuthTokenEnv, "LINTPAL_AUTH_TOKEN_ENV", ""),
+		Format:           report.Format(choose("format", raw.Format, "LINTPAL_FORMAT", "human")),
+		FailOn:           report.Threshold(choose("fail-on", raw.FailOn, "LINTPAL_FAIL_ON", "high")),
+		Metrics:          raw.Metrics,
+		RuleSeverity:     rules.Severity(severity),
+		RuleSeveritySet:  severitySet,
+		RuleThresholdSet: thresholdSet,
+		Include:          append([]string(nil), raw.Include...),
+		Exclude:          append([]string(nil), raw.Exclude...),
+	}
+	threshold, err := strconv.ParseFloat(thresholdText, 64)
+	if err != nil || math.IsNaN(threshold) || math.IsInf(threshold, 0) || threshold < 0 || threshold > 1 {
+		return Options{}, ErrInvalidOptions
+	}
+	o.RuleThreshold = threshold
+	switch o.RuleSeverity {
+	case rules.Low, rules.Medium, rules.High, rules.Critical:
+	default:
+		return Options{}, ErrInvalidOptions
+	}
+	if err := rules.ValidateSelectors(o.Include, o.Exclude); err != nil {
+		return Options{}, ErrInvalidOptions
 	}
 	if o.Base == "" || o.Head == "" || !modelName.MatchString(o.Model) || len(o.Base) > 256 || len(o.Head) > 256 ||
 		len(o.Rules) > 4096 || len(o.Out) > 4096 || len(o.BaseURL) > 2048 || len(o.AuthTokenEnv) > 128 {

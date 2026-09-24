@@ -22,10 +22,13 @@ presence without contacting a provider. `lint` makes provider requests.
 ## Rules and reports
 
 Built-in rules are selected when `--rules` is absent. Use `--rules PATH` for a
-local unmanaged YAML file or `--rules @NAME` for a pack installed through
+local Markdown rule directory or `--rules @NAME` for a pack installed through
 `lintpal pack import`. Installed packs are checked against their
 [lockfile](rule-packs.md) before a provider request. A changed installed copy
 fails verification; use an explicit update and review the resulting lockfile.
+Optional frontmatter sets per-rule severity, threshold, and title. An explicit
+`--rule-severity` or `--rule-threshold` overrides frontmatter for all rules;
+`--include` and `--exclude` filter changed source paths for the whole run.
 
 The default human report goes to stdout. `--format json` selects JSON stdout;
 `--out PATH` also writes a complete JSON artifact. Create the destination

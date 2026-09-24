@@ -3,6 +3,7 @@ package di
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -46,6 +47,7 @@ func ExecuteLint(ctx context.Context, dir string, options cli.Options, stdout, s
 	if err != nil {
 		return err
 	}
+	artifact = report.WithGate(artifact, options.FailOn)
 	writeStarted = time.Now()
 	diagnosticCount = len(artifact.Diagnostics)
 	if containsCredential(artifact, credential) {
@@ -107,6 +109,11 @@ func containsCredential(artifact report.Report, credential string) bool {
 	if credential == "" {
 		return false
 	}
+	if report.Validate(artifact) == nil {
+		payload, err := json.Marshal(artifact)
+		return err != nil || bytes.Contains(payload, []byte(credential))
+	}
+	// Partial reports appear in focused guard tests; scan their source fields too.
 	has := func(value string) bool { return strings.Contains(value, credential) }
 	if has(artifact.SchemaVersion) || has(artifact.BaseSHA) || has(artifact.HeadSHA) || has(artifact.MergeBaseSHA) {
 		return true

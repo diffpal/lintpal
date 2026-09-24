@@ -75,7 +75,7 @@ func Load(reader io.Reader) (Corpus, error) {
 		return Corpus{}, ErrInvalidCorpus
 	}
 	knownRules := make(map[string]bool)
-	for _, rule := range rules.BuiltIn().Rules() {
+	for _, rule := range rules.BuiltInMarkdown().Rules() {
 		knownRules[rule.ID] = true
 	}
 	seen := make(map[string]bool)
@@ -139,7 +139,7 @@ func runCase(ctx context.Context, c Case) (report.Report, error) {
 		Side: git.Right, Hunk: 1, StartLine: c.Line, EndLine: c.Line}
 	groupID := "fixture-" + c.ID
 	groups := []contextplan.Group{{ID: groupID, State: c.Source, Items: []git.WorkItem{item}}}
-	selections, err := rules.Select(ctx, rules.BuiltIn(), groups)
+	selections, err := rules.Select(ctx, rules.BuiltInMarkdown(), groups)
 	if err != nil {
 		return report.Report{}, err
 	}

@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -44,27 +45,20 @@ func verify(root string) error {
 		return err
 	}
 	examples := filepath.Join(root, "examples", "rules")
+	packDirs, err := os.ReadDir(examples)
+	if err != nil {
+		return err
+	}
 	count := 0
-	if err := filepath.WalkDir(examples, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() || entry.Name() != "rules.yaml" {
-			return nil
+	for _, entry := range packDirs {
+		if !entry.IsDir() {
+			continue
 		}
 		count++
-		file, err := os.Open(path)
-		if err != nil {
-			return err
+		packDir := filepath.Join(examples, entry.Name())
+		if _, err := rules.LoadDirectory(context.Background(), packDir); err != nil {
+			return fmt.Errorf("%s: %w", packDir, err)
 		}
-		_, loadErr := rules.Load(file)
-		closeErr := file.Close()
-		if loadErr != nil {
-			return fmt.Errorf("%s: %w", path, loadErr)
-		}
-		return closeErr
-	}); err != nil {
-		return err
 	}
 	if count == 0 {
 		return errors.New("no rule examples found in examples/rules")

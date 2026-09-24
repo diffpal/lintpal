@@ -35,7 +35,7 @@ func newPackCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			previous, err := packs.Get(root, args[0])
+			previous, err := packs.GetMarkdown(root, args[0])
 			if err != nil {
 				return err
 			}
@@ -66,7 +66,7 @@ func newPackCommand() *cobra.Command {
 			if len(args) == 1 {
 				name = args[0]
 			}
-			entries, err := packs.Verify(cmd.Context(), root, name)
+			entries, err := packs.VerifyMarkdown(cmd.Context(), root, name)
 			if err != nil {
 				return err
 			}
@@ -96,7 +96,7 @@ func packRoot(cmd *cobra.Command) (string, error) {
 
 func importPack(cmd *cobra.Command, root, name, source string, update bool) (packs.Entry, error) {
 	if strings.HasPrefix(source, "github:") {
-		return packs.ImportGitHub(cmd.Context(), root, name, source, update)
+		return packs.ImportGitHubMarkdown(cmd.Context(), root, name, source, update)
 	}
-	return packs.ImportLocal(cmd.Context(), root, name, source, update)
+	return packs.ImportLocalMarkdown(cmd.Context(), root, name, source, update)
 }

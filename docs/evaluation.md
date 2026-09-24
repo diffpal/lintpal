@@ -6,7 +6,7 @@ The normal `go test ./...` run also checks the CLI JSON and human goldens, parse
 
 ## Optional live run
 
-The Linux helper `scripts/eval-live.sh` requires Bash, Python 3, `sha256sum`, `jq`, Git, a built lintpal binary, a selected provider credential, and an exact model ID. It creates a temporary committed Git repository for each frozen case and runs `lintpal lint --fail-on none` with the explicitly selected provider and model. It pins built-in rules, an empty artifact path, a two-minute timeout, and four workers so inherited `LINTPAL_*` settings cannot change those choices. The provider receives that case's committed source and built-in questions. Both changed sides can be evaluated; classification uses only RIGHT-side diagnostics while elapsed time and token counts cover the complete run. Durations use a monotonic clock.
+The Linux helper `scripts/eval-live.sh` requires Bash, Python 3, `sha256sum`, `jq`, Git, a built lintpal binary, a selected provider credential, and an exact model ID. It creates a temporary committed Git repository for each frozen case and runs `lintpal lint --fail-on none` with the explicitly selected provider and model. It pins built-in rules, an empty artifact path, a two-minute timeout, and four workers so inherited `LINTPAL_*` settings cannot change those choices. The provider receives that case's committed source and built-in questions. Both changed sides can be evaluated; classification uses only RIGHT-side findings while elapsed time and token counts cover the complete run. Durations use a monotonic clock.
 
 Example with a trusted custom System One endpoint:
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
 )
 
 func TestResolvePrecedenceAndTrust(t *testing.T) {
@@ -55,5 +56,52 @@ func TestResolveCredentialFromLayeredLookup(t *testing.T) {
 	options, err = Resolve(raw, LayeredLookup(nil, map[string]string{"TYPESAFE_API_KEY": "file-secret"}))
 	if err != nil || options.Credential != "file-secret" {
 		t.Fatalf("file credential unavailable: resolved = %v, err = %v", options.CredentialResolved, err)
+	}
+}
+
+func TestResolveMarkdownRulePolicy(t *testing.T) {
+	base := RawOptions{Base: "a", Head: "b", Changed: map[string]bool{"base": true, "head": true}}
+	defaultOptions, err := Resolve(base, nil)
+	if err != nil || defaultOptions.RuleThreshold != 0.95 || defaultOptions.RuleSeverity != rules.Medium ||
+		defaultOptions.RuleThresholdSet || defaultOptions.RuleSeveritySet {
+		t.Fatalf("defaults: %+v, %v", defaultOptions, err)
+	}
+	base.RuleThreshold, base.RuleSeverity = "0.8", "critical"
+	base.Include, base.Exclude = []string{"*.go"}, []string{"vendor/*"}
+	base.Changed["rule-threshold"], base.Changed["rule-severity"] = true, true
+	selected, err := Resolve(base, nil)
+	if err != nil || selected.RuleThreshold != 0.8 || selected.RuleSeverity != rules.Critical ||
+		!selected.RuleThresholdSet || !selected.RuleSeveritySet ||
+		selected.FailOn != report.High || len(selected.Include) != 1 || len(selected.Exclude) != 1 {
+		t.Fatalf("overrides: %+v, %v", selected, err)
+	}
+	for _, value := range []string{"", "NaN", "Inf", "-0.1", "1.1"} {
+		base.RuleThreshold = value
+		if _, err := Resolve(base, nil); !errors.Is(err, ErrInvalidOptions) {
+			t.Fatalf("accepted threshold %q: %v", value, err)
+		}
+	}
+	base.RuleThreshold, base.RuleSeverity = "0.8", "fatal"
+	if _, err := Resolve(base, nil); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("accepted severity: %v", err)
+	}
+	base.RuleSeverity, base.Include = "medium", []string{"[bad"}
+	if _, err := Resolve(base, nil); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("accepted selector: %v", err)
+	}
+	envOptions, err := Resolve(RawOptions{Base: "a", Head: "b", Changed: map[string]bool{"base": true, "head": true}},
+		func(key string) (string, bool) {
+			switch key {
+			case "LINTPAL_RULE_THRESHOLD":
+				return "0.7", true
+			case "LINTPAL_RULE_SEVERITY":
+				return "high", true
+			default:
+				return "", false
+			}
+		})
+	if err != nil || envOptions.RuleThreshold != .7 || envOptions.RuleSeverity != rules.High ||
+		!envOptions.RuleThresholdSet || !envOptions.RuleSeveritySet {
+		t.Fatalf("environment policy: %+v, %v", envOptions, err)
 	}
 }

@@ -2,6 +2,7 @@ package report
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -26,7 +27,7 @@ func (failedWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
 func TestWriteAndGate(t *testing.T) {
 	item := git.WorkItem{ID: strings.Repeat("1", 64), Path: "odd\n.go", NewPath: "odd\n.go", Side: git.Right, StartLine: 1, EndLine: 1, Hunk: 1}
 	result := git.Result{Revisions: git.Revisions{Base: strings.Repeat("a", 40), Head: strings.Repeat("b", 40), MergeBase: strings.Repeat("a", 40)}, Items: []git.WorkItem{item}}
-	decision := rules.Decision{RuleID: "r", WorkItemID: item.ID, Path: item.Path, Side: item.Side, StartLine: 1, EndLine: 1, Severity: rules.High, Title: "title\nnext", Message: "message", Kind: "noul_probability", Value: .9}
+	decision := rules.Decision{RuleID: "r.md", WorkItemID: item.ID, Path: item.Path, Side: item.Side, StartLine: 1, EndLine: 1, Severity: rules.High, Title: "title\nnext", Message: "message", Kind: "noul_probability", Value: .9}
 	artifact, err := New(result, []rules.Decision{decision}, "systemone", "model", Stats{WorkItems: 1})
 	if err != nil {
 		t.Fatal(err)
@@ -35,48 +36,31 @@ func TestWriteAndGate(t *testing.T) {
 	if err := WriteAndGate(&out, artifact, JSON, High); !errors.Is(err, ErrGate) {
 		t.Fatalf("gate: %v", err)
 	}
-	if !bytes.Contains(out.Bytes(), []byte(`"schema_version": "lintpal.report.v1"`)) || !bytes.Contains(out.Bytes(), []byte(`"rule_id": "r"`)) {
-		t.Fatalf("incomplete JSON: %s", out.String())
+	var wire struct {
+		Version  string `json:"version"`
+		ReviewID string `json:"review_id"`
+		Findings []struct {
+			ID          string `json:"id"`
+			ReviewID    string `json:"review_id"`
+			ChangedSpan struct {
+				Side string `json:"side"`
+			} `json:"changed_span"`
+			Evidence struct {
+				Kind   string `json:"kind"`
+				RuleID string `json:"rule_id"`
+			} `json:"evidence"`
+			Decision struct {
+				Value float64 `json:"value"`
+			} `json:"decision"`
+			Blocking bool `json:"blocking"`
+		} `json:"findings"`
 	}
-	wantJSON := fmt.Sprintf(`{
-  "schema_version": "lintpal.report.v1",
-  "base_sha": "%s",
-  "head_sha": "%s",
-  "merge_base_sha": "%s",
-  "diagnostics": [
-    {
-      "rule_id": "r",
-      "work_item_id": "%s",
-      "severity": "high",
-      "path": "odd\n.go",
-      "side": "RIGHT",
-      "start_line": 1,
-      "end_line": 1,
-      "title": "title\nnext",
-      "message": "message",
-      "provider": "systemone",
-      "model": "model",
-      "evidence": {
-        "kind": "noul_probability",
-        "value": 0.9
-      }
-    }
-  ],
-  "skips": [],
-  "stats": {
-    "work_items": 1,
-    "skipped": 0,
-    "groups": 0,
-    "batches": 0,
-    "questions": 0,
-    "diagnostics": 1,
-    "input_tokens": 0,
-    "output_tokens": 0
-  }
-}
-`, strings.Repeat("a", 40), strings.Repeat("b", 40), strings.Repeat("a", 40), strings.Repeat("1", 64))
-	if out.String() != wantJSON {
-		t.Fatalf("JSON golden mismatch:\n%s", out.String())
+	if err := json.Unmarshal(out.Bytes(), &wire); err != nil || wire.Version != "v5" || len(wire.Findings) != 1 ||
+		wire.ReviewID == "" || wire.Findings[0].ReviewID != wire.ReviewID || wire.Findings[0].ID == "" ||
+		wire.Findings[0].ChangedSpan.Side != "RIGHT" || wire.Findings[0].Evidence.Kind != "rule" ||
+		wire.Findings[0].Evidence.RuleID != "r.md" || wire.Findings[0].Decision.Value != .9 || !wire.Findings[0].Blocking ||
+		bytes.Contains(out.Bytes(), []byte(`"diagnostics": [`)) {
+		t.Fatalf("unexpected v5 JSON: %s, %v", out.String(), err)
 	}
 	out.Reset()
 	if err := WriteAndGate(&out, artifact, Human, Critical); err != nil {
@@ -88,7 +72,7 @@ func TestWriteAndGate(t *testing.T) {
 	if !strings.Contains(out.String(), `"odd\n.go"`) {
 		t.Fatalf("missing escaped path: %q", out.String())
 	}
-	wantHuman := fmt.Sprintf("lintpal lintpal.report.v1 base=%s head=%s merge_base=%s\nhigh RIGHT \"odd\\n.go\":1-1 rule=\"r\" title=\"title\\nnext\" message=\"message\" evidence=noul_probability:0.9 provider=\"systemone\" model=\"model\"\nstats work_items=1 skipped=0 groups=0 batches=0 questions=0 diagnostics=1 input_tokens=0 output_tokens=0\n", strings.Repeat("a", 40), strings.Repeat("b", 40), strings.Repeat("a", 40))
+	wantHuman := fmt.Sprintf("lintpal v5 base=%s head=%s merge_base=%s\nhigh RIGHT \"odd\\n.go\":1-1 rule=\"r.md\" title=\"title\\nnext\" message=\"message\" evidence=noul_probability:0.9 provider=\"systemone\" model=\"model\"\nstats work_items=1 skipped=0 groups=0 batches=0 questions=0 diagnostics=1 input_tokens=0 output_tokens=0\n", strings.Repeat("a", 40), strings.Repeat("b", 40), strings.Repeat("a", 40))
 	if out.String() != wantHuman {
 		t.Fatalf("human golden mismatch:\n%s", out.String())
 	}

@@ -121,14 +121,14 @@ func TestPublishedExamplePack(t *testing.T) {
 	}
 	path := filepath.Join(cwd, "..", "..", "..", "..", "examples", "rules", "go-review")
 	root := t.TempDir()
-	entry, err := ImportLocal(t.Context(), root, "go-review", path, false)
+	entry, err := ImportLocalMarkdown(t.Context(), root, "go-review", path, false)
 	if err != nil {
 		t.Fatalf("published example does not import: %v", err)
 	}
 	if entry.SHA256 == "" {
 		t.Fatal("published example has no content hash")
 	}
-	pack, err := Load(t.Context(), root, "go-review")
+	pack, err := LoadMarkdown(t.Context(), root, "go-review")
 	if err != nil || len(pack.Rules()) != 3 {
 		t.Fatalf("published example: %v", err)
 	}

@@ -29,7 +29,11 @@ selected provider accepts. The CLI does not query the model catalog during lint.
 | `--head` | `LINTPAL_HEAD` | Required head revision. |
 | `--provider` | `LINTPAL_PROVIDER` | `jev`, `openrouter`, or `custom`. |
 | `--model` | `LINTPAL_MODEL` | System One model name or alias. |
-| `--rules` | `LINTPAL_RULES` | Unmanaged YAML path or installed `@NAME` pack; built-ins otherwise. |
+| `--rules` | `LINTPAL_RULES` | Markdown rule directory or installed `@NAME` pack; built-ins otherwise. |
+| `--include` | — | Include changed source paths matching a glob; repeatable. |
+| `--exclude` | — | Exclude changed source paths matching a glob; repeatable. |
+| `--rule-threshold` | `LINTPAL_RULE_THRESHOLD` | Override every rule's true-probability threshold, 0–1; default 0.95. |
+| `--rule-severity` | `LINTPAL_RULE_SEVERITY` | Override every rule's severity; default medium. |
 | `--format` | `LINTPAL_FORMAT` | `human` or `json` on stdout. |
 | `--out` | `LINTPAL_OUT` | Additional atomic JSON artifact path. |
 | `--fail-on` | `LINTPAL_FAIL_ON` | `low`, `medium`, `high`, `critical`, or `none`. |
@@ -54,7 +58,7 @@ Start from [`.env.example`](../.env.example) and fill in your own credential.
 An explicitly supplied flag wins over its process environment setting; that
 setting wins over `.env`, which wins over the default. The selected provider's
 key follows process environment over `.env`. Put `.env` in `.gitignore` and keep
-it out of committed source. A rule file is untrusted declarative input and cannot
+it out of committed source. A rule file is untrusted policy input and cannot
 select provider, endpoint, or token source. Presets always read
 `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY` respectively. Custom HTTP endpoints
 are restricted to loopback; remote custom endpoints require HTTPS. Raw token
@@ -72,7 +76,7 @@ are fixed; the values are nonnegative counts and elapsed milliseconds. No
 source, path, question, endpoint, token, raw response, or error text enters
 the local recorder or its trace attributes. The recorder uses an in-process
 ADK/OpenTelemetry provider without an exporter or global registration, so it
-does not make telemetry requests. Metrics stay out of `lintpal.report.v1`.
+does not make telemetry requests. Metrics stay out of the v5 findings bundle.
 If the selected credential happens to match a metrics line, that snapshot is
 suppressed. Durations vary by run and are not a performance guarantee.
 
@@ -88,7 +92,7 @@ lintpal writes the artifact, then stdout, then evaluates the severity gate.
 | 3 | Retryable provider failure or timeout. |
 | 4 | Report or artifact export failure. |
 | 5 | Internal, protocol, or unclassified local failure. |
-| 10 | Complete report written; diagnostic met the gate. |
+| 10 | Complete report written; finding met the gate. |
 | 130 | Interrupted or canceled. |
 
 `lintpal doctor` checks local Git/repository availability and whether the

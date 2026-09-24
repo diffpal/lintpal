@@ -1,7 +1,7 @@
 # lintpal documentation
 
 lintpal reviews changes between two committed Git revisions. It asks a selected
-System One provider questions defined by built-in or declarative rules, then
+System One provider questions defined by built-in or Markdown rules, then
 reports findings tied to changed lines. Start with the [README](../README.md)
 for the short overview.
 
@@ -17,14 +17,14 @@ for the short overview.
 
 ## Write and use rules
 
-- [Rule authoring](rule-authoring.md): schema, `noul`, `choice`, and `score`
-  decisions with complete examples.
+- [Rule authoring](rule-authoring.md): Markdown mandates, frontmatter, and
+  migration from YAML.
 - [Rule packs](rule-packs.md): import from a directory or pinned GitHub ref,
   understand the lockfile, and verify offline.
-- [Go review example](../examples/rules/go-review/rules.yaml): a complete pack
-  with `noul`, `choice`, and `score` rules.
-- [Documentation review example](../examples/rules/docs-review/rules.yaml): a
-  focused `noul` rule for changed Markdown commands.
+- [Go review example](../examples/rules/go-review/unchecked-error.md): a
+  Markdown mandate for changed Go code.
+- [Documentation review example](../examples/rules/docs-review/command-drift.md):
+  a Markdown mandate for documentation commands.
 
 ## Maintain the project
 

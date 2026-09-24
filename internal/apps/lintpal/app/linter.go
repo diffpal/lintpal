@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -72,6 +74,8 @@ type Request struct {
 	Head         string
 	Model        string
 	ProviderName string
+	Include      []string
+	Exclude      []string
 	Limits       Limits
 }
 
@@ -132,7 +136,7 @@ func (l *Linter) Lint(parent context.Context, request Request) (report.Report, e
 		return report.Report{}, stageError(parent, ctx, "assemble", err)
 	}
 	started = time.Now()
-	selections, err := rules.Select(ctx, l.pack, groups)
+	selections, err := rules.SelectWithPaths(ctx, l.pack, groups, request.Include, request.Exclude)
 	l.observe(StageSelect, started, len(selections), err)
 	if err != nil {
 		return report.Report{}, stageError(parent, ctx, "select", err)
@@ -174,7 +178,18 @@ func (l *Linter) Lint(parent context.Context, request Request) (report.Report, e
 		return report.Report{}, stageError(parent, ctx, "run", err)
 	}
 	started = time.Now()
-	artifact, err := report.New(result, decisions, request.ProviderName, model, stats)
+	identitySource, err := json.Marshal(struct {
+		Rules    []rules.Rule
+		Include  []string
+		Exclude  []string
+		Provider string
+		Model    string
+	}{l.pack.Rules(), request.Include, request.Exclude, request.ProviderName, model})
+	if err != nil {
+		return report.Report{}, report.ErrInvalidReport
+	}
+	identitySum := sha256.Sum256(identitySource)
+	artifact, err := report.New(result, decisions, request.ProviderName, model, stats, hex.EncodeToString(identitySum[:]))
 	if err != nil {
 		l.observe(StageReport, started, 0, err)
 		return report.Report{}, fmt.Errorf("report: %w", err)

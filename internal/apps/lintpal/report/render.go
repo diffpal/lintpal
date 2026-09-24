@@ -71,6 +71,7 @@ func WriteAndGate(writer io.Writer, artifact Report, format Format, threshold Th
 	if _, err := rank(threshold); err != nil {
 		return err
 	}
+	artifact = WithGate(artifact, threshold)
 	var err error
 	switch format {
 	case JSON:
@@ -91,6 +92,12 @@ func WriteAndGate(writer io.Writer, artifact Report, format Format, threshold Th
 		return ErrGate
 	}
 	return nil
+}
+
+// WithGate binds the report's blocking flags to the selected CLI gate.
+func WithGate(artifact Report, threshold Threshold) Report {
+	artifact.gate = threshold
+	return artifact
 }
 
 func MeetsGate(artifact Report, threshold Threshold) (bool, error) {

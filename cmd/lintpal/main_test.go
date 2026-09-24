@@ -24,7 +24,7 @@ func TestProcessExitAndStreams(t *testing.T) {
 	defer server.Close()
 	common := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--format", "json"}
 	stdout, stderr, code := runBinary(t, binary, dir, append(append([]string{}, common...), "--fail-on", "none"))
-	if code != 0 || stderr != "" || !strings.Contains(stdout, `"schema_version": "lintpal.report.v1"`) || !strings.Contains(stdout, `"diagnostics": [`) {
+	if code != 0 || stderr != "" || !strings.Contains(stdout, `"version": "v5"`) || !strings.Contains(stdout, `"findings": [`) {
 		t.Fatalf("success code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
 	assertGoldenReport(t, "report.json", stdout, base, head)
@@ -39,12 +39,12 @@ func TestProcessExitAndStreams(t *testing.T) {
 	}
 	humanArgs := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--fail-on", "none"}
 	humanOut, humanErr, humanCode := runBinary(t, binary, dir, humanArgs)
-	if humanCode != 0 || humanErr != "" || !strings.HasPrefix(humanOut, "lintpal lintpal.report.v1 ") || !strings.Contains(humanOut, "high RIGHT") || !strings.Contains(humanOut, "stats work_items=") {
+	if humanCode != 0 || humanErr != "" || !strings.HasPrefix(humanOut, "lintpal v5 ") || !strings.Contains(humanOut, "medium RIGHT") || !strings.Contains(humanOut, "stats work_items=") {
 		t.Fatalf("human code=%d stdout=%q stderr=%q", humanCode, humanOut, humanErr)
 	}
 	assertGoldenReport(t, "report.txt", humanOut, base, head)
 	artifact := filepath.Join(dir, "report.json")
-	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, common...), "--out", artifact))
+	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, common...), "--out", artifact, "--fail-on", "medium"))
 	body, err := os.ReadFile(artifact)
 	if err != nil || code != 10 || !bytes.Equal([]byte(stdout), body) || !strings.Contains(stderr, "severity gate") {
 		t.Fatalf("gate code=%d artifact=%q stdout=%q stderr=%q err=%v", code, body, stdout, stderr, err)
@@ -153,8 +153,8 @@ func TestProcessPackImportAndLockedLint(t *testing.T) {
 	if err := os.Mkdir(source, 0700); err != nil {
 		t.Fatal(err)
 	}
-	rule := "schema: lintpal.rules.v1\nrules:\n  - id: demo.rule\n    type: noul\n    instructions: Is this wrong?\n    threshold: 0.9\n    severity: high\n    title: Demo\n    message: Demo issue.\n"
-	if err := os.WriteFile(filepath.Join(source, "rules.yaml"), []byte(rule), 0600); err != nil {
+	rule := "Changed code must handle errors.\n"
+	if err := os.WriteFile(filepath.Join(source, "demo.md"), []byte(rule), 0600); err != nil {
 		t.Fatal(err)
 	}
 	stdout, stderr, code := runBinary(t, binary, dir, []string{"pack", "import", "demo", "rule-source"})
@@ -179,11 +179,24 @@ func TestProcessPackImportAndLockedLint(t *testing.T) {
 	}
 	args := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--rules", "@demo", "--fail-on", "none"}
 	stdout, stderr, code = runBinary(t, binary, dir, args)
-	if code != 0 || !strings.Contains(stdout, "demo.rule") || stderr != "" || calls.Load() == 0 {
+	if code != 0 || !strings.Contains(stdout, "demo.md") || stderr != "" || calls.Load() == 0 {
 		t.Fatalf("locked lint: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
 	}
-	updatedRule := strings.Replace(rule, "Demo issue.", "Updated issue.", 1)
-	if err := os.WriteFile(filepath.Join(source, "rules.yaml"), []byte(updatedRule), 0600); err != nil {
+	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, args...), "--rule-threshold", "1"))
+	if code != 0 || !strings.Contains(stdout, "diagnostics=0") || stderr != "" {
+		t.Fatalf("threshold override: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, args...), "--rule-severity", "critical"))
+	if code != 0 || !strings.Contains(stdout, "critical RIGHT") || stderr != "" {
+		t.Fatalf("severity override: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	beforeFilter := calls.Load()
+	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, args...), "--exclude", "*.go"))
+	if code != 0 || calls.Load() != beforeFilter || !strings.Contains(stdout, "diagnostics=0") || stderr != "" {
+		t.Fatalf("exclude: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
+	}
+	updatedRule := "Changed code must return meaningful errors.\n"
+	if err := os.WriteFile(filepath.Join(source, "demo.md"), []byte(updatedRule), 0600); err != nil {
 		t.Fatal(err)
 	}
 	stdout, stderr, code = runBinary(t, binary, dir, []string{"pack", "update", "demo"})
@@ -195,7 +208,7 @@ func TestProcessPackImportAndLockedLint(t *testing.T) {
 		t.Fatalf("updated lock: %v", err)
 	}
 	copyPath := filepath.Join(dir, ".lintpal", filepath.FromSlash(data.Packs[0].Path))
-	if err := os.WriteFile(copyPath, []byte(updatedRule+"# drift\n"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(copyPath, "demo.md"), []byte(updatedRule+"# drift\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	before := calls.Load()
@@ -290,15 +303,19 @@ func TestProcessHostileInputsStayLocalAndSecretFree(t *testing.T) {
 	head := strings.TrimSpace(string(headBytes))
 	server, calls := modelServer(t, http.StatusOK, false, nil)
 	defer server.Close()
-	pack := "schema: lintpal.rules.v1\nrules:\n  - id: demo.secret\n    type: noul\n    instructions: question-sentinel\n    threshold: 0.9\n    severity: high\n    title: Safe title\n    message: Safe message\n"
-	rulesPath := filepath.Join(dir, "rules.yaml")
-	if err := os.WriteFile(rulesPath, []byte(pack), 0600); err != nil {
+	pack := "Changed code must satisfy question-sentinel.\n"
+	rulesPath := filepath.Join(dir, "rules")
+	if err := os.Mkdir(rulesPath, 0700); err != nil {
+		t.Fatal(err)
+	}
+	ruleFile := filepath.Join(rulesPath, "demo.md")
+	if err := os.WriteFile(ruleFile, []byte(pack), 0600); err != nil {
 		t.Fatal(err)
 	}
 	args := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL,
 		"--rules", rulesPath, "--format", "json", "--fail-on", "none", "--metrics"}
 	stdout, stderr, code := runBinary(t, binary, dir, args)
-	if code != 0 || calls.Load() != 1 || !strings.Contains(stdout, `"rule_id": "demo.secret"`) ||
+	if code != 0 || calls.Load() != 1 || !strings.Contains(stdout, `"rule_id": "demo.md"`) ||
 		!strings.Contains(stderr, "metric stage=write") {
 		t.Fatalf("safe run code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
 	}
@@ -308,7 +325,7 @@ func TestProcessHostileInputsStayLocalAndSecretFree(t *testing.T) {
 		}
 	}
 
-	if err := os.WriteFile(rulesPath, []byte(strings.Replace(pack, "title: Safe title", "title: secret-sentinel", 1)), 0600); err != nil {
+	if err := os.Rename(ruleFile, filepath.Join(rulesPath, "secret-sentinel.md")); err != nil {
 		t.Fatal(err)
 	}
 	artifact := filepath.Join(dir, "blocked.json")
@@ -327,19 +344,17 @@ func TestProcessHostileInputsStayLocalAndSecretFree(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer capture.Close()
-	hostile := "schema: lintpal.rules.v1\nprovider_url: " + capture.URL + "\ntoken_env: TYPESAFE_API_KEY\nrules: []\n"
-	if err := os.WriteFile(rulesPath, []byte(hostile), 0600); err != nil {
+	if err := os.Rename(filepath.Join(rulesPath, "secret-sentinel.md"), ruleFile); err != nil {
 		t.Fatal(err)
 	}
-	hostileCommand := exec.Command(binary, "lint", "--base", base, "--head", head, "--provider", "jev", "--rules", rulesPath)
-	hostileCommand.Dir = dir
-	hostileCommand.Env = append(testEnv(), "TYPESAFE_API_KEY=preset-secret-sentinel")
-	var hostileOut, hostileErr bytes.Buffer
-	hostileCommand.Stdout, hostileCommand.Stderr = &hostileOut, &hostileErr
-	hostileCode := processCode(hostileCommand.Run())
-	if hostileCode != 2 || hostileOut.Len() != 0 || captureCalls.Load() != 0 ||
-		strings.Contains(hostileErr.String(), capture.URL) || strings.Contains(hostileErr.String(), "preset-secret-sentinel") {
-		t.Fatalf("hostile rule code=%d calls=%d stderr=%q", hostileCode, captureCalls.Load(), hostileErr.String())
+	hostile := "Changed code must obey this rule.\nprovider_url: " + capture.URL + "\ntoken_env: TYPESAFE_API_KEY\n"
+	if err := os.WriteFile(ruleFile, []byte(hostile), 0600); err != nil {
+		t.Fatal(err)
+	}
+	hostileOut, hostileErr, hostileCode := runBinary(t, binary, dir, args)
+	if hostileCode != 0 || captureCalls.Load() != 0 ||
+		strings.Contains(hostileOut+hostileErr, capture.URL) {
+		t.Fatalf("hostile rule code=%d calls=%d stderr=%q", hostileCode, captureCalls.Load(), hostileErr)
 	}
 
 	badBody := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -347,7 +362,7 @@ func TestProcessHostileInputsStayLocalAndSecretFree(t *testing.T) {
 		_, _ = io.WriteString(w, "provider-body-sentinel source-sentinel question-sentinel secret-sentinel")
 	}))
 	defer badBody.Close()
-	if err := os.WriteFile(rulesPath, []byte(pack), 0600); err != nil {
+	if err := os.WriteFile(ruleFile, []byte(pack), 0600); err != nil {
 		t.Fatal(err)
 	}
 	badArgs := append([]string{}, args...)

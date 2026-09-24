@@ -29,7 +29,7 @@ select it explicitly:
 BASE=origin/main HEAD=HEAD RULES=@go-review task self-review
 ```
 
-`RULES` also accepts an unmanaged local YAML path. Set `FAIL_ON=none` to keep
+`RULES` also accepts an unmanaged Markdown directory. Set `FAIL_ON=none` to keep
 findings in the report without failing the severity gate. `PROVIDER`, `RULES`,
 and `FAIL_ON` are optional. For a custom provider, set `PROVIDER=custom` and
 configure `LINTPAL_BASE_URL` and `LINTPAL_TOKEN` through process environment
