@@ -26,8 +26,15 @@ task lint-go
 task security
 go mod verify
 bd lint
-OMNIDIST_VERSION=0.3.0 task release-stage
-OMNIDIST_VERSION=0.3.0 task release-dry-run
+```
+
+When the source commit is clean and the hosted Test, Lint, and Security
+workflows pass, create a local tag and stage the exact release:
+
+```bash
+git tag -a v0.3.0 -m 'lintpal v0.3.0'
+task release-stage
+task release-dry-run
 ```
 
 Review the seven staged npm manifests and tarball contents in
@@ -37,11 +44,10 @@ Omnidist publication plan. The staged Linux amd64 package must install and
 run under both npm meta-package names. The other four targets are checked as
 build artifacts and package payloads.
 
-Go embeds source revision metadata in the binaries. Rebuild from the clean
-release commit and record the commit SHA, Omnidist version, final asset
-hashes, and package manifests together. Wait for the hosted CI matrix on that
-commit before publishing. The stage workflow may be run on the same commit to
-preserve review artifacts.
+Omnidist requires that `HEAD` be exactly at that tag. Record the commit SHA,
+Omnidist version, final asset hashes, and
+package manifests together. The manual stage workflow can preserve review
+artifacts after the tag is pushed.
 
 ## Publication
 
@@ -56,17 +62,18 @@ npx -y @omnidist/omnidist@latest npm trust
 
 After reviewing them, the package owner can run `npm trust --apply` through
 Omnidist. The workflow requests `id-token: write` only for npm publication;
-it does not need an `NPM_PUBLISH_TOKEN` secret. It extracts `0.3.0` from the
-tag for `OMNIDIST_VERSION`, runs the source checks, builds, stages, verifies,
-and dry-runs publication before Omnidist uploads the five platform packages
+it does not need an `NPM_PUBLISH_TOKEN` secret. It checks out the complete
+tagged history; Omnidist reads `0.3.0` directly from `v0.3.0`. The workflow
+runs the source checks, builds, stages, verifies, and dry-runs publication
+before Omnidist uploads the five platform packages
 and both meta packages. GitHub Release creation waits for npm publication and
 uploads the five binaries and checksums. See the
 [upstream release runbook](https://github.com/metalagman/omnidist/blob/master/docs/releases.md)
 for partial-publication recovery.
 
 Pushing the `v0.3.0` tag changes external registries, so approve the exact
-source commit and staged artifacts first. Tag the approved commit and push
-the tag once the trusted publishers are configured. If a package fails, stop
+source commit and staged artifacts first. Push the reviewed local tag once
+the trusted publishers are configured. If a package fails, stop
 and inspect which versions reached npm before retrying.
 
 After publication, inspect versions and dist-tags for all seven npm names.

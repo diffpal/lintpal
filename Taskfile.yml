@@ -78,9 +78,8 @@ tasks:
       - task: docs-verify
 
   release-stage:
-    desc: Build and verify a local Omnidist release candidate (set OMNIDIST_VERSION)
+    desc: Build and verify an Omnidist release from an exact SemVer Git tag
     cmds:
-      - test -n "$OMNIDIST_VERSION"
       - npx -y @omnidist/omnidist@latest build
       - npx -y @omnidist/omnidist@latest stage
       - npx -y @omnidist/omnidist@latest verify
@@ -90,5 +89,4 @@ tasks:
   release-dry-run:
     desc: Inspect staged npm packages without publishing
     cmds:
-      - test -n "$OMNIDIST_VERSION"
       - npx -y @omnidist/omnidist@latest publish --dry-run

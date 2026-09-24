@@ -5,7 +5,7 @@ profiles:
             name: lintpal
             main: ./cmd/lintpal
         version:
-            source: env
+            source: git-tag
         targets:
             - os: darwin
               arch: amd64

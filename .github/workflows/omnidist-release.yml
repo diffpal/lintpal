@@ -16,6 +16,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
@@ -27,14 +29,14 @@ jobs:
       - uses: go-task/setup-task@v2
         with:
           version: 3.44.0
-      - name: Validate release tag and set version
+      - name: Validate release tag
         shell: bash
         run: |
           if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$ ]]; then
             echo 'Expected a SemVer release tag such as v0.3.0' >&2
             exit 1
           fi
-          echo "OMNIDIST_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          test "$(git describe --tags --exact-match HEAD)" = "$GITHUB_REF_NAME"
       - name: Check source
         run: |
           task check
@@ -89,6 +91,8 @@ jobs:
           name: omnidist-staged
       - name: Restore staged artifacts
         run: tar -xzf omnidist-staged.tgz
+      - name: Verify tag and staged version
+        run: test "$(cat .omnidist/default/dist/VERSION)" = "${GITHUB_REF_NAME#v}"
       - name: Verify publication plan
         run: omnidist --profile 'default' publish --dry-run
       - name: Publish npm artifacts
@@ -106,6 +110,8 @@ jobs:
           name: dist
           path: .omnidist/default/dist
           merge-multiple: true
+      - name: Verify tag and build version
+        run: test "$(cat .omnidist/default/dist/VERSION)" = "${GITHUB_REF_NAME#v}"
       - name: Prepare release assets
         run: |
           mkdir -p release-assets

@@ -2,11 +2,6 @@ name: Stage distribution
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: SemVer version for local staging (for example 0.2.0-dev.1)
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -14,10 +9,10 @@ permissions:
 jobs:
   stage:
     runs-on: ubuntu-latest
-    env:
-      OMNIDIST_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -26,11 +21,11 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Validate staging version
+      - name: Validate staging tag
         shell: bash
         run: |
-          if [[ ! "$OMNIDIST_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
-            echo 'Expected a SemVer staging version' >&2
+          if [[ "$GITHUB_REF_TYPE" != tag || ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo 'Dispatch this workflow on a SemVer tag' >&2
             exit 1
           fi
       - name: Build, stage, and verify
@@ -47,7 +42,7 @@ jobs:
       - name: Store staged artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lintpal-staged-${{ inputs.version }}
+          name: lintpal-staged-${{ github.ref_name }}
           path: |
             .omnidist/default/dist/
             .omnidist/default/npm/

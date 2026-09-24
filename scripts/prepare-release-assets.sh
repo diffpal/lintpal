@@ -4,8 +4,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 workspace=.omnidist/default
 version=$(cat "$workspace/dist/VERSION")
-if [[ -z ${OMNIDIST_VERSION:-} || $version != "$OMNIDIST_VERSION" ]]; then
-  echo "Expected staged version ${OMNIDIST_VERSION:-<unset>}, got $version" >&2
+tag=$(git describe --tags --exact-match HEAD)
+if [[ $tag != "v$version" ]]; then
+  echo "Expected tag v$version at HEAD, got $tag" >&2
   exit 1
 fi
 
