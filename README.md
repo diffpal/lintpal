@@ -1,5 +1,12 @@
 # lintpal
 
+[![Test](https://github.com/diffpal/lintpal/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/diffpal/lintpal/actions/workflows/test.yml)
+[![Lint](https://github.com/diffpal/lintpal/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/diffpal/lintpal/actions/workflows/lint.yml)
+[![Security](https://github.com/diffpal/lintpal/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/diffpal/lintpal/actions/workflows/security.yml)
+[![Latest release](https://img.shields.io/github/v/release/diffpal/lintpal)](https://github.com/diffpal/lintpal/releases/latest)
+[![npm version](https://img.shields.io/npm/v/lintpal)](https://www.npmjs.com/package/lintpal)
+[![License: MIT](https://img.shields.io/github/license/diffpal/lintpal)](LICENSE)
+
 **Review committed code changes with questions you control.** lintpal compares
 two Git revisions, asks a selected System One provider focused questions, and
 reports findings on changed lines. Rules are declarative YAML, so a team can
@@ -100,7 +107,7 @@ task self-review-smoke
 
 `task check` builds, tests, vets, checks formatting, evaluates the frozen
 offline corpus, and verifies docs and installed packs without a provider key.
-The [CI workflow](.github/workflows/ci.yml) keeps these checks credential-free
+The [test workflow](.github/workflows/test.yml) keeps these checks credential-free
 on Linux, macOS, and Windows as appropriate. To review lintpal itself with a
 real provider, use explicit committed refs:
 

@@ -2,7 +2,7 @@
 
 Install Go 1.26.6 or newer as required by `go.mod`, then install
 [Task](https://taskfile.dev/docs/installation) v3.44.0. The
-[CI workflow](../.github/workflows/ci.yml) installs that version explicitly.
+[test workflow](../.github/workflows/test.yml) installs that version explicitly.
 Run `task --list` from the repository root to see the available targets.
 
 | Target | Purpose | Direct command |
@@ -19,6 +19,7 @@ Run `task --list` from the repository root to see the available targets.
 | `task self-review-smoke` | Exercise self-review with a fake provider | `go test ./scripts/self-review -run TestSelfReviewSmoke -count=1` |
 | `task lint` | Run vet and format checks | Run both direct commands above |
 | `task lint-go` | Run the module-pinned golangci-lint gate | `go tool golangci-lint run ./...` |
+| `task security` | Scan reachable code for known vulnerabilities | `go tool govulncheck ./...` |
 | `task check` | Run build, test, lint, eval, pack and docs checks | Run the direct commands above |
 
 `task pack-verify` reports `verified 0 pack(s)` when the project has no pack
@@ -27,7 +28,7 @@ fails the target. `task docs-verify` checks relative file links in `README.md`
 and `docs/*.md` and loads every `examples/rules/*/rules.yaml` through the same
 rule parser used by lintpal. Both targets use local files only.
 
-The CI matrix runs build, test, and vet through Task on Linux, macOS, and
+The test matrix runs build, test, and vet through Task on Linux, macOS, and
 Windows. Linux also runs format, eval, pack and docs verification, and race.
 These checks do not need a provider key or send source to a model. The race
 tests start local HTTP servers, so the local environment must allow loopback
@@ -40,6 +41,11 @@ The separate [static lint workflow](../.github/workflows/lint.yml) runs
 `go.mod`.
 `task lint-go` runs it with `go tool`; no separate binary installation is
 needed. The ordinary `task check` does not compile the linter.
+
+The [security workflow](../.github/workflows/security.yml) runs the
+module-pinned `govulncheck` on pushes, pull requests, a weekly schedule, and
+manual dispatch. It queries the Go vulnerability database and does not use a
+provider credential.
 
 For the live command, required revisions, report path, and provider setup,
 see [self-review](self-review.md).

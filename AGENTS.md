@@ -14,6 +14,8 @@ selected-provider credential handling intact when changing behavior.
 - Run `task docs-verify` after changing Markdown links or YAML rule examples.
 - Run `task lint-go` for the separate static lint gate; `go.mod` pins the
   `go tool golangci-lint` version.
+- Run `task security` for the vulnerability scan; it contacts the Go
+  vulnerability database and uses the module-pinned `go tool govulncheck`.
 - Run `go mod tidy` when dependencies change, inspect the module diff, and
   verify with `go mod verify`.
 

@@ -23,6 +23,7 @@ From the reviewed source revision, run:
 task check
 task race
 task lint-go
+task security
 go mod verify
 bd lint
 OMNIDIST_VERSION=0.3.0 task release-stage

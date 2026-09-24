@@ -41,6 +41,7 @@ jobs:
           task race
           task lint-go
           go mod verify
+          go tool govulncheck ./...
       - name: Install omnidist
         run: npm install -g '@omnidist/omnidist@0.1.37'
       - name: Build artifacts

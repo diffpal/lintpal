@@ -62,6 +62,11 @@ tasks:
     cmds:
       - go tool golangci-lint run ./...
 
+  security:
+    desc: Scan reachable Go code against the vulnerability database
+    cmds:
+      - go tool govulncheck ./...
+
   check:
     desc: Run all routine offline checks
     cmds:

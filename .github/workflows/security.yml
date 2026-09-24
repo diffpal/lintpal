@@ -1,16 +1,18 @@
-name: Lint
+name: Security
 
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  golangci:
-    name: golangci-lint
+  vulnerability-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -18,4 +20,4 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
-      - run: go tool golangci-lint run ./...
+      - run: go tool govulncheck ./...
