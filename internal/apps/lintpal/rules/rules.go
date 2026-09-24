@@ -38,6 +38,7 @@ type Rule struct {
 	ID             string
 	Type           string
 	Instructions   string
+	Body           string
 	NoulCriteria   *jev.NoulCriteria
 	ChoiceCriteria map[string]string
 	ScoreCriteria  []string
@@ -228,23 +229,4 @@ func cloneRule(rule Rule) Rule {
 	rule.Paths = append([]string(nil), rule.Paths...)
 	rule.Sides = append([]git.Side(nil), rule.Sides...)
 	return rule
-}
-
-// BuiltIn uses the same compiler as a repository-provided pack.
-func BuiltIn() Pack {
-	threshold := 0.95
-	pack, err := compilePack(rawPack{Schema: schemaV1, Rules: []rawRule{
-		{ID: "security.shell-injection", Type: "noul",
-			Instructions: "Do these changed Go lines introduce untrusted data into command execution without safe argument separation?",
-			Threshold:    &threshold, Severity: string(High), Title: "Possible shell injection",
-			Message: "Changed code may pass untrusted data to a shell command.", Paths: []string{"*.go"}},
-		{ID: "correctness.ignored-error", Type: "noul",
-			Instructions: "Do these changed Go lines ignore a returned error that could change correctness or safety?",
-			Threshold:    &threshold, Severity: string(Medium), Title: "Possible ignored error",
-			Message: "Changed code may ignore a meaningful error.", Paths: []string{"*.go"}},
-	}})
-	if err != nil {
-		panic("invalid built-in rule pack")
-	}
-	return pack
 }

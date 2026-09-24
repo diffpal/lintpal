@@ -44,7 +44,7 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 	flags.StringVar(&raw.Head, "head", "", "Head commit or revision")
 	flags.StringVar(&raw.Provider, "provider", "", "Jev provider: jev, openrouter, or custom")
 	flags.StringVar(&raw.Model, "model", "", "System One model name or alias")
-	flags.StringVar(&raw.Rules, "rules", "", "Rule directory or installed @NAME pack")
+	flags.StringVar(&raw.Rules, "rules", "", "Override Markdown rule directory for this lint run")
 	flags.StringArrayVar(&raw.Include, "include", nil, "Include changed source paths matching glob (repeatable)")
 	flags.StringArrayVar(&raw.Exclude, "exclude", nil, "Exclude changed source paths matching glob (repeatable)")
 	flags.StringVar(&raw.RuleThreshold, "rule-threshold", "", "Minimum violation probability, 0 to 1 (default 0.95)")
@@ -86,7 +86,7 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 	root.AddCommand(command)
 	root.AddCommand(newFeedbackCommand())
 	root.AddCommand(newDoctorCommand())
-	root.AddCommand(newPackCommand())
+	root.AddCommand(newRuleCommand())
 	if version == "" {
 		version = "dev"
 	}

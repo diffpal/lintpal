@@ -32,6 +32,15 @@ type reorderProvider struct {
 	failSecond bool
 }
 
+func testRules(t *testing.T) rules.Pack {
+	t.Helper()
+	pack, err := rules.LoadDirectory(t.Context(), filepath.Join("..", "eval", "testdata", "rules"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pack
+}
+
 func (p *reorderProvider) Evaluate(ctx context.Context, request jev.Request) (jev.Response, error) {
 	var id string
 	for key := range request.Questions {
@@ -87,7 +96,7 @@ func (f *lintProvider) Evaluate(ctx context.Context, request jev.Request) (jev.R
 func TestLintCommittedPipeline(t *testing.T) {
 	repo, dir, base, head := lintRepo(t)
 	provider := &lintProvider{}
-	linter, err := NewLinter(repo, provider, rules.BuiltInMarkdown())
+	linter, err := NewLinter(repo, provider, testRules(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +154,7 @@ func TestLintDeadlineAndConcurrency(t *testing.T) {
 	repo, _, base, head := lintRepo(t)
 	block := make(chan struct{})
 	provider := &lintProvider{block: block}
-	linter, err := NewLinter(repo, provider, rules.BuiltInMarkdown())
+	linter, err := NewLinter(repo, provider, testRules(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +182,7 @@ func TestLintDeadlineAndConcurrency(t *testing.T) {
 func TestLintParentCancellation(t *testing.T) {
 	repo, _, base, head := lintRepo(t)
 	provider := &lintProvider{block: make(chan struct{})}
-	linter, err := NewLinter(repo, provider, rules.BuiltInMarkdown())
+	linter, err := NewLinter(repo, provider, testRules(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +201,7 @@ func TestLintOutOfOrderBatchDeterminism(t *testing.T) {
 	var expected []byte
 	for run := 0; run < 3; run++ {
 		provider := &reorderProvider{secondDone: make(chan struct{})}
-		linter, err := NewLinter(repo, provider, rules.BuiltInMarkdown())
+		linter, err := NewLinter(repo, provider, testRules(t))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -220,7 +229,7 @@ func TestLintOutOfOrderBatchDeterminism(t *testing.T) {
 		}
 	}
 	provider := &reorderProvider{secondDone: make(chan struct{}), failSecond: true}
-	linter, err := NewLinter(repo, provider, rules.BuiltInMarkdown())
+	linter, err := NewLinter(repo, provider, testRules(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +242,7 @@ func TestLintOutOfOrderBatchDeterminism(t *testing.T) {
 func TestLintDeleteAndRename(t *testing.T) {
 	repo, dir, _, head := lintRepo(t)
 	provider := &lintProvider{}
-	linter, err := NewLinter(repo, provider, rules.BuiltInMarkdown())
+	linter, err := NewLinter(repo, provider, testRules(t))
 	if err != nil {
 		t.Fatal(err)
 	}

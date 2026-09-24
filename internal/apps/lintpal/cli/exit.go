@@ -11,10 +11,11 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/contextplan"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/git"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
-	"github.com/diffpal/lintpal/internal/apps/lintpal/packs"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/ruleimport"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/rulesource"
 )
 
 // ExitCode classifies errors without exposing their potentially untrusted text.
@@ -45,9 +46,8 @@ func ExitCode(err error) int {
 		return 2
 	}
 	if errors.Is(err, ErrInvalidOptions) || errors.Is(err, ErrInvalidEnvFile) ||
-		errors.Is(err, ErrEnvFileLimit) || errors.Is(err, packs.ErrSource) ||
-		errors.Is(err, packs.ErrLock) || errors.Is(err, packs.ErrLegacyFormat) || errors.Is(err, packs.ErrConflict) ||
-		errors.Is(err, packs.ErrDrift) || errors.Is(err, packs.ErrStorage) ||
+		errors.Is(err, ErrEnvFileLimit) || errors.Is(err, rulesource.ErrSource) ||
+		errors.Is(err, ruleimport.ErrConflict) || errors.Is(err, ruleimport.ErrStorage) ||
 		errors.Is(err, git.ErrInvalidRevision) ||
 		errors.Is(err, report.ErrInvalidReport) || errors.Is(err, report.ErrInvalidFormat) || errors.Is(err, report.ErrInvalidThreshold) ||
 		errors.Is(err, git.ErrAmbiguousBase) || errors.Is(err, git.ErrInvalidLimits) ||
@@ -62,11 +62,8 @@ func ExitCode(err error) int {
 	return 5
 }
 
-// ExitMessageFor renders a specific safe migration hint for legacy YAML packs.
+// ExitMessageFor renders a sanitized user-facing error message.
 func ExitMessageFor(err error) string {
-	if errors.Is(err, packs.ErrLegacyFormat) {
-		return packs.ErrLegacyFormat.Error()
-	}
 	return ExitMessage(ExitCode(err))
 }
 

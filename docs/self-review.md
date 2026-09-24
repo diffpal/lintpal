@@ -2,7 +2,8 @@
 
 `task self-review` runs lintpal against two committed revisions of this
 repository. It builds a local binary, invokes `lintpal lint`, and writes the
-complete JSON report to `.artifacts/lintpal/self-review.json`. This directory
+complete JSON report to `.artifacts/lintpal/self-review.json` and Markdown
+feedback to stdout. This directory
 is ignored by Git. After checking `BASE` and `HEAD`, the target removes an
 older report before building and running lintpal.
 
@@ -17,19 +18,21 @@ BASE=origin/main HEAD=HEAD task self-review
 
 `BASE` and `HEAD` are required. Use commit IDs or revision names that Git can
 resolve in this worktree; a shallow checkout may need a deeper fetch. The
-default provider is `jev`, with built-in rules and a `high` severity gate.
+default provider is `jev`, with the repository's `.lintpal/rules/` and a
+`high` severity gate.
 Use `PROVIDER=openrouter` with `OPENROUTER_API_KEY`, or put the selected
 provider settings and credential in a project-root `.env` as described in the
 [CLI guide](cli.md). The Taskfile never prints the credential.
 
-To use an imported pack, first [import and verify it](rule-packs.md), then
-select it explicitly:
+To use more rules, [import them](rule-import.md) into `.lintpal/rules/`, review
+the files, and run self-review normally:
 
 ```bash
-BASE=origin/main HEAD=HEAD RULES=@go-review task self-review
+BASE=origin/main HEAD=HEAD task self-review
 ```
 
-`RULES` also accepts an unmanaged Markdown directory. Set `FAIL_ON=none` to keep
+`RULES` optionally selects another local Markdown directory for this run.
+Set `FAIL_ON=none` to keep
 findings in the report without failing the severity gate. `PROVIDER`, `RULES`,
 and `FAIL_ON` are optional. For a custom provider, set `PROVIDER=custom` and
 configure `LINTPAL_BASE_URL` and `LINTPAL_TOKEN` through process environment

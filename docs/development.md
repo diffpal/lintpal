@@ -13,23 +13,22 @@ Run `task --list` from the repository root to see the available targets.
 | `task format` | Check Go formatting without editing files | `go run ./scripts/verify-format` |
 | `task race` | Run tests with the race detector | `go test -race ./...` |
 | `task eval` | Check the frozen offline evaluation baseline | `go test ./internal/apps/lintpal/eval -run TestFrozenCorpusBaseline -count=1` |
-| `task pack-verify` | Check installed rule packs against their lockfile | `go run ./scripts/verify-packs` |
+| `task rule-validate` | Validate repository Markdown rules | `go run ./cmd/lintpal rule validate` |
 | `task docs-verify` | Check local Markdown links and rule examples | `go run ./scripts/verify-docs` |
 | `task self-review` | Review committed changes in this repository | `go run ./scripts/self-review` |
 | `task self-review-smoke` | Exercise self-review with a fake provider | `go test ./scripts/self-review -run TestSelfReviewSmoke -count=1` |
 | `task lint` | Run vet and format checks | Run both direct commands above |
 | `task lint-go` | Run the module-pinned golangci-lint gate | `go tool golangci-lint run ./...` |
 | `task security` | Scan reachable code for known vulnerabilities | `go tool govulncheck ./...` |
-| `task check` | Run build, test, lint, eval, pack and docs checks | Run the direct commands above |
+| `task check` | Run build, test, lint, eval, rule and docs checks | Run the direct commands above |
 
-`task pack-verify` reports `verified 0 pack(s)` when the project has no pack
-lockfile. If the lockfile exists, a malformed lock or changed installed copy
-fails the target. `task docs-verify` checks relative file links in `README.md`
+`task rule-validate` checks this repository's `.lintpal/rules/` with the same
+parser used by lint. `task docs-verify` checks relative file links in `README.md`
 and `docs/*.md` and loads every Markdown example rule directory through the same
 rule parser used by lintpal. Both targets use local files only.
 
 The test matrix runs build, test, and vet through Task on Linux, macOS, and
-Windows. Linux also runs format, eval, pack and docs verification, and race.
+Windows. Linux also runs format, eval, rule and docs verification, and race.
 These checks do not need a provider key or send source to a model. The race
 tests start local HTTP servers, so the local environment must allow loopback
 sockets. The live evaluation and release scripts remain separate commands;

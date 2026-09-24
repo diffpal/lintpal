@@ -31,10 +31,10 @@ tasks:
     cmds:
       - go test ./internal/apps/lintpal/eval -run TestFrozenCorpusBaseline -count=1
 
-  pack-verify:
-    desc: Verify local rule packs against their lockfile
+  rule-validate:
+    desc: Validate repository Markdown rules
     cmds:
-      - go run ./scripts/verify-packs
+      - go run ./cmd/lintpal rule validate
 
   docs-verify:
     desc: Verify local documentation links and rule examples
@@ -74,7 +74,7 @@ tasks:
       - task: test
       - task: lint
       - task: eval
-      - task: pack-verify
+      - task: rule-validate
       - task: docs-verify
 
   release-stage:

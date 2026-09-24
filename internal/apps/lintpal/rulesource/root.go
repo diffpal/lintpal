@@ -1,4 +1,4 @@
-package packs
+package rulesource
 
 import (
 	"context"

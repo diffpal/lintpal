@@ -121,6 +121,20 @@ func TestProcessExitAndStreams(t *testing.T) {
 	}
 }
 
+func TestMissingDefaultRulesFailBeforeProvider(t *testing.T) {
+	binary := buildBinary(t)
+	dir, base, head := committedRepo(t)
+	server, calls := modelServer(t, http.StatusOK, false, nil)
+	defer server.Close()
+	if err := os.Rename(filepath.Join(dir, ".lintpal", "rules"), filepath.Join(dir, ".lintpal", "unused-rules")); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, code := runBinary(t, binary, dir, []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL})
+	if code != 2 || stdout != "" || stderr == "" || calls.Load() != 0 {
+		t.Fatalf("missing default rules reached provider: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
+	}
+}
+
 func TestProcessEnvFileCredential(t *testing.T) {
 	binary := buildBinary(t)
 	dir, base, head := committedRepo(t)
@@ -168,7 +182,7 @@ func TestProcessEnvFileCredential(t *testing.T) {
 	}
 }
 
-func TestProcessPackImportAndLockedLint(t *testing.T) {
+func TestProcessRuleImportAndLint(t *testing.T) {
 	binary := buildBinary(t)
 	dir, base, head := committedRepo(t)
 	server, calls := modelServer(t, http.StatusOK, false, nil)
@@ -181,30 +195,18 @@ func TestProcessPackImportAndLockedLint(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(source, "demo.md"), []byte(rule), 0600); err != nil {
 		t.Fatal(err)
 	}
-	stdout, stderr, code := runBinary(t, binary, dir, []string{"pack", "import", "demo", "rule-source"})
-	if code != 0 || !strings.Contains(stdout, "imported pack demo sha256:") || stderr != "" {
-		t.Fatalf("pack import: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	stdout, stderr, code := runBinary(t, binary, dir, []string{"rule", "import", "rule-source"})
+	if code != 0 || stdout != "created demo.md\n" || stderr != "" {
+		t.Fatalf("rule import: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
-	lock, err := os.ReadFile(filepath.Join(dir, ".lintpal", "packs.lock.json"))
-	if err != nil {
-		t.Fatal(err)
+	stdout, stderr, code = runBinary(t, binary, dir, []string{"rule", "list"})
+	if code != 0 || !strings.Contains(stdout, "demo.md\n") || stderr != "" {
+		t.Fatalf("rule list: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
-	var data struct {
-		Packs []struct {
-			Path string `json:"path"`
-		} `json:"packs"`
-	}
-	if err := json.Unmarshal(lock, &data); err != nil || len(data.Packs) != 1 {
-		t.Fatalf("pack lock: %v, %s", err, lock)
-	}
-	stdout, stderr, code = runBinary(t, binary, dir, []string{"pack", "verify", "demo"})
-	if code != 0 || stdout != "verified 1 pack(s)\n" || stderr != "" {
-		t.Fatalf("pack verify: code=%d stdout=%q stderr=%q", code, stdout, stderr)
-	}
-	args := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--rules", "@demo", "--fail-on", "none"}
+	args := []string{"lint", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL, "--fail-on", "none"}
 	stdout, stderr, code = runBinary(t, binary, dir, args)
 	if code != 0 || !strings.Contains(stdout, "demo.md") || stderr != "" || calls.Load() == 0 {
-		t.Fatalf("locked lint: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
+		t.Fatalf("imported lint: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
 	}
 	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, args...), "--rule-threshold", "1"))
 	if code != 0 || !strings.Contains(stdout, "No findings.") || stderr != "" {
@@ -223,27 +225,19 @@ func TestProcessPackImportAndLockedLint(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(source, "demo.md"), []byte(updatedRule), 0600); err != nil {
 		t.Fatal(err)
 	}
-	stdout, stderr, code = runBinary(t, binary, dir, []string{"pack", "update", "demo"})
-	if code != 0 || !strings.Contains(stdout, "updated pack demo sha256:") || stderr != "" {
-		t.Fatalf("pack update: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	stdout, stderr, code = runBinary(t, binary, dir, []string{"rule", "import", "rule-source", "--force"})
+	if code != 0 || stdout != "overwritten demo.md\n" || stderr != "" {
+		t.Fatalf("rule reimport: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
-	updatedLock, err := os.ReadFile(filepath.Join(dir, ".lintpal", "packs.lock.json"))
-	if err != nil || json.Unmarshal(updatedLock, &data) != nil || len(data.Packs) != 1 {
-		t.Fatalf("updated lock: %v", err)
+	updated, err := os.ReadFile(filepath.Join(dir, ".lintpal", "rules", "demo.md"))
+	if err != nil || string(updated) != updatedRule {
+		t.Fatalf("updated rule: %q, %v", updated, err)
 	}
-	copyPath := filepath.Join(dir, ".lintpal", filepath.FromSlash(data.Packs[0].Path))
-	if err := os.WriteFile(filepath.Join(copyPath, "demo.md"), []byte(updatedRule+"# drift\n"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	before := calls.Load()
-	stdout, stderr, code = runBinary(t, binary, dir, args)
-	if code != 2 || stdout != "" || calls.Load() != before {
-		t.Fatalf("drift lint: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
-	}
-	args[len(args)-3] = copyPath
-	stdout, stderr, code = runBinary(t, binary, dir, args)
-	if code != 2 || stdout != "" || calls.Load() != before {
-		t.Fatalf("managed path bypass: code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
+	for _, invalid := range [][]string{{"pack", "verify"}, {"lint", "--base", base, "--head", head, "--rules", "@demo"}} {
+		stdout, stderr, code = runBinary(t, binary, dir, invalid)
+		if code != 2 || stdout != "" || stderr == "" {
+			t.Fatalf("old selection accepted: %v code=%d stdout=%q stderr=%q", invalid, code, stdout, stderr)
+		}
 	}
 }
 
@@ -523,10 +517,22 @@ func committedRepo(t *testing.T) (string, string, string) {
 	git("init", "-q")
 	git("config", "user.name", "Test")
 	git("config", "user.email", "test@example.invalid")
+	for name, body := range map[string]string{
+		"correctness/ignored-error.md": "Changed code must handle or return errors from calls whose failure can affect correctness or safety.\n",
+		"security/shell-injection.md":  "Changed code must not pass untrusted input to a shell command without safe argument separation.\n",
+	} {
+		path := filepath.Join(dir, ".lintpal", "rules", name)
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := os.WriteFile(filepath.Join(dir, "example.go"), []byte("package example\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	git("add", "example.go")
+	git("add", "example.go", ".lintpal/rules")
 	git("commit", "-qm", "base")
 	base := git("rev-parse", "HEAD")
 	if err := os.WriteFile(filepath.Join(dir, "example.go"), []byte("package example\nvar X=1\n"), 0600); err != nil {

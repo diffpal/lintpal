@@ -18,7 +18,7 @@ func TestLoadAndSelectionCancellation(t *testing.T) {
 	if !errors.Is(err, context.Canceled) || len(pack.Rules()) != 0 {
 		t.Fatalf("load cancel: %v", err)
 	}
-	selected, err := Select(ctx, BuiltIn(), sampleGroups())
+	selected, err := Select(ctx, sampleMarkdownPack(t), sampleGroups())
 	if !errors.Is(err, context.Canceled) || len(selected) != 0 {
 		t.Fatalf("select cancel: %v", err)
 	}
@@ -28,13 +28,25 @@ func TestLoadAndSelectionCancellation(t *testing.T) {
 	}
 }
 
-func TestBuiltInRepresentativeSafeAndBuggyAnswers(t *testing.T) {
+func sampleMarkdownPack(t *testing.T) Pack {
+	t.Helper()
+	pack, err := CompileMandates([]Mandate{
+		{ID: "correctness/ignored-error.md", Body: "Changed code must handle errors.\n"},
+		{ID: "security/shell-injection.md", Body: "---\nseverity: high\n---\nChanged code must not pass untrusted input to a shell.\n"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pack
+}
+
+func TestMarkdownRepresentativeSafeAndBuggyAnswers(t *testing.T) {
 	item := git.WorkItem{ID: strings.Repeat("d", 64), NewPath: "pkg/command.go", Path: "pkg/command.go",
 		Side: git.Right, Hunk: 1, StartLine: 8, EndLine: 8}
 	groups := []contextplan.Group{{ID: "source-group", Items: []git.WorkItem{item}}}
-	selected, err := Select(t.Context(), BuiltIn(), groups)
+	selected, err := Select(t.Context(), sampleMarkdownPack(t), groups)
 	if err != nil || len(selected) != 2 {
-		t.Fatalf("built-in selection: %v, %+v", err, selected)
+		t.Fatalf("Markdown selection: %v, %+v", err, selected)
 	}
 	bindings, err := Questions(t.Context(), selected)
 	if err != nil {
@@ -52,7 +64,7 @@ func TestBuiltInRepresentativeSafeAndBuggyAnswers(t *testing.T) {
 	for _, selection := range selected {
 		safe.Answers[selection.QuestionID] = jev.NoulAnswer{Probability: 0.1}
 		probability := 0.1
-		if selection.Rule.ID == "security.shell-injection" {
+		if selection.Rule.ID == "security/shell-injection.md" {
 			probability = 0.96
 		}
 		buggy.Answers[selection.QuestionID] = jev.NoulAnswer{Probability: probability}
@@ -62,7 +74,7 @@ func TestBuiltInRepresentativeSafeAndBuggyAnswers(t *testing.T) {
 		t.Fatalf("safe: %v, %+v", err, decisions)
 	}
 	decisions, err = Decide(t.Context(), batch, selected, buggy)
-	if err != nil || len(decisions) != 1 || decisions[0].RuleID != "security.shell-injection" ||
+	if err != nil || len(decisions) != 1 || decisions[0].RuleID != "security/shell-injection.md" ||
 		decisions[0].Severity != High || decisions[0].Path != item.Path || decisions[0].Value != 0.96 {
 		t.Fatalf("buggy: %v, %+v", err, decisions)
 	}

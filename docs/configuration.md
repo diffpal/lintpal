@@ -1,7 +1,7 @@
 # Configuration
 
 lintpal selects settings in this order: explicit CLI flag, process environment,
-worktree-root `.env`, then built-in default. For a selected provider's key,
+worktree-root `.env`, then the CLI default. For a selected provider's key,
 process environment takes precedence over `.env`. Both `lint` and `doctor`
 read the optional root `.env` automatically. Use `--env-file PATH` to choose a
 file or `--no-env-file` to disable file loading. A missing default file is
@@ -21,11 +21,12 @@ presence without contacting a provider. `lint` makes provider requests.
 
 ## Rules and reports
 
-Built-in rules are selected when `--rules` is absent. Use `--rules PATH` for a
-local Markdown rule directory or `--rules @NAME` for a pack installed through
-`lintpal pack import`. Installed packs are checked against their
-[lockfile](rule-packs.md) before a provider request. A changed installed copy
-fails verification; use an explicit update and review the resulting lockfile.
+Without `--rules`, lintpal loads Markdown from the Git worktree-root
+`.lintpal/rules/` directory. There are no built-in mandates. A missing, empty,
+or invalid directory fails before contacting a provider. Use `--rules PATH`
+to select another local Markdown directory for one lint run. Use
+[`rule import`](rule-import.md) to copy local or GitHub rules into the default
+directory, then review and commit the files.
 Optional frontmatter sets per-rule severity, threshold, and title. An explicit
 `--rule-severity` or `--rule-threshold` overrides frontmatter for all rules;
 `--include` and `--exclude` filter changed source paths for the whole run.
@@ -44,8 +45,8 @@ configuration, provider, or output errors. See [report fields](report.md) and
   with `--base` and `--head`.
 - Missing credential: select a provider and set only its key in process env or
   `.env`; run `lintpal doctor` to check presence.
-- Lock drift: run `lintpal pack verify`, then explicitly re-import or update
-  the pack and review the local copy plus lockfile.
+- Invalid rules: run `lintpal rule validate`, inspect the named Markdown files,
+  and correct the input before running lint again.
 - Report path failure: create the parent directory and ensure it is writable.
 
 Credentials should stay out of Git, shell traces, rule files, and report

@@ -20,6 +20,7 @@ func TestVerifyRejectsBrokenLinkAndRuleExample(t *testing.T) {
 		}
 	}
 	write("README.md", "[docs](docs/guide.md)\n")
+	write("CONTRIBUTING.md", "# Contributing\n")
 	write("docs/guide.md", "[missing](missing.md)\n")
 	write("examples/rules/sample/rule.md", " \n")
 	if err := verify(root); err == nil || !strings.Contains(err.Error(), "missing.md") {
@@ -31,9 +32,12 @@ func TestVerifyRejectsBrokenLinkAndRuleExample(t *testing.T) {
 	}
 }
 
-func TestVerifyRejectsInvalidRuleSnippet(t *testing.T) {
+func TestVerifyRejectsBrokenContributorLink(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "README.md"), []byte("```yaml\nschema: lintpal.rules.v1\nrules: []\n```\n"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "README.md"), []byte("# Readme\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "CONTRIBUTING.md"), []byte("[missing](missing.md)\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Mkdir(filepath.Join(root, "docs"), 0700); err != nil {
@@ -42,7 +46,7 @@ func TestVerifyRejectsInvalidRuleSnippet(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "examples", "rules", "sample"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := verify(root); err == nil || !strings.Contains(err.Error(), "YAML example") {
-		t.Fatalf("invalid snippet accepted: %v", err)
+	if err := verify(root); err == nil || !strings.Contains(err.Error(), "missing.md") {
+		t.Fatalf("broken contributor link accepted: %v", err)
 	}
 }

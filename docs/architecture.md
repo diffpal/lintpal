@@ -96,20 +96,18 @@ true probability reaches its threshold; equality triggers. The rule supplies
 title, fixed message, severity, and ID. The Git work item supplies path, side,
 and changed lines. The model cannot supply finding text or an anchor.
 
-`BuiltIn()` contains two conservative Go mandate examples for possible shell
-injection and ignored errors, each at a 0.95 threshold. Hermetic examples
-verify policy behavior; they do not measure model precision. `app.Linter` takes an already selected
-pack, executes batches, and constructs anchored reports. Repository rules
-cannot choose a provider destination or credential source.
+Lint loads the worktree-root `.lintpal/rules/` directory by default; there are
+no built-in mandates. `app.Linter` takes an already validated rule set,
+executes batches, and constructs anchored reports. Repository rules cannot
+choose a provider destination or credential source.
 
-`internal/apps/lintpal/packs` acquires a Markdown directory per named pack
-through explicit `pack import`/`pack update` commands. It validates the files
-with the same rule loader, stores content-addressed directory copies under
-`.lintpal/packs/`, and atomically switches `.lintpal/packs.lock.json` after the
-copy is ready. A GitHub source is resolved to a commit before fetching files.
-`pack verify` and `--rules @NAME` check the lock hash and rule validity offline;
-direct paths into managed storage are rejected. Local `--rules PATH` directories
-and the built-in default remain available. See [rule packs](rule-packs.md).
+`rule list`, `rule view`, and `rule validate` load that same local directory
+without provider construction. `internal/apps/lintpal/ruleimport` stages local
+or GitHub Markdown files, validates the complete result, and installs them in
+`.lintpal/rules/`. The GitHub source reader in `internal/apps/lintpal/rulesource`
+resolves a ref to a commit before fetching files. Imported rules become
+ordinary files to review and commit; normal lint makes no rule-source network
+request. See [rule import](rule-import.md).
 
 ## System One provider
 
@@ -181,7 +179,7 @@ selected credentials at the output boundary; they do not scan unrelated
 environment variables. The selected provider still receives committed source
 context and rule instructions to perform linting.
 
-The executable exposes `lint`, `doctor`, `pack`, `version`, and `completion`.
+The executable exposes `lint`, `rule`, `feedback`, `doctor`, `version`, and `completion`.
 Its core packages import neither Cobra, Fx, nor ADK LLM APIs. There is no
 PR-host publisher, working-tree analysis, SARIF writer, autofix, RAG, general
 chat path, or embedded Laya sidecar. [Resource limits](resource-limits.md)

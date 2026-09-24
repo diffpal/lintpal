@@ -8,10 +8,10 @@ selected-provider credential handling intact when changing behavior.
 
 - Use the Go version in `go.mod` (currently 1.26.6).
 - Run `task --list` to discover tooling. `task check` runs the routine offline
-  build, test, vet, format, evaluation, pack, and docs checks.
+  build, test, vet, format, evaluation, rule, and docs checks.
 - Run `task race` for race-sensitive code and `task self-review-smoke` for the
   fake-provider process path. These tests use local HTTP listeners.
-- Run `task docs-verify` after changing Markdown links or YAML rule examples.
+- Run `task docs-verify` after changing Markdown links or rule examples.
 - Run `task lint-go` for the separate static lint gate; `go.mod` pins the
   `go tool golangci-lint` version.
 - Run `task security` for the vulnerability scan; it contacts the Go
@@ -21,8 +21,8 @@ selected-provider credential handling intact when changing behavior.
 
 ## Repository conventions
 
-- Keep rule packs as data. Validate examples through the existing rules parser;
-  imported copies and `.lintpal/packs.lock.json` should be reviewed together.
+- Keep `.lintpal/rules/` as declarative Markdown data. Validate examples
+  through the existing rules parser; review imported rule files in Git.
 - Keep documentation links relative and route new user topics through
   `docs/index.md`. Explain observable CLI behavior rather than promising model
   accuracy or unpublished distribution channels.

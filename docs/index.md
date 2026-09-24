@@ -1,13 +1,13 @@
 # lintpal documentation
 
 lintpal reviews changes between two committed Git revisions. It asks a selected
-System One provider questions defined by built-in or Markdown rules, then
+System One provider questions defined by repository Markdown rules, then
 reports findings tied to changed lines. Start with the [README](../README.md)
 for the short overview.
 
 ## Start using lintpal
 
-- [Getting started](getting-started.md): build from source and review a first
+- [Getting started](getting-started.md): install through npm and lint a first
   committed comparison.
 - [Configuration](configuration.md): providers, `.env`, rule selection, output,
   and common setup failures.
@@ -17,10 +17,9 @@ for the short overview.
 
 ## Write and use rules
 
-- [Rule authoring](rule-authoring.md): Markdown mandates, frontmatter, and
-  migration from YAML.
-- [Rule packs](rule-packs.md): import from a directory or pinned GitHub ref,
-  understand the lockfile, and verify offline.
+- [Rule authoring](rule-authoring.md): Markdown mandates and frontmatter.
+- [Rule import](rule-import.md): copy a local or pinned GitHub directory into
+  `.lintpal/rules/` and validate the catalog offline.
 - [Go review example](../examples/rules/go-review/unchecked-error.md): a
   Markdown mandate for changed Go code.
 - [Documentation review example](../examples/rules/docs-review/command-drift.md):
@@ -28,6 +27,7 @@ for the short overview.
 
 ## Maintain the project
 
+- [Contributing](../CONTRIBUTING.md): source setup and contribution checks.
 - [Development tasks](development.md): Taskfile build, tests, evaluation,
   format, and verification targets.
 - [Self-review](self-review.md): review committed lintpal changes and collect

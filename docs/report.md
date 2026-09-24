@@ -2,8 +2,7 @@
 
 `lintpal lint --format json` writes one UTF-8 JSON object followed by a
 newline. `--out PATH` writes the complete JSON object atomically regardless of
-stdout format. DiffPal also
-writes a v5 findings bundle. The canonical contract is in DiffPal at
+stdout format. DiffPal also writes a v5 findings bundle. The canonical contract is in DiffPal at
 `schemas/findings/v5.schema.json`; LintPal keeps a pinned
 [offline copy](schema/findings-v5.schema.json). The
 [JSON](../cmd/lintpal/testdata/golden/report.json) and

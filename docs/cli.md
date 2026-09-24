@@ -1,8 +1,9 @@
 # lintpal CLI
 
 `lintpal lint` reads a committed Git comparison from the current repository.
-It never reads uncommitted source for lint context. The command writes one
-complete report to stdout; operational messages use stderr.
+It never reads uncommitted source for lint context. By default it writes
+Markdown feedback to stdout; `--format json` writes the findings v5 report.
+Operational messages use stderr.
 
 ```bash
 export TYPESAFE_API_KEY='...'
@@ -29,7 +30,7 @@ selected provider accepts. The CLI does not query the model catalog during lint.
 | `--head` | `LINTPAL_HEAD` | Required head revision. |
 | `--provider` | `LINTPAL_PROVIDER` | `jev`, `openrouter`, or `custom`. |
 | `--model` | `LINTPAL_MODEL` | System One model name or alias. |
-| `--rules` | `LINTPAL_RULES` | Markdown rule directory or installed `@NAME` pack; built-ins otherwise. |
+| `--rules` | `LINTPAL_RULES` | Override the default `.lintpal/rules/` directory for this lint run. |
 | `--include` | — | Include changed source paths matching a glob; repeatable. |
 | `--exclude` | — | Exclude changed source paths matching a glob; repeatable. |
 | `--rule-threshold` | `LINTPAL_RULE_THRESHOLD` | Override every rule's true-probability threshold, 0–1; default 0.95. |
@@ -86,17 +87,21 @@ renames it only after the complete artifact is written. With both sinks,
 lintpal writes the artifact, then stdout, then evaluates the severity gate.
 `--fail-on none` keeps findings in the report and disables exit code 10.
 `--block-on` sets the same `blocking` field but returns success after lint,
-allowing a later feedback command to apply the gate.
+allowing a later feedback command to apply the gate. An explicit `--block-on`
+overrides `LINTPAL_FAIL_ON`; combining it with an explicit `--fail-on` is an
+input error.
 
 For a single command with Markdown stdout and the default high gate:
 
 ```bash
+mkdir -p .artifacts/lintpal
 lintpal lint --base origin/main --head HEAD --out .artifacts/lintpal/findings.json
 ```
 
 For a two-command CI flow, first write findings, then render and gate them:
 
 ```bash
+mkdir -p .artifacts/lintpal
 lintpal lint --base origin/main --head HEAD --block-on high \
   --format json --out .artifacts/lintpal/findings.json
 lintpal feedback markdown --in .artifacts/lintpal/findings.json \
@@ -131,5 +136,11 @@ explains provider transfer and the output guard.
 local live procedure, and model-upgrade comparison. [Report reference](report.md)
 defines the versioned output contract.
 
-[Rule packs](rule-packs.md) documents local and GitHub import, the project
-lockfile, offline verification, and example rules.
+`lintpal rule list` prints the IDs in the worktree-root `.lintpal/rules/`
+directory. `lintpal rule view ID` shows one mandate with its effective title,
+severity, and threshold. `lintpal rule validate` checks the whole directory.
+These commands are local and do not need provider credentials. `lintpal rule
+import SOURCE` copies a local or pinned GitHub Markdown directory into the
+same rule root; see [rule import](rule-import.md). Rules are required for lint;
+missing or invalid defaults fail before a provider request. `--rules PATH`
+selects another local directory for a single lint run.

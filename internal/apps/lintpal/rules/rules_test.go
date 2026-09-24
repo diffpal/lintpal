@@ -6,13 +6,10 @@ import (
 	"testing"
 )
 
-func TestLoadAndBuiltInsShareValidation(t *testing.T) {
+func TestLoadReturnsIndependentRules(t *testing.T) {
 	pack, err := Load(strings.NewReader(minimalPack))
 	if err != nil || len(pack.Rules()) != 1 {
 		t.Fatalf("load: %v, %+v", err, pack)
-	}
-	if len(BuiltIn().Rules()) != 2 {
-		t.Fatal("built-in pack missing")
 	}
 	copyRules := pack.Rules()
 	copyRules[0].Title = "tampered"

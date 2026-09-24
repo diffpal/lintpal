@@ -1,7 +1,8 @@
 # Write Markdown rules
 
 A rule is one UTF-8 Markdown file containing a requirement for changed code.
-The path relative to the selected rule directory is its ID. For example,
+Put it under the worktree-root `.lintpal/rules/` directory. The path relative
+to that directory is its ID. For example,
 `go/unchecked-error.md` is the ID of a file at that path. Directories organize
 IDs; they do not select source files. Every rule applies to eligible changed
 lines on both `LEFT` and `RIGHT` sides.
@@ -39,21 +40,10 @@ source paths for the whole run; they do not change rule IDs.
 Try the [Go review directory](../examples/rules/go-review/unchecked-error.md):
 
 ```bash
-lintpal lint --base HEAD~1 --head HEAD --rules ./examples/rules/go-review \
+npx lintpal lint --base HEAD~1 --head HEAD --rules ./examples/rules/go-review \
   --include '*.go' --rule-threshold 0.95
 ```
 
-You can also [import and pin a directory](rule-packs.md). Rule text and bounded
+You can also [import a directory](rule-import.md). Rule text and bounded
 committed source context are sent to the selected provider; see
 [privacy](privacy.md).
-
-## Migrating YAML rule packs
-
-Replace each old YAML rule with one `.md` file. Use its relative path as the
-ID, put the requirement in the body, and move only `severity`, `threshold`,
-and `title` into optional frontmatter. Old `choice`, `score`, `criteria`,
-`message`, `paths`, and `sides` fields have no Markdown equivalent. Rewrite
-choice or score questions as yes/no requirements, use `--include`/`--exclude`
-for source selection, and review both changed sides. The CLI no longer loads
-`rules.yaml` or a v1 pack lockfile; re-import the Markdown directory to create
-a v2 lockfile. See [report migration](report.md) for output changes.

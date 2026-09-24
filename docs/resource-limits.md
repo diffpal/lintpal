@@ -14,5 +14,6 @@ All limits below are enforced on a single lint run. Zero-valued internal limits 
 | Provider attempts / attempt timeout / retry delay | `provider/systemone` | 3 / 15 s / 2 s | Fixed | `provider/systemone/retry_test.go` |
 | Provider concurrency / run timeout | `app` | 4 / 2 min | 16 / 10 min | `app/linter_test.go`, `cli/options_test.go` |
 | JSON report size | `app` | 16 MiB | 64 MiB | `app/linter_test.go` |
+| Stored findings input for `feedback markdown` | `report` | 64 MiB | Fixed | `report/feedback_test.go` |
 
 Git also caps a diff line at 1 MiB and a path at 4 KiB. Context planning caps items, groups, questions, and questions per batch. Limit failures return no partial report; the CLI prints a fixed error category. Context cancellation reaches Git, planning, provider attempts, retries, and the application run. The provider and application tests cover blocked calls, cancellation, worker peak, and response size.

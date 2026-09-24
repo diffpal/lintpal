@@ -42,11 +42,18 @@ func TestSelfReviewSmoke(t *testing.T) {
 	git("init", "-q")
 	git("config", "user.name", "Smoke")
 	git("config", "user.email", "smoke@example.invalid")
+	rulePath := filepath.Join(root, ".lintpal", "rules", "go", "errors.md")
+	if err := os.MkdirAll(filepath.Dir(rulePath), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(rulePath, []byte("Changed code must handle errors.\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(root, "example.go")
 	if err := os.WriteFile(path, []byte("package example\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	git("add", "example.go")
+	git("add", "example.go", ".lintpal/rules")
 	git("commit", "-qm", "base")
 	base := git("rev-parse", "HEAD")
 	if err := os.WriteFile(path, []byte("package example\nvar X=1\n"), 0600); err != nil {

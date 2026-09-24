@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -25,6 +26,19 @@ const SchemaVersion = "lintpal.eval.corpus.v1"
 const MaxCorpusBytes = 256 << 10
 
 var ErrInvalidCorpus = errors.New("invalid evaluation corpus")
+
+//go:embed testdata/rules/correctness/ignored-error.md
+var ignoredErrorMandate string
+
+//go:embed testdata/rules/security/shell-injection.md
+var shellInjectionMandate string
+
+func fixtureRules() (rules.Pack, error) {
+	return rules.CompileMandates([]rules.Mandate{
+		{ID: "correctness/ignored-error.md", Body: ignoredErrorMandate},
+		{ID: "security/shell-injection.md", Body: shellInjectionMandate},
+	})
+}
 
 type Case struct {
 	ID          string  `json:"id"`
@@ -74,8 +88,12 @@ func Load(reader io.Reader) (Corpus, error) {
 		corpus.SchemaVersion != SchemaVersion || len(corpus.Cases) == 0 || len(corpus.Cases) > 128 {
 		return Corpus{}, ErrInvalidCorpus
 	}
+	pack, err := fixtureRules()
+	if err != nil {
+		return Corpus{}, err
+	}
 	knownRules := make(map[string]bool)
-	for _, rule := range rules.BuiltInMarkdown().Rules() {
+	for _, rule := range pack.Rules() {
 		knownRules[rule.ID] = true
 	}
 	seen := make(map[string]bool)
@@ -97,6 +115,10 @@ func RunOffline(ctx context.Context, corpus Corpus) (Summary, []report.Report, e
 	if ctx == nil || corpus.SchemaVersion != SchemaVersion || len(corpus.Cases) == 0 {
 		return Summary{}, nil, ErrInvalidCorpus
 	}
+	pack, err := fixtureRules()
+	if err != nil {
+		return Summary{}, nil, err
+	}
 	ordered := append([]Case(nil), corpus.Cases...)
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].ID < ordered[j].ID })
 	summary := Summary{SchemaVersion: "lintpal.eval.summary.v1", CorpusVersion: corpus.SchemaVersion,
@@ -106,7 +128,7 @@ func RunOffline(ctx context.Context, corpus Corpus) (Summary, []report.Report, e
 		if err := ctx.Err(); err != nil {
 			return Summary{}, nil, err
 		}
-		artifact, err := runCase(ctx, c)
+		artifact, err := runCase(ctx, pack, c)
 		if err != nil {
 			return Summary{}, nil, err
 		}
@@ -133,13 +155,13 @@ func RunOffline(ctx context.Context, corpus Corpus) (Summary, []report.Report, e
 	return summary, reports, nil
 }
 
-func runCase(ctx context.Context, c Case) (report.Report, error) {
+func runCase(ctx context.Context, pack rules.Pack, c Case) (report.Report, error) {
 	id := sha256.Sum256([]byte(c.ID))
 	item := git.WorkItem{ID: hex.EncodeToString(id[:]), NewPath: c.Path, Path: c.Path,
 		Side: git.Right, Hunk: 1, StartLine: c.Line, EndLine: c.Line}
 	groupID := "fixture-" + c.ID
 	groups := []contextplan.Group{{ID: groupID, State: c.Source, Items: []git.WorkItem{item}}}
-	selections, err := rules.Select(ctx, rules.BuiltInMarkdown(), groups)
+	selections, err := rules.Select(ctx, pack, groups)
 	if err != nil {
 		return report.Report{}, err
 	}

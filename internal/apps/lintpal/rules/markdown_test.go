@@ -82,9 +82,6 @@ func TestCompileMandatesRejectsBadIDsAndDuplicates(t *testing.T) {
 	if _, err := CompileMandates([]Mandate{{ID: "a.md", Body: "One"}, {ID: "a.md", Body: "Two"}}); err == nil {
 		t.Fatal("accepted duplicate")
 	}
-	if len(BuiltInMarkdown().Rules()) != 2 {
-		t.Fatal("missing built-in Markdown mandates")
-	}
 }
 
 func TestMarkdownPolicyAndGlobalSelection(t *testing.T) {

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -17,7 +16,6 @@ import (
 )
 
 var markdownLink = regexp.MustCompile(`\]\(([^)\s]+)(?:\s+"[^"]*")?\)`)
-var yamlFence = regexp.MustCompile("(?s)```ya?ml\\n(.*?)\\n```")
 
 func main() {
 	if err := verify("."); err != nil {
@@ -30,6 +28,9 @@ func main() {
 func verify(root string) error {
 	readme := filepath.Join(root, "README.md")
 	if err := checkLinks(readme); err != nil {
+		return err
+	}
+	if err := checkLinks(filepath.Join(root, "CONTRIBUTING.md")); err != nil {
 		return err
 	}
 	docs := filepath.Join(root, "docs")
@@ -70,14 +71,6 @@ func checkLinks(path string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
-	}
-	for _, match := range yamlFence.FindAllSubmatch(content, -1) {
-		if !bytes.HasPrefix(bytes.TrimSpace(match[1]), []byte("schema: lintpal.rules.v1")) {
-			continue
-		}
-		if _, err := rules.Load(bytes.NewReader(match[1])); err != nil {
-			return fmt.Errorf("%s: invalid rule pack YAML example: %w", path, err)
-		}
 	}
 	for _, match := range markdownLink.FindAllSubmatch(content, -1) {
 		ref := string(match[1])

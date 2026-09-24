@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,10 +15,10 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/cli"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/git"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
-	"github.com/diffpal/lintpal/internal/apps/lintpal/packs"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/rulesource"
 	adkruntime "github.com/diffpal/lintpal/internal/apps/lintpal/runtime/adk"
 )
 
@@ -32,14 +31,17 @@ func Lint(ctx context.Context, dir string, options cli.Options) (report.Report, 
 }
 
 func lintWithRuntime(ctx context.Context, dir string, options cli.Options, runtime *adkruntime.Runtime) (report.Report, error) {
+	pack, err := loadPack(ctx, dir, options)
+	if err != nil {
+		return report.Report{}, err
+	}
 	var linter *app.Linter
 	graph := fx.New(
-		fx.Supply(runtime),
+		fx.Supply(runtime, pack),
 		fx.Provide(func() cli.Options { return options }),
 		fx.Provide(func() context.Context { return ctx }),
 		fx.Provide(func() *http.Client { return http.DefaultClient }),
 		fx.Provide(fx.Annotate(func() (*git.Repository, error) { return git.NewRepository(dir, git.Limits{}) }, fx.As(new(app.Comparer)))),
-		fx.Provide(func(ctx context.Context, options cli.Options) (rules.Pack, error) { return loadPack(ctx, dir, options) }),
 		fx.Provide(fx.Annotate(newProvider, fx.As(new(jev.Provider)))),
 		fx.Provide(func(runtime *adkruntime.Runtime) app.Observer { return runtime }),
 		fx.Provide(app.NewObservedLinter),
@@ -53,7 +55,7 @@ func lintWithRuntime(ctx context.Context, dir string, options cli.Options, runti
 		return report.Report{}, err
 	}
 	startCtx, cancelStart := context.WithTimeout(ctx, lifecycleTimeout)
-	err := graph.Start(startCtx)
+	err = graph.Start(startCtx)
 	cancelStart()
 	if err != nil {
 		return report.Report{}, err
@@ -81,54 +83,26 @@ func loadPack(ctx context.Context, dir string, options cli.Options) (rules.Pack,
 		}
 		return rules.WithOverrides(pack, threshold, severity)
 	}
-	if options.Rules == "" {
-		return applyPolicy(rules.BuiltInMarkdown())
-	}
-	root, err := packs.RepositoryRoot(ctx, dir)
+	root, err := rulesource.RepositoryRoot(ctx, dir)
 	if err != nil {
 		return rules.Pack{}, err
+	}
+	selectedRules := options.Rules
+	if selectedRules == "" {
+		selectedRules = filepath.Join(root, ".lintpal", "rules")
 	}
 	if strings.HasPrefix(options.Rules, "@") {
-		pack, err := packs.LoadMarkdown(ctx, root, strings.TrimPrefix(options.Rules, "@"))
-		if err != nil {
-			return rules.Pack{}, err
-		}
-		return applyPolicy(pack)
+		return rules.Pack{}, cli.ErrInvalidOptions
 	}
-	managed := filepath.Join(root, ".lintpal", "packs")
-	selected, err := filepath.Abs(options.Rules)
+	selected, err := filepath.Abs(selectedRules)
 	if err != nil {
-		return rules.Pack{}, packs.ErrSource
+		return rules.Pack{}, rulesource.ErrSource
 	}
-	if isManagedPath(filepath.Join(dir, ".lintpal", "packs"), selected) {
-		return rules.Pack{}, packs.ErrDrift
-	}
-	if isManagedPath(managed, selected) {
-		return rules.Pack{}, packs.ErrDrift
-	}
-	if resolved, err := filepath.EvalSymlinks(selected); err == nil {
-		selected = resolved
-	}
-	if isManagedPath(managed, selected) {
-		return rules.Pack{}, packs.ErrDrift
-	}
-	info, err := os.Stat(selected)
+	pack, err := rules.LoadDirectory(ctx, selected)
 	if err != nil {
 		return rules.Pack{}, err
 	}
-	if info.IsDir() {
-		pack, err := rules.LoadDirectory(ctx, selected)
-		if err != nil {
-			return rules.Pack{}, err
-		}
-		return applyPolicy(pack)
-	}
-	return rules.Pack{}, packs.ErrLegacyFormat
-}
-
-func isManagedPath(managed, selected string) bool {
-	relative, err := filepath.Rel(managed, selected)
-	return err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
+	return applyPolicy(pack)
 }
 
 func newProvider(options cli.Options, client *http.Client) (*systemone.Provider, error) {

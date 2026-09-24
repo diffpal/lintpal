@@ -165,7 +165,7 @@ func CompileMandates(mandates []Mandate) (Pack, error) {
 		if metadata.Title != nil {
 			title = *metadata.Title
 		}
-		pack.rules = append(pack.rules, Rule{ID: mandate.ID, Type: "noul",
+		pack.rules = append(pack.rules, Rule{ID: mandate.ID, Type: "noul", Body: body,
 			Instructions: "Does the changed code violate this requirement?\n\n" + body,
 			Threshold:    threshold, Severity: severity, Title: title,
 			Message: "Changed code may violate " + mandate.ID + "."})
@@ -250,18 +250,6 @@ func validMandateMetadata(metadata mandateMetadata) bool {
 		return false
 	}
 	return metadata.Title == nil || boundedText(*metadata.Title, maxTitle) && !strings.ContainsAny(*metadata.Title, "\r\n")
-}
-
-// BuiltInMarkdown supplies the default mandates through the Markdown compiler.
-func BuiltInMarkdown() Pack {
-	pack, err := CompileMandates([]Mandate{
-		{ID: "correctness/ignored-error.md", Body: "Changed code must handle or return errors from calls whose failure can affect correctness or safety."},
-		{ID: "security/shell-injection.md", Body: "Changed code must not pass untrusted input to a shell command without safe argument separation."},
-	})
-	if err != nil {
-		panic("invalid built-in Markdown mandates")
-	}
-	return pack
 }
 
 // WithPolicy applies one trusted run policy to every mandate in a pack.

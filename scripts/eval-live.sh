@@ -92,7 +92,7 @@ while IFS= read -r case_json; do
   head="$(git -C "$case_dir" rev-parse HEAD)"
 
   args=(lint --base "$base" --head "$head" --provider "$LINTPAL_EVAL_PROVIDER"
-    --model "$LINTPAL_EVAL_MODEL" --rules "" --out "" --format json --fail-on none
+    --model "$LINTPAL_EVAL_MODEL" --rules "$repo_root/internal/apps/lintpal/eval/testdata/rules" --out "" --format json --fail-on none
     --timeout 2m --max-concurrency 4)
   if [[ "$LINTPAL_EVAL_PROVIDER" == custom ]]; then
     args+=(--base-url "$LINTPAL_EVAL_BASE_URL" --auth-token-env "$token_env")

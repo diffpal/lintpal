@@ -33,7 +33,7 @@ jobs:
         run: |
           task format
           task eval
-          task pack-verify
+          task rule-validate
           task docs-verify
           task self-review-smoke
           task race
