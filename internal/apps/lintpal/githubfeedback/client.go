@@ -105,7 +105,7 @@ func (publisher *Publisher) Publish(ctx context.Context, token string, reviewCtx
 		return ErrInvalidContext
 	}
 	reviewsURL := fmt.Sprintf("%s/repos/%s/pulls/%d/reviews", publisher.apiBase, reviewCtx.Repo, reviewCtx.PRNumber)
-	existingID, err := publisher.findResult(ctx, token, reviewsURL, identity.ResultMarker(reviewCtx.HeadSHA))
+	existingID, existingBody, err := publisher.findResult(ctx, token, reviewsURL, identity.ResultMarker(reviewCtx.HeadSHA))
 	if err != nil {
 		return err
 	}
@@ -124,8 +124,8 @@ func (publisher *Publisher) Publish(ctx context.Context, token string, reviewCtx
 		}
 		comments = append(comments, item)
 	}
-	if existingID > 0 && len(comments) == 0 {
-		return publisher.doJSON(ctx, token, http.MethodPatch, fmt.Sprintf("%s/%d", reviewsURL, existingID), map[string]any{"body": body}, nil)
+	if existingID > 0 && len(comments) == 0 && strings.TrimSpace(existingBody) == strings.TrimSpace(body) {
+		return nil
 	}
 	payload := map[string]any{"commit_id": reviewCtx.HeadSHA, "event": "COMMENT", "body": body}
 	if len(comments) != 0 {
@@ -134,9 +134,10 @@ func (publisher *Publisher) Publish(ctx context.Context, token string, reviewCtx
 	return publisher.doJSON(ctx, token, http.MethodPost, reviewsURL, payload, nil)
 }
 
-func (publisher *Publisher) findResult(ctx context.Context, token, firstURL, marker string) (int64, error) {
+func (publisher *Publisher) findResult(ctx context.Context, token, firstURL, marker string) (int64, string, error) {
 	next := firstURL + "?per_page=100"
 	var found int64
+	var foundBody string
 	for next != "" {
 		var reviews []struct {
 			ID    int64  `json:"id"`
@@ -145,19 +146,20 @@ func (publisher *Publisher) findResult(ctx context.Context, token, firstURL, mar
 		}
 		headers, err := publisher.getJSON(ctx, token, next, &reviews)
 		if err != nil {
-			return 0, err
+			return 0, "", err
 		}
 		for _, review := range reviews {
 			if strings.EqualFold(review.State, "COMMENTED") && strings.HasPrefix(strings.TrimSpace(review.Body), marker) {
 				found = review.ID
+				foundBody = review.Body
 			}
 		}
 		next, err = trustedNext(headers.Get("Link"), next)
 		if err != nil {
-			return 0, err
+			return 0, "", err
 		}
 	}
-	return found, nil
+	return found, foundBody, nil
 }
 
 func (publisher *Publisher) doJSON(ctx context.Context, token, method, target string, input, output any) error {

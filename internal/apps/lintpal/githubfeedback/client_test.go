@@ -11,10 +11,10 @@ import (
 	"testing"
 )
 
-func TestPublisherCreatesLeftMultilineReviewAndPatchesRerun(t *testing.T) {
+func TestPublisherCreatesLeftMultilineReviewAndSkipsUnchangedRerun(t *testing.T) {
 	identity, _ := NewIdentity("")
 	var posted map[string]any
-	patches := 0
+	posts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Header.Get("Authorization") != "Bearer secret-token" {
 			t.Fatalf("missing auth header")
@@ -28,13 +28,11 @@ func TestPublisherCreatesLeftMultilineReviewAndPatchesRerun(t *testing.T) {
 			body := posted["body"].(string)
 			_, _ = fmt.Fprintf(writer, `[{"id":41,"body":%q,"state":"COMMENTED"}]`, body)
 		case request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/reviews"):
+			posts++
 			if err := json.NewDecoder(request.Body).Decode(&posted); err != nil {
 				t.Fatal(err)
 			}
 			writer.WriteHeader(http.StatusCreated)
-		case request.Method == http.MethodPatch && strings.HasSuffix(request.URL.Path, "/reviews/41"):
-			patches++
-			writer.WriteHeader(http.StatusOK)
 		default:
 			t.Fatalf("unexpected request: %s %s", request.Method, request.URL.Path)
 		}
@@ -57,8 +55,8 @@ func TestPublisherCreatesLeftMultilineReviewAndPatchesRerun(t *testing.T) {
 	if err := publisher.Publish(context.Background(), "secret-token", reviewCtx, identity, "No blocking findings", Plan{}); err != nil {
 		t.Fatal(err)
 	}
-	if patches != 1 {
-		t.Fatalf("expected one patch, got %d", patches)
+	if posts != 1 {
+		t.Fatalf("expected unchanged rerun to skip publication, got %d posts", posts)
 	}
 }
 
