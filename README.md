@@ -15,7 +15,7 @@ specific requirements your team wants enforced on every change.
 [Quickstart](docs/getting-started.md) ·
 [Documentation](docs/index.md) ·
 [Rule packs](https://github.com/diffpal/lintpal-rules) ·
-[Demo](https://github.com/diffpal/lintpal-demo)
+[Demo](https://github.com/diffpal/lintpal-demo/pull/3)
 
 ## Features
 

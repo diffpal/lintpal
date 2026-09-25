@@ -47,4 +47,6 @@ fetch that history or choose two commit IDs that exist locally. Working-tree
 edits are not lint inputs. Markdown findings go to stdout. Exit code `10`
 means a finding met the severity gate after the complete report was written;
 see [CLI options and exit codes](cli.md). A remote provider receives bounded
-committed source context and rule text; see [privacy](privacy.md).
+committed source context and rule text; see [privacy](privacy.md). Inspect the
+[demo pull request](https://github.com/diffpal/lintpal-demo/pull/3) to see live
+GitHub Actions review feedback and inline findings on committed changes.

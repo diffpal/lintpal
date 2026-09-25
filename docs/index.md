@@ -14,6 +14,8 @@ for the short overview.
 - [CLI reference](cli.md): flags, environment settings, and exit codes.
 - [Report reference](report.md): shared JSON findings and Markdown feedback.
 - [Privacy and limitations](privacy.md): source transfer and current scope.
+- [Demo pull request](https://github.com/diffpal/lintpal-demo/pull/3): review
+  live GitHub Actions feedback and inline rule findings.
 
 ## Write and use rules
 
