@@ -33,3 +33,11 @@ profiles:
                 access: public
                 publish-auth: trusted
                 include-readme: true
+                keywords:
+                    - jev
+                    - lintpal
+                    - code-review
+                    - linter
+                    - developer-tools
+                    - github-actions
+                    - git-diff
