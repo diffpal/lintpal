@@ -165,10 +165,15 @@ func CompileMandates(mandates []Mandate) (Pack, error) {
 		if metadata.Title != nil {
 			title = *metadata.Title
 		}
+		message := strings.TrimSpace(body)
+		if message == "" {
+			message = "Changed code may violate " + mandate.ID + "."
+		}
+		instructions := "Does the code changed directly within this span violate this requirement? Do not flag code that merely invokes or dispatches to other functions unless the violation occurs directly in these changed lines.\n\n" + body
 		pack.rules = append(pack.rules, Rule{ID: mandate.ID, Type: "noul", Body: body,
-			Instructions: "Does the changed code violate this requirement?\n\n" + body,
+			Instructions: instructions,
 			Threshold:    threshold, Severity: severity, Title: title,
-			Message: "Changed code may violate " + mandate.ID + "."})
+			Message: message})
 	}
 	return pack, nil
 }

@@ -181,7 +181,7 @@ func TestMarkdownDecisionUsesFixedReportFields(t *testing.T) {
 	decisions, err := Decide(t.Context(), batch, selections, response)
 	if err != nil || len(decisions) != 1 || decisions[0].RuleID != "review/requirement.md" ||
 		decisions[0].Severity != Critical || decisions[0].Title != "Possible rule violation" ||
-		decisions[0].Message != "Changed code may violate review/requirement.md." ||
+		decisions[0].Message != "Changed code must handle errors." ||
 		decisions[0].StartLine != selections[0].Item.StartLine {
 		t.Fatalf("fixed decision: %+v, %v", decisions, err)
 	}

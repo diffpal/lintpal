@@ -20,7 +20,7 @@
         "side": "RIGHT"
       },
       "title": "Possible rule violation",
-      "message": "Changed code may violate correctness/ignored-error.md.",
+      "message": "Changed code must handle or return errors from calls whose failure can affect correctness or safety.",
       "evidence": {
         "kind": "rule",
         "rule_id": "correctness/ignored-error.md"
@@ -49,7 +49,7 @@
         "side": "RIGHT"
       },
       "title": "Possible rule violation",
-      "message": "Changed code may violate security/shell-injection.md.",
+      "message": "Changed code must not pass untrusted input to a shell command without safe argument separation.",
       "evidence": {
         "kind": "rule",
         "rule_id": "security/shell-injection.md"

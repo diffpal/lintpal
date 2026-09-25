@@ -151,3 +151,51 @@ func TestRenderGitHubFindingUsesOnlyStoredFields(t *testing.T) {
 		t.Fatalf("invented prose in:\n%s", output)
 	}
 }
+
+func TestRenderGitHubFindingCleanRuleCodeSpan(t *testing.T) {
+	finding := Finding{Severity: "critical", Title: "Validate untrusted input", Message: "Changed code must validate untrusted input.", Blocking: true}
+	finding.Evidence.Kind = "rule"
+	finding.Evidence.RuleID = "general/input-validation.md"
+	output := string(RenderGitHubFinding(finding))
+	if !strings.Contains(output, "Rule: `general/input-validation.md`") {
+		t.Fatalf("expected clean code span for rule ID without backslash escapes, got:\n%s", output)
+	}
+	if strings.Contains(output, "input\\-validation") {
+		t.Fatalf("found escaped hyphen in rule ID in:\n%s", output)
+	}
+}
+
+func TestRenderGitHubResultSummaryTable(t *testing.T) {
+	emptyBundle := Bundle{BaseSHA: strings.Repeat("a", 40), HeadSHA: strings.Repeat("b", 40), Findings: []Finding{}}
+	emptyOutput, err := RenderGitHubResult(emptyBundle, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(emptyOutput), "### Findings summary") {
+		t.Fatalf("empty bundle should not contain summary table, got:\n%s", emptyOutput)
+	}
+
+	finding := Finding{ID: "f1", Severity: "critical", Title: "Enforce authorization", Blocking: true}
+	finding.Evidence.Kind = "rule"
+	finding.Evidence.RuleID = "general/authorization.md"
+	finding.ChangedSpan.Path = "internal/orders/handler.go"
+	finding.ChangedSpan.StartLine = 60
+	finding.ChangedSpan.EndLine = 63
+	finding.ChangedSpan.Side = "RIGHT"
+
+	nonEmptyBundle := Bundle{BaseSHA: strings.Repeat("a", 40), HeadSHA: strings.Repeat("b", 40), Findings: []Finding{finding}}
+	nonEmptyOutput, err := RenderGitHubResult(nonEmptyBundle, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outText := string(nonEmptyOutput)
+	for _, expected := range []string{
+		"### Findings summary",
+		"| Severity | Rule | Location | Title |",
+		"| **critical** (blocking) | `general/authorization.md` | `internal/orders/handler.go:60-63` | Enforce authorization |",
+	} {
+		if !strings.Contains(outText, expected) {
+			t.Fatalf("missing %q in summary table output:\n%s", expected, outText)
+		}
+	}
+}

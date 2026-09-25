@@ -337,10 +337,13 @@ func TestProcessHostileInputsStayLocalAndSecretFree(t *testing.T) {
 		!strings.Contains(stderr, "metric stage=write") {
 		t.Fatalf("safe run code=%d calls=%d stdout=%q stderr=%q", code, calls.Load(), stdout, stderr)
 	}
-	for _, secret := range []string{"source-sentinel", "question-sentinel", "secret-sentinel", server.URL} {
+	for _, secret := range []string{"source-sentinel", "secret-sentinel", server.URL} {
 		if strings.Contains(stdout+stderr, secret) {
 			t.Fatalf("local output contains %q", secret)
 		}
+	}
+	if strings.Contains(stderr, "question-sentinel") {
+		t.Fatalf("stderr contains question-sentinel: %q", stderr)
 	}
 
 	if err := os.Rename(ruleFile, filepath.Join(rulesPath, "secret-sentinel.md")); err != nil {
@@ -369,9 +372,9 @@ func TestProcessHostileInputsStayLocalAndSecretFree(t *testing.T) {
 	if err := os.WriteFile(ruleFile, []byte(hostile), 0600); err != nil {
 		t.Fatal(err)
 	}
-	hostileOut, hostileErr, hostileCode := runBinary(t, binary, dir, args)
+	_, hostileErr, hostileCode := runBinary(t, binary, dir, args)
 	if hostileCode != 0 || captureCalls.Load() != 0 ||
-		strings.Contains(hostileOut+hostileErr, capture.URL) {
+		strings.Contains(hostileErr, capture.URL) {
 		t.Fatalf("hostile rule code=%d calls=%d stderr=%q", hostileCode, captureCalls.Load(), hostileErr)
 	}
 

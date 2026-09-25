@@ -182,6 +182,30 @@ func RenderGitHubResult(bundle Bundle, unanchoredIDs []string) ([]byte, error) {
 	fmt.Fprintf(&out, "# LintPal findings\n\n- Base: %s\n- Head: %s\n\n", markdownText(bundle.BaseSHA), markdownText(bundle.HeadSHA))
 	out.WriteString("## Gate status\n\n")
 	fmt.Fprintf(&out, "%s\n\n", blockingStatus(BlockingCount(bundle)))
+	if len(bundle.Findings) > 0 {
+		out.WriteString("### Findings summary\n\n")
+		out.WriteString("| Severity | Rule | Location | Title |\n")
+		out.WriteString("| :--- | :--- | :--- | :--- |\n")
+		for _, finding := range bundle.Findings {
+			status := "nonblocking"
+			if finding.Blocking {
+				status = "blocking"
+			}
+			ruleRef := "-"
+			if finding.Evidence.Kind == "rule" && finding.Evidence.RuleID != "" {
+				ruleRef = fmt.Sprintf("`%s`", cleanCodeSpan(finding.Evidence.RuleID))
+			} else if finding.Evidence.Anchor != "" {
+				ruleRef = fmt.Sprintf("`%s`", cleanCodeSpan(finding.Evidence.Anchor))
+			}
+			loc := "-"
+			if finding.ChangedSpan.Path != "" {
+				loc = fmt.Sprintf("`%s:%d-%d`", cleanCodeSpan(finding.ChangedSpan.Path), finding.ChangedSpan.StartLine, finding.ChangedSpan.EndLine)
+			}
+			fmt.Fprintf(&out, "| **%s** (%s) | %s | %s | %s |\n",
+				markdownText(finding.Severity), status, ruleRef, loc, markdownText(finding.Title))
+		}
+		out.WriteString("\n")
+	}
 	out.WriteString("## Publication\n\n")
 	fmt.Fprintf(&out, "- Findings: %d\n- Inline: %d\n- Not attached inline: %d\n",
 		len(bundle.Findings), len(bundle.Findings)-len(unanchored), len(unanchored))
@@ -211,9 +235,17 @@ func RenderGitHubFinding(finding Finding) []byte {
 	fmt.Fprintf(&out, "**%s** (%s): %s\n\n%s\n", markdownText(finding.Severity), status,
 		markdownText(finding.Title), markdownText(finding.Message))
 	if finding.Evidence.Kind == "rule" {
-		fmt.Fprintf(&out, "\nRule: %s\n", markdownText(finding.Evidence.RuleID))
+		fmt.Fprintf(&out, "\nRule: `%s`\n", cleanCodeSpan(finding.Evidence.RuleID))
 	}
 	return out.Bytes()
+}
+
+func cleanCodeSpan(value string) string {
+	value = strings.ReplaceAll(value, "\r", " ")
+	value = strings.ReplaceAll(value, "\n", " ")
+	value = strings.ReplaceAll(value, "`", "")
+	value = strings.ReplaceAll(value, "|", "\\|")
+	return strings.TrimSpace(value)
 }
 
 func BlockingCount(bundle Bundle) int {
