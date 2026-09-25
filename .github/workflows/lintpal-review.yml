@@ -1,0 +1,64 @@
+name: lintpal review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: lintpal-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: review
+    if: ${{ !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build LintPal
+        run: |
+          mkdir -p .artifacts/bin
+          go build -o .artifacts/bin/lintpal ./cmd/lintpal
+
+      - name: Lint with LintPal
+        run: >-
+          .artifacts/bin/lintpal lint
+          --base ${{ github.event.pull_request.base.sha }}
+          --head ${{ github.event.pull_request.head.sha }}
+          --block-on high
+          --format json
+          --out .artifacts/lintpal/findings.json
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+
+      - name: Publish LintPal feedback
+        run: >-
+          .artifacts/bin/lintpal feedback github
+          --in .artifacts/lintpal/findings.json
+          --repo ${{ github.repository }}
+          --pr-number ${{ github.event.pull_request.number }}
+          --base ${{ github.event.pull_request.base.sha }}
+          --head ${{ github.event.pull_request.head.sha }}
+          --review-channel lintpal-self
+          --gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lintpal-findings
+          path: .artifacts/lintpal/
+          if-no-files-found: warn

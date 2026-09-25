@@ -1,8 +1,9 @@
 # LintPal
 
-[![Test](https://github.com/diffpal/lintpal/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/diffpal/lintpal/actions/workflows/test.yml)
-[![npm version](https://img.shields.io/npm/v/lintpal)](https://www.npmjs.com/package/lintpal)
-[![License: MIT](https://img.shields.io/github/license/diffpal/lintpal)](LICENSE)
+[![test](https://github.com/diffpal/lintpal/actions/workflows/test.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/test.yml)
+[![lintpal review](https://github.com/diffpal/lintpal/actions/workflows/lintpal-review.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/lintpal-review.yml)
+[![npm](https://img.shields.io/npm/v/lintpal?label=npm)](https://www.npmjs.com/package/lintpal)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Lint committed changes against the rules your team writes.** Put requirements
 in Markdown files beside your code. LintPal checks changed lines in two Git
