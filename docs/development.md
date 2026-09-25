@@ -2,7 +2,7 @@
 
 Install Go 1.26.6 or newer as required by `go.mod`, then install
 [Task](https://taskfile.dev/docs/installation) v3.44.0. The
-[test workflow](../.github/workflows/test.yml) installs that version explicitly.
+[CI workflow](../.github/workflows/ci.yml) installs that version explicitly.
 Run `task --list` from the repository root to see the available targets.
 
 | Target | Purpose | Direct command |

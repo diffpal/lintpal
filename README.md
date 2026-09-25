@@ -1,7 +1,7 @@
 # LintPal
 
-[![test](https://github.com/diffpal/lintpal/actions/workflows/test.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/test.yml)
-[![lintpal review](https://github.com/diffpal/lintpal/actions/workflows/lintpal-review.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/lintpal-review.yml)
+[![ci](https://github.com/diffpal/lintpal/actions/workflows/ci.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/ci.yml)
+[![lintpal-dev review](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml)
 [![npm](https://img.shields.io/npm/v/lintpal?label=npm)](https://www.npmjs.com/package/lintpal)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
