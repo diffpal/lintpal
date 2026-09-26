@@ -89,3 +89,44 @@ func TestTotalSourceAndHardLimits(t *testing.T) {
 		}
 	}
 }
+
+func TestZeroSubprocessWithEmptyPath(t *testing.T) {
+	dir := testRepo(t)
+	base := testCommit(t, dir, "a.txt", "one\n")
+	head := testCommit(t, dir, "a.txt", "two\n")
+	if err := os.WriteFile(filepath.Join(dir, "uncommitted.txt"), []byte("draft\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Disable all subprocesses by emptying PATH
+	t.Setenv("PATH", "")
+
+	repo, err := NewRepository(dir, Limits{})
+	if err != nil {
+		t.Fatalf("NewRepository failed with empty PATH: %v", err)
+	}
+
+	// Compare committed
+	result, err := repo.Compare(t.Context(), base, head)
+	if err != nil {
+		t.Fatalf("Compare failed with empty PATH: %v", err)
+	}
+	if len(result.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(result.Items))
+	}
+	for _, item := range result.Items {
+		src, err := result.Source(item)
+		if err != nil || len(src) == 0 {
+			t.Fatalf("failed to read source for item %+v with empty PATH: %v", item, err)
+		}
+	}
+
+	// Compare uncommitted
+	uncommittedResult, err := repo.CompareUncommitted(t.Context())
+	if err != nil {
+		t.Fatalf("CompareUncommitted failed with empty PATH: %v", err)
+	}
+	if len(uncommittedResult.Items) == 0 {
+		t.Fatal("expected uncommitted items, got 0")
+	}
+}

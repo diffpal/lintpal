@@ -132,3 +132,37 @@ func TestResolveMarkdownRulePolicy(t *testing.T) {
 		t.Fatalf("environment policy: %+v, %v", envOptions, err)
 	}
 }
+
+func TestResolveUncommitted(t *testing.T) {
+	lookup := func(key string) (string, bool) {
+		switch key {
+		case "LINTPAL_BASE":
+			return "env-base", true
+		case "LINTPAL_HEAD":
+			return "env-head", true
+		default:
+			return "", false
+		}
+	}
+	opts, err := Resolve(RawOptions{Uncommitted: true}, lookup)
+	if err != nil || !opts.Uncommitted || opts.Base != "" || opts.Head != "" {
+		t.Fatalf("uncommitted resolution failed: %+v, %v", opts, err)
+	}
+
+	conflicts := []RawOptions{
+		{Uncommitted: true, Base: "main", Changed: map[string]bool{"base": true}},
+		{Uncommitted: true, Head: "HEAD", Changed: map[string]bool{"head": true}},
+		{Uncommitted: true, Base: "main", Head: "HEAD", Changed: map[string]bool{"base": true, "head": true}},
+		{Uncommitted: true, Base: "main"},
+		{Uncommitted: true, Head: "HEAD"},
+	}
+	for _, raw := range conflicts {
+		if _, err := Resolve(raw, lookup); !errors.Is(err, ErrInvalidOptions) {
+			t.Fatalf("accepted conflicting uncommitted options %+v: %v", raw, err)
+		}
+	}
+
+	if _, err := Resolve(RawOptions{Uncommitted: false}, nil); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("accepted missing base/head when uncommitted is false: %v", err)
+	}
+}

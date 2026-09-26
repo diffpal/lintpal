@@ -241,6 +241,70 @@ func TestProcessRuleImportAndLint(t *testing.T) {
 	}
 }
 
+func TestProcessLintUncommitted(t *testing.T) {
+	binary := buildBinary(t)
+	dir, base, head := committedRepo(t)
+	server, calls := modelServer(t, http.StatusOK, false, nil)
+	defer server.Close()
+
+	if err := os.WriteFile(filepath.Join(dir, "example.go"), []byte("package example\nvar X=1\nvar Y=2\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "untracked.go"), []byte("package example\nfunc Untracked() {}\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	gitStatus := func() string {
+		cmd := exec.Command("git", "status", "--porcelain")
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git status: %v: %s", err, out)
+		}
+		return string(out)
+	}
+	statusBefore := gitStatus()
+
+	common := []string{"lint", "--uncommitted", "--provider", "custom", "--base-url", server.URL}
+	stdout, stderr, code := runBinary(t, binary, dir, append(append([]string{}, common...), "--fail-on", "none", "--format", "json"))
+	if code != 0 || stderr != "" {
+		t.Fatalf("uncommitted json: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout, `"version": "v5"`) ||
+		!strings.Contains(stdout, `"head_sha": "UNCOMMITTED"`) ||
+		!strings.Contains(stdout, `"base_sha": "`+head+`"`) ||
+		!strings.Contains(stdout, "example.go") ||
+		!strings.Contains(stdout, "untracked.go") {
+		t.Fatalf("unexpected uncommitted output: %s", stdout)
+	}
+
+	// Verify working tree is untouched
+	statusAfter := gitStatus()
+	if statusBefore != statusAfter {
+		t.Fatalf("git status changed: before=%q after=%q", statusBefore, statusAfter)
+	}
+
+	// Markdown output
+	stdout, stderr, code = runBinary(t, binary, dir, append(append([]string{}, common...), "--fail-on", "none"))
+	if code != 0 || stderr != "" || !strings.HasPrefix(stdout, "# LintPal findings\n") ||
+		!strings.Contains(stdout, "example.go") || !strings.Contains(stdout, "untracked.go") {
+		t.Fatalf("uncommitted markdown: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+
+	// Flag conflict validation
+	before := calls.Load()
+	for _, conflict := range [][]string{
+		{"lint", "--uncommitted", "--base", base, "--provider", "custom", "--base-url", server.URL},
+		{"lint", "--uncommitted", "--head", head, "--provider", "custom", "--base-url", server.URL},
+		{"lint", "--uncommitted", "--base", base, "--head", head, "--provider", "custom", "--base-url", server.URL},
+	} {
+		stdout, stderr, code = runBinary(t, binary, dir, conflict)
+		if code != 2 || stdout != "" || calls.Load() != before || !strings.Contains(stderr, "invalid lint input or configuration") {
+			t.Fatalf("conflict %v: code=%d stdout=%q stderr=%q", conflict, code, stdout, stderr)
+		}
+	}
+}
+
 var itemHash = regexp.MustCompile(`\b[0-9a-f]{64}\b`)
 
 func assertGoldenReport(t *testing.T, name, output, base, head string) {

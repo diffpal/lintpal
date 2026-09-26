@@ -60,7 +60,7 @@ func lintWithRuntime(ctx context.Context, dir string, options cli.Options, runti
 	if err != nil {
 		return report.Report{}, err
 	}
-	artifact, runErr := linter.Lint(ctx, app.Request{Base: options.Base, Head: options.Head, Model: options.Model, ProviderName: options.Provider,
+	artifact, runErr := linter.Lint(ctx, app.Request{Base: options.Base, Head: options.Head, Uncommitted: options.Uncommitted, Model: options.Model, ProviderName: options.Provider,
 		Include: options.Include, Exclude: options.Exclude, Limits: options.Limits})
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), lifecycleTimeout)
 	stopErr := graph.Stop(stopCtx)

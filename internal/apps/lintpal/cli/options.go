@@ -25,6 +25,7 @@ type RawOptions struct {
 	RuleThreshold, RuleSeverity                                      string
 	Include, Exclude                                                 []string
 	Metrics                                                          bool
+	Uncommitted                                                      bool
 	Changed                                                          map[string]bool
 }
 
@@ -42,6 +43,7 @@ type Options struct {
 	Include, Exclude                        []string
 	Limits                                  app.Limits
 	Metrics                                 bool
+	Uncommitted                             bool
 }
 
 type LookupEnv func(string) (string, bool)
@@ -75,6 +77,9 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 	if raw.Changed["block-on"] && raw.Changed["fail-on"] {
 		return Options{}, ErrInvalidOptions
 	}
+	if raw.Uncommitted && (raw.Changed["base"] || raw.Changed["head"] || raw.Base != "" || raw.Head != "") {
+		return Options{}, ErrInvalidOptions
+	}
 	threshold := choose("fail-on", raw.FailOn, "LINTPAL_FAIL_ON", "high")
 	gate := true
 	if raw.Changed["block-on"] {
@@ -83,9 +88,16 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 	}
 	severity, severitySet := choosePolicy("rule-severity", raw.RuleSeverity, "LINTPAL_RULE_SEVERITY", "medium")
 	thresholdText, thresholdSet := choosePolicy("rule-threshold", raw.RuleThreshold, "LINTPAL_RULE_THRESHOLD", "0.95")
+	base := choose("base", raw.Base, "LINTPAL_BASE", "")
+	head := choose("head", raw.Head, "LINTPAL_HEAD", "")
+	if raw.Uncommitted {
+		base = ""
+		head = ""
+	}
 	o := Options{
-		Base:             choose("base", raw.Base, "LINTPAL_BASE", ""),
-		Head:             choose("head", raw.Head, "LINTPAL_HEAD", ""),
+		Base:             base,
+		Head:             head,
+		Uncommitted:      raw.Uncommitted,
 		Provider:         choose("provider", raw.Provider, "LINTPAL_PROVIDER", "jev"),
 		Model:            choose("model", raw.Model, "LINTPAL_MODEL", "jev-latest"),
 		Rules:            choose("rules", raw.Rules, "LINTPAL_RULES", ""),
@@ -115,7 +127,13 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 	if err := rules.ValidateSelectors(o.Include, o.Exclude); err != nil {
 		return Options{}, ErrInvalidOptions
 	}
-	if o.Base == "" || o.Head == "" || !modelName.MatchString(o.Model) || len(o.Base) > 256 || len(o.Head) > 256 ||
+	if !o.Uncommitted && (o.Base == "" || o.Head == "") {
+		return Options{}, ErrInvalidOptions
+	}
+	if o.Uncommitted && (o.Base != "" || o.Head != "") {
+		return Options{}, ErrInvalidOptions
+	}
+	if len(o.Base) > 256 || len(o.Head) > 256 || !modelName.MatchString(o.Model) ||
 		len(o.Rules) > 4096 || len(o.Out) > 4096 || len(o.BaseURL) > 2048 || len(o.AuthTokenEnv) > 128 {
 		return Options{}, ErrInvalidOptions
 	}

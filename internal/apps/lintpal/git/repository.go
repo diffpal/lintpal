@@ -9,9 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
+	diffutil "github.com/go-git/go-git/v5/utils/diff"
 )
 
 const defaultBlobBytes = 2 << 20
@@ -21,9 +26,20 @@ const hardMaxPatchBytes = 64 << 20
 const hardMaxBlobBytes = 16 << 20
 const hardMaxTotalBlobBytes = 128 << 20
 const hardMaxItems = 100_000
+const defaultOutputBytes = 8 << 20
 
 var ErrInvalidLimits = errors.New("invalid Git input limits")
 var ErrMissingSource = errors.New("work item source is unavailable")
+var ErrLimit = errors.New("git input limit exceeded")
+var ErrInvalidRevision = errors.New("invalid commit revision")
+var ErrAmbiguousBase = errors.New("comparison has no unique merge base")
+
+// Revisions contains only verified immutable commit IDs.
+type Revisions struct {
+	Base      string
+	Head      string
+	MergeBase string
+}
 
 // Limits cap subprocess output, each source blob, and the number of work items.
 // Zero fields select finite defaults.
@@ -57,9 +73,9 @@ func (l Limits) normalized() (Limits, error) {
 	return l, nil
 }
 
-// Repository reads only committed Git objects.
+// Repository reads Git objects and working tree state using pure Go.
 type Repository struct {
-	runner commandRunner
+	client *gitClient
 	limits Limits
 }
 
@@ -75,7 +91,11 @@ func NewRepository(dir string, limits Limits) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{runner: commandRunner{dir: absolute}, limits: limits}, nil
+	client, err := newGitClient(absolute)
+	if err != nil {
+		return nil, err
+	}
+	return &Repository{client: client, limits: limits}, nil
 }
 
 // WorkItem anchors one contiguous changed span in a committed file side.
@@ -128,31 +148,217 @@ func (r Result) Source(item WorkItem) ([]byte, error) {
 // Compare resolves an immutable committed range and returns no partial result
 // on command, parser, or resource-limit failure.
 func (r *Repository) Compare(ctx context.Context, base, head string) (Result, error) {
-	revs, err := r.runner.resolve(ctx, base, head)
+	revs, err := r.client.resolve(ctx, base, head)
 	if err != nil {
 		return Result{}, err
 	}
-	flags := []string{"--no-ext-diff", "--no-textconv", "--no-color", "--find-renames", "--no-relative", "--src-prefix=a/", "--dst-prefix=b/", "--diff-algorithm=myers", "--no-indent-heuristic", "--submodule=short"}
-	rawArgs := append([]string{"diff", "--raw", "-z"}, flags...)
-	rawArgs = append(rawArgs, revs.MergeBase, revs.Head, "--")
-	raw, err := r.runner.run(ctx, r.limits.MaxPatchBytes, rawArgs...)
+	baseCommit, err := r.client.resolveCommit(ctx, revs.MergeBase)
 	if err != nil {
-		return Result{}, fmt.Errorf("diff metadata: %w", err)
+		return Result{}, fmt.Errorf("merge base commit: %w", err)
 	}
-	files, err := parseRaw(raw)
+	headCommit, err := r.client.resolveCommit(ctx, revs.Head)
 	if err != nil {
-		return Result{}, err
+		return Result{}, fmt.Errorf("head commit: %w", err)
 	}
-	patchArgs := append([]string{"diff", "--patch", "--unified=0"}, flags...)
-	patchArgs = append(patchArgs, revs.MergeBase, revs.Head, "--")
-	patch, err := r.runner.run(ctx, r.limits.MaxPatchBytes, patchArgs...)
-	if err != nil {
-		return Result{}, fmt.Errorf("diff patch: %w", err)
-	}
-	changes, err := parsePatch(patch, files)
+	changes, err := r.client.diffCommits(ctx, baseCommit, headCommit, r.limits.MaxPatchBytes)
 	if err != nil {
 		return Result{}, err
 	}
+	return r.buildResult(ctx, revs, changes, false)
+}
+
+// CompareUncommitted inspects unstaged, staged, and untracked changes in the working tree.
+func (r *Repository) CompareUncommitted(ctx context.Context) (Result, error) {
+	if err := ctx.Err(); err != nil {
+		return Result{}, err
+	}
+	headID := "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+	headCommit, _ := r.client.resolveCommit(ctx, "HEAD")
+	if headCommit != nil {
+		headID = headCommit.Hash.String()
+	}
+
+	w, err := r.client.repo.Worktree()
+	if err != nil {
+		return Result{}, err
+	}
+	status, err := w.Status()
+	if err != nil {
+		return Result{}, err
+	}
+
+	headFiles := make(map[string]rawTreeEntry)
+	if headCommit != nil {
+		_ = r.client.flattenRawTree(headCommit.TreeHash, "", headFiles)
+	}
+
+	paths := make([]string, 0, len(status))
+	for p := range status {
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+
+	var changes []fileChange
+	var skips []Skip
+
+	for _, p := range paths {
+		if err := ctx.Err(); err != nil {
+			return Result{}, err
+		}
+		clean := filepath.Clean(p)
+		if clean == "." || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			continue
+		}
+		fs := status[p]
+		if fs.Staging == git.Unmodified && fs.Worktree == git.Unmodified {
+			continue
+		}
+
+		headEntry, inHead := headFiles[clean]
+
+		if fs.Worktree == git.Deleted || fs.Staging == git.Deleted {
+			if inHead {
+				headContent, err := r.client.readBlobByHash(headEntry.Hash)
+				if err != nil {
+					return Result{}, err
+				}
+				if isBinary(headContent) {
+					changes = append(changes, fileChange{
+						file:   rawFile{status: 'D', oldMode: normalizeMode(headEntry.Mode), newMode: "000000", oldPath: clean},
+						binary: true,
+					})
+				} else {
+					lines := sourceLineCount(headContent)
+					changes = append(changes, fileChange{
+						file: rawFile{status: 'D', oldMode: normalizeMode(headEntry.Mode), newMode: "000000", oldPath: clean},
+						spans: []changedSpan{{
+							side:  Left,
+							start: 1,
+							end:   lines,
+							hunk:  1,
+						}},
+					})
+				}
+			}
+			continue
+		}
+
+		// File is present in working tree
+		full := filepath.Join(r.client.dir, clean)
+		info, err := os.Lstat(full)
+		if err != nil {
+			continue
+		}
+
+		if fs.Worktree == git.Untracked {
+			if !info.Mode().IsRegular() {
+				skips = append(skips, Skip{NewPath: clean, Reason: SkipNonRegular})
+				continue
+			}
+			if info.Size() > int64(r.limits.MaxBlobBytes) {
+				return Result{}, ErrLimit
+			}
+			content, err := os.ReadFile(full)
+			if err != nil {
+				return Result{}, fmt.Errorf("read untracked %q: %w", clean, err)
+			}
+			if isBinary(content) {
+				skips = append(skips, Skip{NewPath: clean, Reason: SkipBinary})
+				continue
+			}
+			lines := sourceLineCount(content)
+			if lines == 0 {
+				skips = append(skips, Skip{NewPath: clean, Reason: SkipNoLines})
+				continue
+			}
+			changes = append(changes, fileChange{
+				file: rawFile{
+					oldMode: "000000",
+					newMode: "100644",
+					status:  'A',
+					newPath: clean,
+				},
+				spans: []changedSpan{{
+					side:  Right,
+					start: 1,
+					end:   lines,
+					hunk:  1,
+				}},
+			})
+			continue
+		}
+
+		if !inHead {
+			// Staged new file
+			if !info.Mode().IsRegular() {
+				skips = append(skips, Skip{NewPath: clean, Reason: SkipNonRegular})
+				continue
+			}
+			if info.Size() > int64(r.limits.MaxBlobBytes) {
+				return Result{}, ErrLimit
+			}
+			content, err := r.readFile(clean)
+			if err != nil {
+				return Result{}, err
+			}
+			if isBinary(content) {
+				changes = append(changes, fileChange{
+					file:   rawFile{status: 'A', oldMode: "000000", newMode: "100644", newPath: clean},
+					binary: true,
+				})
+			} else {
+				lines := sourceLineCount(content)
+				changes = append(changes, fileChange{
+					file: rawFile{status: 'A', oldMode: "000000", newMode: "100644", newPath: clean},
+					spans: []changedSpan{{
+						side:  Right,
+						start: 1,
+						end:   lines,
+						hunk:  1,
+					}},
+				})
+			}
+			continue
+		}
+
+		// Modified file (both in HEAD and on disk)
+		if !info.Mode().IsRegular() {
+			skips = append(skips, Skip{OldPath: clean, NewPath: clean, Reason: SkipNonRegular})
+			continue
+		}
+		headContent, err := r.client.readBlobByHash(headEntry.Hash)
+		if err != nil {
+			return Result{}, err
+		}
+		content, err := r.readFile(clean)
+		if err != nil {
+			return Result{}, err
+		}
+		if isBinary(headContent) || isBinary(content) {
+			changes = append(changes, fileChange{
+				file:   rawFile{status: 'M', oldMode: normalizeMode(headEntry.Mode), newMode: normalizeMode(headEntry.Mode), oldPath: clean, newPath: clean},
+				binary: true,
+			})
+		} else {
+			diffs := diffutil.Do(string(headContent), string(content))
+			spans := spansFromDMP(diffs)
+			changes = append(changes, fileChange{
+				file:  rawFile{status: 'M', oldMode: normalizeMode(headEntry.Mode), newMode: normalizeMode(headEntry.Mode), oldPath: clean, newPath: clean},
+				spans: spans,
+			})
+		}
+	}
+
+	revs := Revisions{Base: headID, Head: "UNCOMMITTED", MergeBase: headID}
+	result, err := r.buildResult(ctx, revs, changes, true)
+	if err != nil {
+		return Result{}, err
+	}
+	result.Skips = append(result.Skips, skips...)
+	return result, nil
+}
+
+func (r *Repository) buildResult(ctx context.Context, revs Revisions, changes []fileChange, uncommitted bool) (Result, error) {
 	result := Result{Revisions: revs, sources: make(map[string][]byte)}
 	totalSourceBytes := 0
 	for _, change := range changes {
@@ -182,17 +388,32 @@ func (r *Repository) Compare(ctx context.Context, base, head string) (Result, er
 			if item.Path == "" || item.StartLine < 1 || item.EndLine < item.StartLine {
 				return Result{}, ErrMalformedDiff
 			}
-			item.sourceKey = objectID + ":" + item.Path
-			if _, ok := result.sources[item.sourceKey]; !ok {
-				source, err := r.readBlob(ctx, item.sourceKey)
-				if err != nil {
-					return Result{}, err
+			if uncommitted && span.side == Right {
+				item.sourceKey = "WORKTREE:" + item.Path
+				if _, ok := result.sources[item.sourceKey]; !ok {
+					source, err := r.readFile(item.Path)
+					if err != nil {
+						return Result{}, err
+					}
+					if len(source) > r.limits.MaxTotalBlobBytes-totalSourceBytes {
+						return Result{}, ErrLimit
+					}
+					totalSourceBytes += len(source)
+					result.sources[item.sourceKey] = source
 				}
-				if len(source) > r.limits.MaxTotalBlobBytes-totalSourceBytes {
-					return Result{}, ErrLimit
+			} else {
+				item.sourceKey = objectID + ":" + item.Path
+				if _, ok := result.sources[item.sourceKey]; !ok {
+					source, err := r.readBlob(ctx, item.sourceKey)
+					if err != nil {
+						return Result{}, err
+					}
+					if len(source) > r.limits.MaxTotalBlobBytes-totalSourceBytes {
+						return Result{}, ErrLimit
+					}
+					totalSourceBytes += len(source)
+					result.sources[item.sourceKey] = source
 				}
-				totalSourceBytes += len(source)
-				result.sources[item.sourceKey] = source
 			}
 			if item.EndLine > sourceLineCount(result.sources[item.sourceKey]) {
 				return Result{}, ErrMalformedDiff
@@ -202,6 +423,29 @@ func (r *Repository) Compare(ctx context.Context, base, head string) (Result, er
 		}
 	}
 	return result, nil
+}
+
+func (r *Repository) readFile(relPath string) ([]byte, error) {
+	clean := filepath.Clean(relPath)
+	if clean == "." || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return nil, ErrMalformedDiff
+	}
+	full := filepath.Join(r.client.dir, clean)
+	info, err := os.Lstat(full)
+	if err != nil {
+		return nil, fmt.Errorf("read worktree file %q: %w", relPath, err)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, ErrMalformedDiff
+	}
+	if info.Size() > int64(r.limits.MaxBlobBytes) {
+		return nil, ErrLimit
+	}
+	data, err := os.ReadFile(full)
+	if err != nil {
+		return nil, fmt.Errorf("read worktree file %q: %w", relPath, err)
+	}
+	return data, nil
 }
 
 func sourceLineCount(source []byte) int {
@@ -225,25 +469,11 @@ func regularChange(f rawFile) bool {
 }
 
 func (r *Repository) readBlob(ctx context.Context, spec string) ([]byte, error) {
-	sizeBytes, err := r.runner.run(ctx, 64, "cat-file", "-s", spec)
-	if err != nil {
-		return nil, fmt.Errorf("source size: %w", err)
-	}
-	size, err := strconv.ParseInt(strings.TrimSpace(string(sizeBytes)), 10, 64)
-	if err != nil || size < 0 {
+	commitSHA, relPath, ok := strings.Cut(spec, ":")
+	if !ok {
 		return nil, ErrMalformedDiff
 	}
-	if size > int64(r.limits.MaxBlobBytes) {
-		return nil, ErrLimit
-	}
-	data, err := r.runner.run(ctx, r.limits.MaxBlobBytes, "cat-file", "blob", spec)
-	if err != nil {
-		return nil, fmt.Errorf("source blob: %w", err)
-	}
-	if int64(len(data)) != size {
-		return nil, ErrMalformedDiff
-	}
-	return data, nil
+	return r.client.readBlob(ctx, commitSHA, relPath, r.limits.MaxBlobBytes)
 }
 
 func itemID(revs Revisions, item WorkItem) string {

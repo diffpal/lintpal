@@ -42,6 +42,7 @@ func NewRoot(lint LintFunc, version string) *cobra.Command {
 	flags := command.Flags()
 	flags.StringVar(&raw.Base, "base", "", "Base commit or revision")
 	flags.StringVar(&raw.Head, "head", "", "Head commit or revision")
+	flags.BoolVar(&raw.Uncommitted, "uncommitted", false, "Lint uncommitted Git changes in the working tree")
 	flags.StringVar(&raw.Provider, "provider", "", "Jev provider: jev, openrouter, or custom")
 	flags.StringVar(&raw.Model, "model", "", "System One model name or alias")
 	flags.StringVar(&raw.Rules, "rules", "", "Override Markdown rule directory for this lint run")
