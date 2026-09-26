@@ -327,3 +327,45 @@ func gitInRepo(t *testing.T, dir string, args ...string) string {
 	}
 	return strings.TrimSpace(string(out))
 }
+
+func TestLinterUncommitted(t *testing.T) {
+	repo, dir, base, head := lintRepo(t)
+	provider := &lintProvider{}
+	pack := testRules(t)
+	linter, err := NewLinter(repo, provider, pack)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. Invalid combination of flags
+	if _, err := linter.Lint(t.Context(), Request{
+		Uncommitted:  true,
+		Base:         base,
+		Model:        "model",
+		ProviderName: "provider",
+	}); !errors.Is(err, ErrInvalidRun) {
+		t.Fatalf("expected ErrInvalidRun when Uncommitted and Base are set, got %v", err)
+	}
+
+	// 2. Successful uncommitted lint
+	if err := os.WriteFile(filepath.Join(dir, "example.go"), []byte("package example\nvar X = 2\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := linter.Lint(t.Context(), Request{
+		Uncommitted:  true,
+		Model:        "model",
+		ProviderName: "provider",
+		Limits:       Limits{Timeout: 5 * time.Second},
+	})
+	if err != nil {
+		t.Fatalf("Lint(uncommitted): %v", err)
+	}
+
+	if report.HeadSHA != "UNCOMMITTED" {
+		t.Fatalf("head_sha = %q, want UNCOMMITTED", report.HeadSHA)
+	}
+	if report.BaseSHA != head {
+		t.Fatalf("base_sha = %q, want %q", report.BaseSHA, head)
+	}
+}

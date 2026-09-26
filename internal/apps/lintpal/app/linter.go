@@ -23,6 +23,7 @@ var ErrReportLimit = errors.New("lint report size limit exceeded")
 
 type Comparer interface {
 	Compare(context.Context, string, string) (git.Result, error)
+	CompareUncommitted(context.Context) (git.Result, error)
 }
 
 // Stage and Status are fixed observability dimensions. They never carry input.
@@ -72,6 +73,7 @@ func (l Limits) normalized() (Limits, error) {
 type Request struct {
 	Base         string
 	Head         string
+	Uncommitted  bool
 	Model        string
 	ProviderName string
 	Include      []string
@@ -110,8 +112,13 @@ func (l *Linter) observe(stage Stage, started time.Time, count int, err error) {
 }
 
 func (l *Linter) Lint(parent context.Context, request Request) (report.Report, error) {
-	if l == nil || l.comparer == nil || l.provider == nil || request.Base == "" || request.Head == "" ||
-		request.Model == "" || request.ProviderName == "" {
+	if l == nil || l.comparer == nil || l.provider == nil || request.Model == "" || request.ProviderName == "" {
+		return report.Report{}, ErrInvalidRun
+	}
+	if !request.Uncommitted && (request.Base == "" || request.Head == "") {
+		return report.Report{}, ErrInvalidRun
+	}
+	if request.Uncommitted && (request.Base != "" || request.Head != "") {
 		return report.Report{}, ErrInvalidRun
 	}
 	limits, err := request.Limits.normalized()
@@ -124,7 +131,12 @@ func (l *Linter) Lint(parent context.Context, request Request) (report.Report, e
 	ctx, cancel := context.WithTimeout(parent, limits.Timeout)
 	defer cancel()
 	started := time.Now()
-	result, err := l.comparer.Compare(ctx, request.Base, request.Head)
+	var result git.Result
+	if request.Uncommitted {
+		result, err = l.comparer.CompareUncommitted(ctx)
+	} else {
+		result, err = l.comparer.Compare(ctx, request.Base, request.Head)
+	}
 	l.observe(StageCompare, started, len(result.Items), err)
 	if err != nil {
 		return report.Report{}, stageError(parent, ctx, "compare", err)

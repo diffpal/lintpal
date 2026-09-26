@@ -104,15 +104,8 @@ func TestParseRealDiffWithUnusualPathsAndRename(t *testing.T) {
 	runTestGit(t, dir, "add", renamed)
 	runTestGit(t, dir, "commit", "-qm", "rename and edit")
 	head := runTestGit(t, dir, "rev-parse", "HEAD")
-	r := commandRunner{dir: dir}
-	raw, err := r.run(t.Context(), defaultOutputBytes, "diff", "--raw", "-z", "--find-renames", "--no-ext-diff", "--no-textconv", "--no-color", base, head)
-	if err != nil {
-		t.Fatal(err)
-	}
-	patch, err := r.run(t.Context(), defaultOutputBytes, "diff", "--patch", "--unified=0", "--find-renames", "--no-ext-diff", "--no-textconv", "--no-color", base, head)
-	if err != nil {
-		t.Fatal(err)
-	}
+	raw := runTestGitRaw(t, dir, "diff", "--raw", "-z", "--find-renames", "--no-ext-diff", "--no-textconv", "--no-color", base, head)
+	patch := runTestGitRaw(t, dir, "diff", "--patch", "--unified=0", "--find-renames", "--no-ext-diff", "--no-textconv", "--no-color", base, head)
 	files, err := parseRaw(raw)
 	if err != nil {
 		t.Fatalf("parse raw: %v, %q", err, raw)

@@ -87,3 +87,37 @@ func TestEnvFileFlagConflict(t *testing.T) {
 		}
 	}
 }
+
+func TestLintUncommittedCommand(t *testing.T) {
+	var calledOptions Options
+	called := false
+	root := NewRoot(func(_ context.Context, o Options, _, _ io.Writer) error {
+		called = true
+		calledOptions = o
+		return nil
+	}, "dev")
+	root.SetArgs([]string{"lint", "--uncommitted"})
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	if err := root.ExecuteContext(t.Context()); err != nil {
+		t.Fatalf("lint --uncommitted: %v", err)
+	}
+	if !called || !calledOptions.Uncommitted || calledOptions.Base != "" || calledOptions.Head != "" {
+		t.Fatalf("unexpected options: called=%v, opts=%+v", called, calledOptions)
+	}
+
+	for _, args := range [][]string{
+		{"lint", "--uncommitted", "--base", "a"},
+		{"lint", "--uncommitted", "--head", "b"},
+		{"lint", "--uncommitted", "--base", "a", "--head", "b"},
+		{"lint"},
+	} {
+		root := NewRoot(func(context.Context, Options, io.Writer, io.Writer) error { return nil }, "dev")
+		root.SetArgs(args)
+		root.SetOut(io.Discard)
+		root.SetErr(io.Discard)
+		if err := root.ExecuteContext(t.Context()); !errors.Is(err, ErrInvalidOptions) {
+			t.Fatalf("%v: expected ErrInvalidOptions, got %v", args, err)
+		}
+	}
+}

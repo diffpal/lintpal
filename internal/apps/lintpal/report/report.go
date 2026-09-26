@@ -70,7 +70,7 @@ type Report struct {
 
 // New checks every decision against the original changed-line work items.
 func New(result git.Result, decisions []rules.Decision, provider, model string, stats Stats, identitySalt ...string) (Report, error) {
-	if !commitID(result.Revisions.Base) || !commitID(result.Revisions.Head) ||
+	if !commitID(result.Revisions.Base) || !revisionID(result.Revisions.Head) ||
 		!commitID(result.Revisions.MergeBase) || !safeName(provider) || !safeName(model) ||
 		len(identitySalt) > 1 || len(identitySalt) == 1 && !commitID(identitySalt[0]) ||
 		stats.WorkItems != len(result.Items) || stats.Skipped != len(result.Skips) ||
@@ -151,7 +151,7 @@ func Validate(report Report) error {
 		}
 	}
 	if report.SchemaVersion != SchemaVersion || !commitID(report.BaseSHA) ||
-		!commitID(report.HeadSHA) || !commitID(report.MergeBaseSHA) ||
+		!revisionID(report.HeadSHA) || !commitID(report.MergeBaseSHA) ||
 		report.Diagnostics == nil || report.Skips == nil ||
 		report.Stats.WorkItems < 0 || report.Stats.Skipped != len(report.Skips) ||
 		report.Stats.Groups < 0 || report.Stats.Batches < 0 || report.Stats.Questions < 0 ||
@@ -242,6 +242,10 @@ func validRuleID(id string) bool {
 }
 
 func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+
+func revisionID(value string) bool {
+	return value == "UNCOMMITTED" || commitID(value)
+}
 
 func commitID(value string) bool {
 	if len(value) != 40 && len(value) != 64 {
