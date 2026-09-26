@@ -2,7 +2,7 @@
 
 Install Go 1.26.6 or newer as required by `go.mod`, then install
 [Task](https://taskfile.dev/docs/installation) v3.44.0. The
-[CI workflow](../.github/workflows/ci.yml) installs that version explicitly.
+[CI workflow](../../.github/workflows/ci.yml) installs that version explicitly.
 Run `task --list` from the repository root to see the available targets.
 
 | Target | Purpose | Direct command |
@@ -35,13 +35,13 @@ sockets. The live evaluation and release scripts remain separate commands;
 see the [evaluation guide](evaluation.md) and
 [distribution guide](distribution.md).
 
-The separate [static lint workflow](../.github/workflows/lint.yml) runs
+The separate [static lint workflow](../../.github/workflows/lint.yml) runs
 `go tool golangci-lint` with the version pinned by the `tool` directive in
 `go.mod`.
 `task lint-go` runs it with `go tool`; no separate binary installation is
 needed. The ordinary `task check` does not compile the linter.
 
-The [security workflow](../.github/workflows/security.yml) runs the
+The [security workflow](../../.github/workflows/security.yml) runs the
 module-pinned `govulncheck` on pushes, pull requests, a weekly schedule, and
 manual dispatch. It queries the Go vulnerability database and does not use a
 provider credential.

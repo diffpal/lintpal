@@ -47,8 +47,8 @@ output together.
 
 The required local gates are `go build ./...`, `go test ./...`, `go vet ./...`,
 `go test -race ./...`, format checks, and `bd lint`. The pushed source revision
-must also pass the hosted [test matrix](../.github/workflows/ci.yml) before any
-registry publication. The [stage workflow](../.github/workflows/stage.yml)
+must also pass the hosted [test matrix](../../.github/workflows/ci.yml) before any
+registry publication. The [stage workflow](../../.github/workflows/stage.yml)
 can store additional review artifacts; it has no publication step.
 
 ## External actions, after exact approval

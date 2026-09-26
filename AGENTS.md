@@ -34,5 +34,5 @@ selected-provider credential handling intact when changing behavior.
   current issue state before updating it; keep requirements, design, tasks,
   approvals, and verification in Beads.
 
-See [development tasks](docs/development.md), [architecture](docs/architecture.md),
-and [privacy](docs/privacy.md) for details.
+See [development tasks](docs/development/tasks.md), [architecture](docs/architecture/overview.md),
+and [privacy](docs/architecture/privacy.md) for details.

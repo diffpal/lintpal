@@ -40,4 +40,4 @@ malformed Markdown, unsafe paths, symlinks, and content over the limits. Failed
 validation leaves the previous rule set in place. `rule validate` checks the
 catalog locally without a provider key.
 
-For mandate syntax and policy frontmatter, see [rule authoring](rule-authoring.md).
+For mandate syntax and policy frontmatter, see [rule authoring](authoring.md).

@@ -4,9 +4,9 @@
 newline. `--out PATH` writes the complete JSON object atomically regardless of
 stdout format. DiffPal also writes a v5 findings bundle. The canonical contract is in DiffPal at
 `schemas/findings/v5.schema.json`; LintPal keeps a pinned
-[offline copy](schema/findings-v5.schema.json). The
-[JSON](../cmd/lintpal/testdata/golden/report.json) and
-[Markdown](../cmd/lintpal/testdata/golden/report.md) goldens show LintPal output.
+[offline copy](../schema/findings-v5.schema.json). The
+[JSON](../../cmd/lintpal/testdata/golden/report.json) and
+[Markdown](../../cmd/lintpal/testdata/golden/report.md) goldens show LintPal output.
 
 Both tools use `version: "v5"`, `review_id`, `base_sha`, `head_sha`, and
 `findings`. LintPal also emits `merge_base_sha`, `skips`, and `stats`.
@@ -42,7 +42,7 @@ threshold. With `--block-on`, lint records the flag but does not gate.
 DiffPal code findings use `evidence.kind: "code"` with `anchor`,
 `reasoning_basis`, and `source`; they include structured `impact` and numeric
 `confidence`. These are the same fields previously used by DiffPal, now with
-an explicit evidence kind. See the [shared schema](schema/findings-v5.schema.json)
+an explicit evidence kind. See the [shared schema](../schema/findings-v5.schema.json)
 for exact types and optional metadata.
 
 Each LintPal skip has `reason` and at least one of `old_path` or `new_path`.
@@ -68,4 +68,4 @@ The previous LintPal `lintpal.report.v1` object used `schema_version` and
 `evidence.rule_id`, side and range into `changed_span`, and the numeric answer
 from `evidence` into `decision`. DiffPal v4 readers remain available in
 DiffPal, while its new writes use v5. Consumers of either tool should branch
-on `version` and adopt the [shared schema](schema/findings-v5.schema.json).
+on `version` and adopt the [shared schema](../schema/findings-v5.schema.json).
