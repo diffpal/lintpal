@@ -51,7 +51,7 @@ artifacts after the tag is pushed.
 
 ## Publication
 
-The [Omnidist release workflow](../.github/workflows/omnidist-release.yml)
+The [Omnidist release workflow](../../.github/workflows/omnidist-release.yml)
 publishes on a pushed `v*` tag. Before its first run, configure npm trusted
 publishing for all seven packages, with repository `diffpal/lintpal` and
 workflow file `omnidist-release.yml`. Print the exact setup commands with:

@@ -12,7 +12,7 @@ repository. It produces findings on changed lines, applies a deterministic
 severity gate, and can publish the result directly to GitHub. Use it for
 specific requirements your team wants enforced on every change.
 
-[Quickstart](docs/getting-started.md) ·
+[Quickstart](docs/guides/getting-started.md) ·
 [Documentation](docs/index.md) ·
 [Rule packs](https://github.com/diffpal/lintpal-rules) ·
 [Demo](https://github.com/diffpal/lintpal-demo/pull/3)
@@ -127,16 +127,21 @@ npx lintpal rule validate
 npx lintpal rule import github:diffpal/lintpal-rules//go@v1.1.0
 ```
 
-Read [rule authoring](docs/rule-authoring.md) for the complete format and
-[rule import](docs/rule-import.md) for local and pinned GitHub sources.
+Read [rule authoring](docs/rules/authoring.md) for the complete format and
+[rule import](docs/rules/import.md) for local and pinned GitHub sources.
 
 ## Run Locally
 
-Both revisions must be committed and available in the local Git repository:
+Check uncommitted changes in your working tree before committing, or compare two committed revisions:
 
 ```bash
 export TYPESAFE_API_KEY='your-provider-key'
 npx lintpal doctor
+
+# Lint uncommitted working-tree changes (staged, unstaged, and untracked regular files)
+npx lintpal lint --uncommitted
+
+# Or lint committed revisions
 npx lintpal lint --base origin/main --head HEAD
 ```
 
@@ -146,20 +151,20 @@ code `10` when a high or critical finding blocks the run.
 
 The default provider is Jev. LintPal also supports OpenRouter and a trusted
 custom endpoint. Provider credentials stay in environment variables; the
-selected provider receives bounded committed source context and rule text.
-See [configuration](docs/configuration.md) and [privacy](docs/privacy.md).
+selected provider receives bounded source context and rule text.
+See [configuration](docs/guides/configuration.md) and [privacy](docs/architecture/privacy.md).
 
 ## Documentation by Goal
 
 | Goal | Start here |
 | --- | --- |
-| Run the first check | [Getting started](docs/getting-started.md) |
-| Configure providers and policy | [Configuration](docs/configuration.md) |
-| Write project rules | [Rule authoring](docs/rule-authoring.md) |
-| Import reusable rule packs | [Rule import](docs/rule-import.md) |
-| Understand findings and gates | [Report reference](docs/report.md) |
-| Automate the CLI | [CLI reference](docs/cli.md) |
-| Review security and data flow | [Privacy](docs/privacy.md) and [architecture](docs/architecture.md) |
+| Run the first check | [Getting started](docs/guides/getting-started.md) |
+| Configure providers and policy | [Configuration](docs/guides/configuration.md) |
+| Write project rules | [Rule authoring](docs/rules/authoring.md) |
+| Import reusable rule packs | [Rule import](docs/rules/import.md) |
+| Understand findings and gates | [Report reference](docs/reference/report.md) |
+| Automate the CLI | [CLI reference](docs/reference/cli.md) |
+| Review security and data flow | [Privacy](docs/architecture/privacy.md) and [architecture](docs/architecture/overview.md) |
 | Contribute to LintPal | [Contributing](CONTRIBUTING.md) |
 
 ## License

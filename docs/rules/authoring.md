@@ -37,13 +37,13 @@ environment setting. Without either override, each rule uses its frontmatter
 or the default. Repeatable `--include GLOB` and `--exclude GLOB` filter changed
 source paths for the whole run; they do not change rule IDs.
 
-Try the [Go review directory](../examples/rules/go-review/unchecked-error.md):
+Try the [Go review directory](../../examples/rules/go-review/unchecked-error.md):
 
 ```bash
 npx lintpal lint --base HEAD~1 --head HEAD --rules ./examples/rules/go-review \
   --include '*.go' --rule-threshold 0.95
 ```
 
-You can also [import a directory](rule-import.md). Rule text and bounded
+You can also [import a directory](import.md). Rule text and bounded
 committed source context are sent to the selected provider; see
-[privacy](privacy.md).
+[privacy](../architecture/privacy.md).

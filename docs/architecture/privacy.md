@@ -1,8 +1,8 @@
 # Privacy and current limits
 
-`lintpal lint` reads committed Git objects at the requested base and head. It
-does not inspect uncommitted working-tree source for lint context. It sends
-bounded committed source context and rule questions to the **selected remote
+`lintpal lint` reads committed Git objects at the requested base and head,
+or uncommitted working-tree changes when `--uncommitted` is specified. It sends
+bounded source context and rule questions to the **selected remote
 provider** when using a remote endpoint. Decide whether that transfer is
 permitted for the repository before configuring a provider. A `custom`
 loopback endpoint can keep the provider exchange on the local machine.
@@ -44,9 +44,9 @@ responses, and pagination links are bounded and treated as untrusted; pagination
 must remain on the configured API origin. API errors do not include response
 bodies or tokens.
 
-This MVP covers committed comparisons, changed-line diagnostics, repository
-Markdown rules, Markdown/JSON reports, and GitHub findings publication. It does
-not analyze uncommitted changes, apply fixes, or emit SARIF. The
-offline [evaluation corpus](evaluation.md) checks policy plumbing with fake
+This version covers committed comparisons, uncommitted working-tree linting,
+changed-line diagnostics, repository Markdown rules, Markdown/JSON reports, and
+GitHub findings publication. It does not apply fixes or emit SARIF. The
+offline [evaluation corpus](../development/evaluation.md) checks policy plumbing with fake
 provider probabilities; its counts are not live model precision, latency, or
 cost guarantees. Live evaluation is an optional operator action.

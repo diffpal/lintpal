@@ -27,14 +27,14 @@ does not contact a registry. The local install smoke requires Linux amd64;
 cross-built macOS, Windows, and Linux arm64 binaries are staged and verified
 as files, but cannot be executed on that host.
 
-The [release workflow](../.github/workflows/omnidist-release.yml) is generated
+The [release workflow](../../.github/workflows/omnidist-release.yml) is generated
 by `omnidist ci` and customized for lintpal's source checks and tag validation.
 Pushing a `v*` tag runs those checks, builds and verifies all npm packages,
 publishes with npm trusted publishing, then creates a GitHub Release with the
-five binaries and checksums. The [manual stage workflow](../.github/workflows/stage.yml)
+five binaries and checksums. The [manual stage workflow](../../.github/workflows/stage.yml)
 stores build and npm artifacts without publishing.
 
-Staging and the dry run do not publish. The [v0.3.0 release runbook](release-v0.3.0.md)
+Staging and the dry run do not publish. The [v0.3.0 release runbook](../releases/release-v0.3.0.md)
 records the exact package and asset set, preflight commands, and public
-verification gates. The [v0.2.0 runbook](release-v0.2.0.md) is kept as release
+verification gates. The [v0.2.0 runbook](../releases/release-v0.2.0.md) is kept as release
 history.

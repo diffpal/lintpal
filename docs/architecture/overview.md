@@ -26,26 +26,26 @@ This foundation requires Go 1.26.6 because the pinned ADK v2.4.0 module
 declares that minimum. Cobra v1.10.2 and Fx v1.24.0 are pinned in `go.mod`.
 Build and verify locally with `go build ./...`, `go test ./...`, and
 `go vet ./...`. `go run ./cmd/lintpal --help` displays the command tree;
-`docs/cli.md` records its flags and exit contract.
+`docs/reference/cli.md` records its flags and exit contract.
 
 Git scope, bounded context, rules, the System One transport, lint orchestration,
 and reports now live under `internal/apps/lintpal`. The CLI Story binds their
 constructors in `di` and owns process options and exit behavior. The ADK runtime
 does not own Jev answers.
 
-## Committed Git input
+## Git input
 
-`internal/apps/lintpal/git.NewRepository(dir, limits).Compare(ctx, base, head)`
-resolves both revisions to commits, requires one merge base, and reads a
-bounded raw diff and patch. It returns ordered LEFT/RIGHT `WorkItem` values
-with stable IDs and changed-line spans. `Result.Source(item)` returns a copy of
-the corresponding merge-base or head blob; it never reads the working tree.
-Binary, non-regular, and line-free changes appear in `Result.Skips`. Invalid
-revisions, ambiguous merge bases, malformed diffs, limit breaches, and canceled
-commands return an error with no partial result. Default limits are 8 MiB per
-diff output, 2 MiB per blob, 16 MiB total source, and 10,000 items; `Limits`
-allows lower values. `contextplan.Assemble` slices these object-backed sources
-into bounded hunk context. The CLI Story owns user-facing flags and exit codes.
+`internal/apps/lintpal/git.NewRepository(dir, limits)` provides two comparison methods:
+- `Compare(ctx, base, head)` resolves both revisions to commits, requires one merge base, and reads a bounded raw diff and patch. Sources are read from Git blobs.
+- `CompareUncommitted(ctx)` diffs the working tree (including unstaged edits, staged changes, and untracked regular files) against HEAD (or the Git empty tree if no commits exist). Sources for uncommitted right-side items are read directly from disk.
+
+Both methods return ordered LEFT/RIGHT `WorkItem` values with stable IDs and
+changed-line spans. Binary, non-regular, and line-free changes appear in
+`Result.Skips`. Invalid revisions, ambiguous merge bases, malformed diffs, limit
+breaches, and canceled commands return an error with no partial result. Default
+limits are 8 MiB per diff output, 2 MiB per blob, 16 MiB total source, and
+10,000 items; `Limits` allows lower values. `contextplan.Assemble` slices these
+sources into bounded hunk context.
 
 ## Bounded context and batching
 
@@ -107,7 +107,7 @@ or GitHub Markdown files, validates the complete result, and installs them in
 `.lintpal/rules/`. The GitHub source reader in `internal/apps/lintpal/rulesource`
 resolves a ref to a commit before fetching files. Imported rules become
 ordinary files to review and commit; normal lint makes no rule-source network
-request. See [rule import](rule-import.md).
+request. See [rule import](../rules/import.md).
 
 ## System One provider
 

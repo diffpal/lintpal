@@ -18,9 +18,9 @@ security` contacts the Go vulnerability database.
 Keep rule examples as Markdown data. Review imported files in
 `.lintpal/rules/` as policy changes. Update documentation when CLI behavior
 changes and run `task docs-verify` after changing Markdown links or examples.
-The [development guide](docs/development.md), [architecture](docs/architecture.md),
-and [distribution guide](docs/distribution.md) cover the rest of the repository.
+The [development guide](docs/development/tasks.md), [architecture](docs/architecture/overview.md),
+and [distribution guide](docs/development/distribution.md) cover the rest of the repository.
 
 Live self-review and evaluation contact a selected provider only when
 explicitly invoked. Keep `.env` and generated reports out of Git; see
-[privacy](docs/privacy.md).
+[privacy](docs/architecture/privacy.md).
