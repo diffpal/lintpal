@@ -241,6 +241,115 @@ func TestProcessRuleImportAndLint(t *testing.T) {
 	}
 }
 
+func TestProcessViolationFixAndGreenRerun(t *testing.T) {
+	binary := buildBinary(t)
+	dir := t.TempDir()
+	git := func(args ...string) string {
+		t.Helper()
+		command := exec.Command("git", args...)
+		command.Dir = dir
+		command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+os.DevNull)
+		out, err := command.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	git("init", "-q")
+	git("config", "user.name", "Test")
+	git("config", "user.email", "test@example.invalid")
+	rulePath := filepath.Join(dir, ".lintpal", "rules", "no-x-one.md")
+	if err := os.MkdirAll(filepath.Dir(rulePath), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(rulePath, []byte("Changed code must not assign 1 to X.\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	sourcePath := filepath.Join(dir, "example.go")
+	if err := os.WriteFile(sourcePath, []byte("package example\nvar X=0\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	git("add", ".lintpal/rules", "example.go")
+	git("commit", "-qm", "base")
+	base := git("rev-parse", "HEAD")
+	if err := os.WriteFile(sourcePath, []byte("package example\nvar X=1\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "example.go")
+	git("commit", "-qm", "introduce violation")
+	buggy := git("rev-parse", "HEAD")
+	var violation atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/systemone" || r.Header.Get("Authorization") != "Bearer secret-sentinel" {
+			t.Error("unexpected provider request")
+		}
+		var request struct {
+			Model     string                     `json:"model"`
+			Questions map[string]json.RawMessage `json:"questions"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Error(err)
+			return
+		}
+		probability := 0.01
+		if violation.Load() {
+			probability = 0.99
+		}
+		answers := make(map[string]any, len(request.Questions))
+		for id := range request.Questions {
+			answers[id] = map[string]any{"type": "noul", "noul": probability}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]any{"model": request.Model, "answers": answers,
+			"usage": map[string]int{"input_tokens": 1, "output_tokens": 1}}); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer server.Close()
+
+	run := func(from, to string) (string, string, int) {
+		t.Helper()
+		return runBinary(t, binary, dir, []string{"lint", "--base", from, "--head", to,
+			"--provider", "custom", "--base-url", server.URL, "--fail-on", "medium", "--format", "json"})
+	}
+	var result struct {
+		Findings []struct {
+			Path      string `json:"path"`
+			StartLine int    `json:"start_line"`
+			Blocking  bool   `json:"blocking"`
+			Evidence  struct {
+				RuleID string `json:"rule_id"`
+			} `json:"evidence"`
+		} `json:"findings"`
+	}
+
+	stdout, stderr, code := run(base, base)
+	if code != 0 || stderr != "" || json.Unmarshal([]byte(stdout), &result) != nil || len(result.Findings) != 0 {
+		t.Fatalf("clean baseline: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+
+	violation.Store(true)
+	stdout, stderr, code = run(base, buggy)
+	if code != 10 || json.Unmarshal([]byte(stdout), &result) != nil || len(result.Findings) == 0 ||
+		result.Findings[0].Path != "example.go" || result.Findings[0].StartLine != 2 ||
+		result.Findings[0].Evidence.RuleID != "no-x-one.md" || !result.Findings[0].Blocking ||
+		!strings.Contains(stderr, "severity gate") {
+		t.Fatalf("blocking violation: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+
+	if err := os.WriteFile(sourcePath, []byte("package example\nvar X=2\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "example.go")
+	git("commit", "-qm", "fix violation")
+	fixed := git("rev-parse", "HEAD")
+	violation.Store(false)
+	stdout, stderr, code = run(buggy, fixed)
+	if code != 0 || stderr != "" || json.Unmarshal([]byte(stdout), &result) != nil || len(result.Findings) != 0 {
+		t.Fatalf("fixed rerun: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+}
+
 func TestProcessLintUncommitted(t *testing.T) {
 	binary := buildBinary(t)
 	dir, base, head := committedRepo(t)
