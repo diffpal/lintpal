@@ -1,14 +1,16 @@
 # Product Hunt launch draft for LintPal
 
 This is a reviewable draft for the launch owner. It does not publish a release,
-enable GitHub Discussions, or create a Product Hunt post. The current binary
-release is [v0.5.3](https://github.com/diffpal/lintpal/releases/tag/v0.5.3);
+enable GitHub Discussions, or create a Product Hunt post. At the pre-merge
+check, the published binary release was
+[v0.5.3](https://github.com/diffpal/lintpal/releases/tag/v0.5.3);
 its [release notes](../../CHANGELOG.md) record a package-description change,
 not new CLI behavior. The [README](../../README.md) and
 [privacy guide](../architecture/privacy.md) describe the product and data flow.
-The working tree prepares `v0.5.4`; it is not tagged or published. On
-2026-09-29, the local and remote tag, GitHub Release, and all seven npm
-identities were absent for that version. Recheck immediately before release.
+The [candidate PR #5](https://github.com/diffpal/lintpal/pull/5) prepares
+`v0.5.4`. At the pre-merge check on 2026-09-29, the local and remote tag,
+GitHub Release, and all seven npm identities were absent for that version.
+Recheck immediately before release.
 
 ## Product Hunt fields
 
@@ -26,14 +28,14 @@ describes the current fields and media sizes.
 
 ## Launch decision and evidence
 
-Status refreshed on 2026-09-29. **The preparation handoff is ready for review;
+Pre-merge snapshot from 2026-09-29. **The preparation handoff is ready for review;
 the public Product Hunt launch is NO-GO.** A passing local check does not put
 the current worktree changes into the already published `v0.5.3` tag. Merge the
 scoped changes and confirm the owner gates below before posting.
 
 | Gate | Current evidence and status | Owner / exit condition |
 | --- | --- | --- |
-| Source | The worktree prepares a `v0.5.4` README pin and changelog entry along with the new docs, test, and forms. `task check`, `task race`, `task lint-go`, `task self-review-smoke`, `task security`, and `go mod verify` passed locally on 2026-09-28. These changes are uncommitted. **Local pass; merge and default-branch CI pending.** | Maintainer reviews and merges the scoped diff; default-branch CI passes. |
+| Source | PR #5 prepares a `v0.5.4` README pin and changelog entry along with the new docs, test, and forms. Local checks passed on 2026-09-28; PR checks passed on 2026-09-29 across Linux, macOS, and Windows. **PR pass; merge and default-branch CI pending.** | Maintainer reviews and merges the scoped diff; default-branch CI passes. |
 | Package | Local Omnidist staging and dry run passed; isolated Linux x64 installs of both npm meta packages returned `lintpal 0.5.3` and working help. All seven packages are published at `0.5.3`. However, both published npm meta-package READMEs still show the old Action pin `0.4.1`. **Binary pass; published-copy blocker.** Other platforms were inspected as artifacts, not executed locally. | Maintainer publishes an unused new version through the release workflow after merging the corrected README, then checks all seven identities, the published README, and a fresh install. |
 | Community | GitHub reported Discussions disabled. Three repository forms are prepared, while README uses the working Issues route. **Blocked.** | Owner enables Discussions, confirms category slugs, merges the forms, verifies that they render, and posts the welcome thread. |
 | Page | Copy and capture instructions are drafted; genuine thumbnail and gallery images are absent. Product Hunt account and page state are unverified. **Blocked.** | Owner captures and checks the media, reviews the draft in an eligible account, and posts only after a fresh product check. |
@@ -94,9 +96,9 @@ must be available on YouTube if included.
 
 ## GitHub Discussions setup
 
-GitHub currently reports Discussions disabled for `diffpal/lintpal`. The owner
-must enable it and create or confirm categories with these exact slugs before
-the matching forms become usable:
+GitHub reported Discussions disabled for `diffpal/lintpal` on 2026-09-29. The
+owner must enable it and create or confirm categories with these exact slugs
+before the matching forms become usable:
 
 | Category | Format | Form |
 | --- | --- | --- |
@@ -180,8 +182,8 @@ Title: **Welcome to LintPal — what engineering rule should your repo enforce?*
 ### New package release path
 
 The published npm README mismatch means the version-consistency gate needs a
-new package release even if the binary code does not change. The working tree
-prepares the `0.5.4` README pin and changelog; recheck that the version is
+new package release even if the binary code does not change. PR #5 prepares
+the `0.5.4` README pin and changelog; recheck that the version is
 unused, finalize the release date, merge the changes, and confirm the release
 commit is checked out and clean. Otherwise the new npm package could embed an
 old Action pin and repeat the mismatch. For the reviewed `0.5.4` candidate:

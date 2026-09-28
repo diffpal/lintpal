@@ -1,10 +1,9 @@
 # Changelog
 
-The [GitHub Releases](https://github.com/diffpal/lintpal/releases) page contains
-the published release history. Version 0.5.4 below is a candidate; it has not
-been tagged or published.
+The [GitHub Releases](https://github.com/diffpal/lintpal/releases) page shows
+which versions have been published.
 
-## [0.5.4] - Unreleased
+## [0.5.4] - 2026-09-29
 
 ### Added
 
@@ -15,12 +14,12 @@ been tagged or published.
 
 ### Changed
 
-- Corrected the README Action example to pin the planned 0.5.4 release and
+- Corrected the README Action example to pin 0.5.4 and
   clarified provider data flow, rule-to-finding behavior, and feedback.
 
 ### Fixed
 
-- No CLI runtime fixes are included in this candidate.
+- No CLI runtime fixes are included in this release.
 
 ### Known limitations
 
