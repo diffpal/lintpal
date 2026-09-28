@@ -30,9 +30,9 @@ jobs:
           fi
       - name: Build, stage, and verify
         run: |
-          npx -y @omnidist/omnidist@0.1.37 build
-          npx -y @omnidist/omnidist@0.1.37 stage
-          npx -y @omnidist/omnidist@0.1.37 verify
+          npx -y @omnidist/omnidist@0.1.38 build
+          npx -y @omnidist/omnidist@0.1.38 stage
+          npx -y @omnidist/omnidist@0.1.38 verify
       - name: Hash target binaries
         shell: bash
         run: |

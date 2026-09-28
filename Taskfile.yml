@@ -80,13 +80,13 @@ tasks:
   release-stage:
     desc: Build and verify an Omnidist release from an exact SemVer Git tag
     cmds:
-      - npx -y @omnidist/omnidist@latest build
-      - npx -y @omnidist/omnidist@latest stage
-      - npx -y @omnidist/omnidist@latest verify
+      - npx -y @omnidist/omnidist@0.1.38 build
+      - npx -y @omnidist/omnidist@0.1.38 stage
+      - npx -y @omnidist/omnidist@0.1.38 verify
       - bash scripts/verify-staging.sh
       - bash scripts/prepare-release-assets.sh
 
   release-dry-run:
     desc: Inspect staged npm packages without publishing
     cmds:
-      - npx -y @omnidist/omnidist@latest publish --dry-run
+      - npx -y @omnidist/omnidist@0.1.38 publish --dry-run

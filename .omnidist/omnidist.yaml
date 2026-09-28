@@ -24,6 +24,7 @@ profiles:
         distributions:
             npm:
                 package: lintpal
+                description: Check committed Git changes against repository-owned Markdown rules and report findings on changed lines.
                 aliases:
                     - '@diffpal/lintpal'
                 platform-package: '@diffpal/lintpal'
