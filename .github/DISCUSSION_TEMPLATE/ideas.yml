@@ -1,0 +1,26 @@
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the workflow you want to improve. Do not post secrets or
+        private repository content.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What happens today, and who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested approach
+      description: Optional; describe a possible solution if you have one.
+  - type: textarea
+    id: value
+    attributes:
+      label: Expected value
+      description: How would this change help your review workflow?
+    validations:
+      required: true

@@ -15,7 +15,11 @@ specific requirements your team wants enforced on every change.
 [Quickstart](docs/guides/getting-started.md) ·
 [Documentation](docs/index.md) ·
 [Rule packs](https://github.com/diffpal/lintpal-rules) ·
-[Demo](https://github.com/diffpal/lintpal-demo/pull/3)
+[Demo PR (v0.5.0)](https://github.com/diffpal/lintpal-demo/pull/3)
+
+For example, a [Go error-handling rule](examples/rules/go-review/unchecked-error.md)
+can flag a violating changed line in a pull request; the configured severity
+gate can then fail the check.
 
 ## Features
 
@@ -51,8 +55,10 @@ npx lintpal rule import github:diffpal/lintpal-rules//general@v1.1.0
 npx lintpal rule validate
 ```
 
-Add `TYPESAFE_API_KEY` as a repository Actions secret, then create
-`.github/workflows/lintpal.yml`:
+The selected remote provider receives bounded source context and rule text.
+Check whether that transfer is permitted for your repository before adding
+`TYPESAFE_API_KEY` as an Actions secret; see [privacy](docs/architecture/privacy.md).
+Then create `.github/workflows/lintpal.yml`:
 
 ```yaml
 name: lintpal
@@ -77,7 +83,7 @@ jobs:
           node-version: 24
       - uses: diffpal/lintpal-action@v1
         with:
-          lintpal-version: "0.4.1"
+          lintpal-version: "0.5.4"
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
           block-on: high
@@ -165,6 +171,7 @@ See [configuration](docs/guides/configuration.md) and [privacy](docs/architectur
 | Understand findings and gates | [Report reference](docs/reference/report.md) |
 | Automate the CLI | [CLI reference](docs/reference/cli.md) |
 | Review security and data flow | [Privacy](docs/architecture/privacy.md) and [architecture](docs/architecture/overview.md) |
+| Report a bug or share rule feedback | [GitHub Issues](https://github.com/diffpal/lintpal/issues/new) |
 | Contribute to LintPal | [Contributing](CONTRIBUTING.md) |
 
 ## License

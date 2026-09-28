@@ -1,0 +1,58 @@
+title: "[Rule feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share the smallest reproducible example. Remove secrets, credentials,
+        private source, and proprietary code before posting. If the example
+        cannot be shared safely, describe the behavior without pasting code.
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: What happened?
+      options:
+        - False positive
+        - False negative
+        - Rule was difficult to express
+        - Finding was correct but unclear
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: LintPal version
+      placeholder: "0.5.4"
+    validations:
+      required: true
+  - type: textarea
+    id: rule
+    attributes:
+      label: Markdown rule
+      description: Paste a sanitized rule or a representative substitute.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Minimal changed code or diff
+      description: Use a sanitized or synthetic example; never post private source.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Provider and environment, if relevant
+      placeholder: "Provider name, OS, CI or local (no tokens)"

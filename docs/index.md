@@ -54,10 +54,13 @@ Workflows and tooling for developing and verifying lintpal.
   a JSON artifact.
 - [Evaluation](development/evaluation.md): frozen offline corpus and optional live checks.
 - [Distribution](development/distribution.md): packaging and publication checks.
+- [Product Hunt launch draft](development/product-hunt-launch.md): release identity,
+  feedback setup, copy, and real-asset capture plan for maintainers.
 
 ## Releases
 
 Version-specific runbooks and release notes.
 
+- [Changelog](../CHANGELOG.md): current release notes and known limitations.
 - [v0.3.0 release runbook](releases/release-v0.3.0.md): packaging and publication runbook for v0.3.0.
 - [v0.2.0 release runbook](releases/release-v0.2.0.md): release verification and history for v0.2.0.
