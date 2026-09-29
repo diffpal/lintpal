@@ -1,5 +1,7 @@
 # LintPal
 
+<img src="docs/assets/lintpal-thumbnail.png" alt="LintPal logo with the DiffPal family mark" width="120">
+
 [![ci](https://github.com/diffpal/lintpal/actions/workflows/ci.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/ci.yml)
 [![lintpal-dev review](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml)
 [![npm](https://img.shields.io/npm/v/lintpal?label=npm)](https://www.npmjs.com/package/lintpal)
@@ -11,6 +13,12 @@ LintPal checks committed changes against Markdown rules owned by your
 repository. It produces findings on changed lines, applies a deterministic
 severity gate, and can publish the result directly to GitHub. Use it for
 specific requirements your team wants enforced on every change.
+
+LintPal is part of the [DiffPal family](https://github.com/diffpal/diffpal).
+It checks explicit repository rules; [DiffPal](https://diffpal.github.io/)
+provides broader AI pull-request review across GitHub, GitLab, and Azure DevOps.
+They have separate CLIs and report versions: LintPal writes findings v5,
+while DiffPal currently writes v4.
 
 [Quickstart](docs/guides/getting-started.md) ·
 [Documentation](docs/index.md) ·
@@ -39,7 +47,7 @@ gate can then fail the check.
 | Rules | Loads the repository's `.lintpal/rules/**/*.md` requirements |
 | Diff | Reads changed lines between two committed Git revisions |
 | Decisions | Evaluates each applicable rule through the configured provider |
-| Findings | Writes line-anchored findings in the shared findings v5 format |
+| Findings | Writes line-anchored findings in LintPal's findings v5 format |
 | Feedback | Publishes inline GitHub comments and applies the configured gate |
 
 LintPal is a focused policy checker. It does not generate a narrative code

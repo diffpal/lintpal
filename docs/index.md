@@ -1,9 +1,20 @@
 # lintpal documentation
 
+<img src="assets/lintpal-thumbnail.png" alt="LintPal logo with the DiffPal family mark" width="96">
+
 lintpal reviews changes between two committed Git revisions. It asks a selected
 System One provider questions defined by repository Markdown rules, then
 reports findings tied to changed lines. Start with the [README](../README.md)
 for the short overview.
+
+## DiffPal family
+
+LintPal checks repository-owned Markdown rules against committed revisions.
+The original [DiffPal](https://github.com/diffpal/diffpal) handles broader
+AI pull-request review across GitHub, GitLab, and Azure DevOps. See the
+[DiffPal documentation](https://diffpal.github.io/docs) for its setup and
+capabilities. The tools have separate CLIs and report versions: LintPal writes
+findings v5, while DiffPal currently writes v4.
 
 ## User Guides
 
@@ -33,7 +44,7 @@ Specifications, guidelines, and tools for writing and importing repository revie
 Formal specifications for command-line interfaces and reporting schemas.
 
 - [CLI reference](reference/cli.md): flags, environment settings, and exit codes.
-- [Report reference](reference/report.md): shared JSON findings and Markdown feedback.
+- [Report reference](reference/report.md): LintPal JSON findings and Markdown feedback.
 
 ## Architecture & Security
 
