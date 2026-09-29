@@ -2,7 +2,7 @@
 
 `task self-review` runs lintpal against two committed revisions of this
 repository. It builds a local binary, invokes `lintpal lint`, and writes the
-complete JSON report to `.artifacts/lintpal/self-review.json` and Markdown
+complete JSON report to `.artifacts/lintpal/self-review.json` and JSON
 feedback to stdout. This directory
 is ignored by Git. After checking `BASE` and `HEAD`, the target removes an
 older report before building and running lintpal.

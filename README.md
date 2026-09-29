@@ -43,7 +43,7 @@ gate can then fail the check.
 | Stage | What LintPal does |
 | --- | --- |
 | Rules | Loads the repository's `.lintpal/rules/**/*.md` requirements |
-| Diff | Reads changed lines between two committed Git revisions |
+| Diff | Reads changed lines from the unique merge base through head, or from `HEAD` to the working tree with `--uncommitted` |
 | Decisions | Evaluates each applicable rule through the configured provider |
 | Findings | Writes line-anchored findings in LintPal's findings v5 format |
 | Feedback | Publishes inline GitHub comments and applies the configured gate |
@@ -156,6 +156,10 @@ npx lintpal lint --uncommitted
 # Or lint committed revisions
 npx lintpal lint --base origin/main --head HEAD
 ```
+
+Committed comparisons start at the unique merge base of base and head; changes
+found only on the base branch are excluded. See the [CLI reference](docs/reference/cli.md)
+for report revision fields and uncommitted behavior.
 
 Markdown findings go to stdout. Use `--out` to retain the complete JSON
 artifact, or `--format json` for JSON on stdout. The default gate returns exit

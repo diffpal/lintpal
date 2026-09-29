@@ -4,7 +4,7 @@ All limits below are enforced on a single lint run. Zero-valued internal limits 
 
 | Boundary | Owner | Default | Hard maximum | Evidence |
 | --- | --- | --- | --- | --- |
-| Git patch output | `git/runner.go`, `git/repository.go` | 8 MiB | 64 MiB | `git/runner_test.go`, `git/repository_test.go` |
+| Encoded unified Git patch | `git/patch_limits.go`, `git/client.go`, `git/repository.go` | 8 MiB | 64 MiB | `git/patch_limits_test.go`, `git/repository_test.go` |
 | Source blob / total source | `git/repository.go` | 2 MiB / 16 MiB | 16 MiB / 128 MiB | `git/repository_test.go`, `git/hardening_test.go` |
 | Changed work items | `git/repository.go` | 10,000 | 100,000 | `git/repository_test.go`, `git/hardening_test.go` |
 | State per group / all states | `contextplan` | 20,000 B / 16 MiB | 28,000 B / 128 MiB | `contextplan/assemble_test.go`, `contextplan/contracts_test.go` |
@@ -17,4 +17,8 @@ All limits below are enforced on a single lint run. Zero-valued internal limits 
 | Stored findings input for `feedback markdown` / `feedback github` | `report` | 64 MiB | Fixed | `report/feedback_test.go` |
 | GitHub event / API request / API response | `githubfeedback` | 2 MiB each | Fixed | `githubfeedback/context_test.go`, `githubfeedback/client_test.go` |
 
-Git also caps a diff line at 1 MiB and a path at 4 KiB. Context planning caps items, groups, questions, and questions per batch. Limit failures return no partial report; the CLI prints a fixed error category. Context cancellation reaches Git, planning, provider attempts, retries, and the application run. The provider and application tests cover blocked calls, cancellation, worker peak, and response size.
+Git also caps an encoded diff line at 1 MiB and a changed path at 4 KiB.
+The same patch budget applies to committed comparisons, the raw-tree fallback,
+and uncommitted comparisons. The encoder constructs each patch in memory before the limit check; these
+limits do not bound every temporary allocation made by the Git and diff
+libraries. Context planning caps items, groups, questions, and questions per batch. Limit failures return no partial report; the CLI prints a fixed error category. Context cancellation reaches Git, planning, provider attempts, retries, and the application run. The provider and application tests cover blocked calls, cancellation, worker peak, and response size.

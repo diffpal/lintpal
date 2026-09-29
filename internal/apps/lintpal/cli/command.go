@@ -128,3 +128,13 @@ func newCompletionCommand(root *cobra.Command) *cobra.Command {
 	}
 	return command
 }
+
+// validArgs maps Cobra validation failures to the CLI input error category.
+func validArgs(validate cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := validate(cmd, args); err != nil {
+			return ErrInvalidOptions
+		}
+		return nil
+	}
+}

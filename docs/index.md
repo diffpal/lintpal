@@ -2,14 +2,15 @@
 
 <img src="assets/lintpal-thumbnail.png" alt="LintPal logo with the DiffPal family mark" width="96">
 
-lintpal reviews changes between two committed Git revisions. It asks a selected
+lintpal reviews committed changes from merge base through head, or explicit
+`--uncommitted` working-tree changes. It asks a selected
 System One provider questions defined by repository Markdown rules, then
 reports findings tied to changed lines. Start with the [README](../README.md)
 for the short overview.
 
 ## DiffPal family
 
-LintPal checks repository-owned Markdown rules against committed revisions.
+LintPal checks repository-owned Markdown rules against committed or local changes.
 The original [DiffPal](https://github.com/diffpal/diffpal) handles broader
 AI pull-request review across GitHub, GitLab, and Azure DevOps. See the
 [DiffPal documentation](https://diffpal.github.io/docs) for its setup and
@@ -20,7 +21,7 @@ capabilities. The tools have separate CLIs and share the findings v5 schema.
 Practical guides for setting up and running lintpal in local and CI environments.
 
 - [Getting started](guides/getting-started.md): install through npm and lint a first
-  committed comparison.
+  committed or local comparison.
 - [Configuration](guides/configuration.md): providers, `.env`, rule selection, output,
   and common setup failures.
 - [Demo pull request](https://github.com/diffpal/lintpal-demo/pull/3): review

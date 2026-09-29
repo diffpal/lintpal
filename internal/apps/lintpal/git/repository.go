@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
-	diffutil "github.com/go-git/go-git/v5/utils/diff"
 )
 
 const defaultBlobBytes = 2 << 20
@@ -41,7 +40,7 @@ type Revisions struct {
 	MergeBase string
 }
 
-// Limits cap subprocess output, each source blob, and the number of work items.
+// Limits cap encoded patch bytes, each source blob, and the number of work items.
 // Zero fields select finite defaults.
 type Limits struct {
 	MaxPatchBytes     int
@@ -199,11 +198,15 @@ func (r *Repository) CompareUncommitted(ctx context.Context) (Result, error) {
 	sort.Strings(paths)
 
 	var changes []fileChange
+	budget := patchBudget{remaining: r.limits.MaxPatchBytes}
 	var skips []Skip
 
 	for _, p := range paths {
 		if err := ctx.Err(); err != nil {
 			return Result{}, err
+		}
+		if len(p) > maxGitPathBytes {
+			return Result{}, ErrLimit
 		}
 		clean := filepath.Clean(p)
 		if clean == "." || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
@@ -220,6 +223,9 @@ func (r *Repository) CompareUncommitted(ctx context.Context) (Result, error) {
 			if inHead {
 				headContent, err := r.client.readBlobByHash(headEntry.Hash)
 				if err != nil {
+					return Result{}, err
+				}
+				if _, err := budget.addRaw(rawFile{status: 'D', oldMode: normalizeMode(headEntry.Mode), newMode: "000000", oldPath: clean}, headContent, nil); err != nil {
 					return Result{}, err
 				}
 				if isBinary(headContent) {
@@ -262,6 +268,9 @@ func (r *Repository) CompareUncommitted(ctx context.Context) (Result, error) {
 			if err != nil {
 				return Result{}, fmt.Errorf("read untracked %q: %w", clean, err)
 			}
+			if _, err := budget.addRaw(rawFile{status: 'A', oldMode: "000000", newMode: "100644", newPath: clean}, nil, content); err != nil {
+				return Result{}, err
+			}
 			if isBinary(content) {
 				skips = append(skips, Skip{NewPath: clean, Reason: SkipBinary})
 				continue
@@ -301,6 +310,9 @@ func (r *Repository) CompareUncommitted(ctx context.Context) (Result, error) {
 			if err != nil {
 				return Result{}, err
 			}
+			if _, err := budget.addRaw(rawFile{status: 'A', oldMode: "000000", newMode: "100644", newPath: clean}, nil, content); err != nil {
+				return Result{}, err
+			}
 			if isBinary(content) {
 				changes = append(changes, fileChange{
 					file:   rawFile{status: 'A', oldMode: "000000", newMode: "100644", newPath: clean},
@@ -334,14 +346,16 @@ func (r *Repository) CompareUncommitted(ctx context.Context) (Result, error) {
 		if err != nil {
 			return Result{}, err
 		}
+		spans, err := budget.addRaw(rawFile{status: 'M', oldMode: normalizeMode(headEntry.Mode), newMode: normalizeMode(headEntry.Mode), oldPath: clean, newPath: clean}, headContent, content)
+		if err != nil {
+			return Result{}, err
+		}
 		if isBinary(headContent) || isBinary(content) {
 			changes = append(changes, fileChange{
 				file:   rawFile{status: 'M', oldMode: normalizeMode(headEntry.Mode), newMode: normalizeMode(headEntry.Mode), oldPath: clean, newPath: clean},
 				binary: true,
 			})
 		} else {
-			diffs := diffutil.Do(string(headContent), string(content))
-			spans := spansFromDMP(diffs)
 			changes = append(changes, fileChange{
 				file:  rawFile{status: 'M', oldMode: normalizeMode(headEntry.Mode), newMode: normalizeMode(headEntry.Mode), oldPath: clean, newPath: clean},
 				spans: spans,

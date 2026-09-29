@@ -36,7 +36,7 @@ does not own Jev answers.
 ## Git input
 
 `internal/apps/lintpal/git.NewRepository(dir, limits)` provides two comparison methods:
-- `Compare(ctx, base, head)` resolves both revisions to commits, requires one merge base, and reads a bounded raw diff and patch. Sources are read from Git blobs.
+- `Compare(ctx, base, head)` resolves both revisions to commits, requires one merge base, and compares the merge base with head using go-git. A bounded unified patch encoder checks patch bytes, line length, and changed paths. Sources are read from Git blobs.
 - `CompareUncommitted(ctx)` diffs the working tree (including unstaged edits, staged changes, and untracked regular files) against HEAD (or the Git empty tree if no commits exist). Sources for uncommitted right-side items are read directly from disk.
 
 Both methods return ordered LEFT/RIGHT `WorkItem` values with stable IDs and
@@ -50,7 +50,7 @@ sources into bounded hunk context.
 ## Bounded context and batching
 
 `internal/apps/lintpal/contextplan.Assemble` reads only `git.Result.Source` for
-the committed work items. It sorts items by path, side, hunk, and line, renders
+the comparison work items. It sorts items by path, side, hunk, and line, renders
 numbered source lines with a two-line surrounding window, and retains each
 work-item ID and changed-line span in exactly one `Group`. Compatible hunks on
 one file side may share a group; a size boundary splits between hunks. An
@@ -181,11 +181,12 @@ An unsafe report fails with the export category and no partial artifact. The
 local `--metrics` snapshot is printed to stderr only when requested and is
 suppressed if its bytes contain that credential. These checks protect known
 selected credentials at the output boundary; they do not scan unrelated
-environment variables. The selected provider still receives committed source
-context and rule instructions to perform linting.
+environment variables. The selected provider receives source context from the
+selected committed or uncommitted comparison and rule instructions to perform linting.
 
 The executable exposes `lint`, `rule`, `feedback`, `doctor`, `version`, and `completion`.
-Its core packages import neither Cobra, Fx, nor ADK LLM APIs. There is no
-PR-host publisher, working-tree analysis, SARIF writer, autofix, RAG, general
-chat path, or embedded Laya sidecar. [Resource limits](resource-limits.md)
+Its core packages import neither Cobra, Fx, nor ADK LLM APIs. It supports
+explicit working-tree analysis and publishing stored findings to GitHub pull
+requests. There is no SARIF writer, autofix, RAG, general chat path, or embedded
+Laya sidecar. [Resource limits](resource-limits.md)
 lists boundary owners and adversarial tests.

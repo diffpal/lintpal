@@ -14,7 +14,7 @@ import (
 )
 
 func newFeedbackCommand() *cobra.Command {
-	feedback := &cobra.Command{Use: "feedback", Short: "Render stored lint findings", Args: cobra.NoArgs}
+	feedback := &cobra.Command{Use: "feedback", Short: "Render stored lint findings", Args: validArgs(cobra.NoArgs)}
 	feedback.RunE = func(cmd *cobra.Command, _ []string) error { return cmd.Help() }
 	var input, output string
 	var gate bool

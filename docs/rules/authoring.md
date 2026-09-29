@@ -45,5 +45,5 @@ npx lintpal lint --base HEAD~1 --head HEAD --rules ./examples/rules/go-review \
 ```
 
 You can also [import a directory](import.md). Rule text and bounded
-committed source context are sent to the selected provider; see
+source context from the selected comparison are sent to the selected provider; see
 [privacy](../architecture/privacy.md).
