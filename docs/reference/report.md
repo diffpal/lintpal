@@ -3,9 +3,9 @@
 `lintpal lint --format json` writes one UTF-8 JSON object followed by a
 newline. `--out PATH` writes the complete JSON object atomically regardless of
 stdout format. The LintPal v5 contract is documented by the local
-[JSON schema](../schema/findings-v5.schema.json). DiffPal currently writes a
-v4 findings bundle; its [schema reference](https://github.com/diffpal/diffpal/blob/main/docs/reference/findings-schema.md)
-describes that separate contract. The
+[JSON schema](../schema/findings-v5.schema.json). DiffPal also writes v5
+bundles; its [schema reference](https://github.com/diffpal/diffpal/blob/main/docs/reference/findings-schema.md)
+describes code findings and legacy bundle reads. The
 [JSON](../../cmd/lintpal/testdata/golden/report.json) and
 [Markdown](../../cmd/lintpal/testdata/golden/report.md) goldens show LintPal output.
 
@@ -40,9 +40,8 @@ Severity comes from frontmatter or an explicit override. `blocking` indicates
 whether the finding meets the run's selected `--fail-on` or `--block-on`
 threshold. With `--block-on`, lint records the flag but does not gate.
 
-The local LintPal v5 schema also defines code findings with
-`evidence.kind: "code"`, structured `impact`, and numeric `confidence`. Current
-DiffPal v4 output does not use this v5 evidence discriminator. See the
+The shared v5 schema also defines DiffPal code findings with
+`evidence.kind: "code"`, structured `impact`, and numeric `confidence`. See the
 [LintPal schema](../schema/findings-v5.schema.json) for exact v5 types and
 optional metadata.
 
@@ -67,6 +66,6 @@ successful publication when any finding is blocking. See [CLI exit codes](cli.md
 The previous LintPal `lintpal.report.v1` object used `schema_version` and
 `diagnostics[]`. In v5, use `version` and `findings[]`. Move `rule_id` into
 `evidence.rule_id`, side and range into `changed_span`, and the numeric answer
-from `evidence` into `decision`. DiffPal currently writes v4 and LintPal
-writes v5. Consumers of either tool should branch on `version` and use the
-corresponding schema rather than assume the bundles are interchangeable.
+from `evidence` into `decision`. DiffPal and LintPal both write v5 bundles.
+Consumers should branch on `version` and `evidence.kind` when handling stored
+findings from either tool.

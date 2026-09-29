@@ -13,8 +13,7 @@ LintPal checks repository-owned Markdown rules against committed revisions.
 The original [DiffPal](https://github.com/diffpal/diffpal) handles broader
 AI pull-request review across GitHub, GitLab, and Azure DevOps. See the
 [DiffPal documentation](https://diffpal.github.io/docs) for its setup and
-capabilities. The tools have separate CLIs and report versions: LintPal writes
-findings v5, while DiffPal currently writes v4.
+capabilities. The tools have separate CLIs and share the findings v5 schema.
 
 ## User Guides
 
