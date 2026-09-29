@@ -4,12 +4,16 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
 
 func TestCommittedPatchLimitsIncludeRawFallback(t *testing.T) {
 	for _, path := range []string{"file.txt", "control\nfile.txt"} {
+		if runtime.GOOS == "windows" && strings.Contains(path, "\n") {
+			continue
+		}
 		for _, oversizedLine := range []bool{false, true} {
 			t.Run(path+"/"+map[bool]string{false: "bytes", true: "line"}[oversizedLine], func(t *testing.T) {
 				dir := testRepo(t)
