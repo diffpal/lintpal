@@ -6,7 +6,8 @@ Discussions or create a Product Hunt post. The current published release is
 [README](../../README.md) and [privacy guide](../architecture/privacy.md)
 describe the product and data flow. LintPal is part of the
 [DiffPal family](https://github.com/diffpal/diffpal); the two tools have
-separate CLIs and share the findings v5 report format.
+separate CLIs and report versions: LintPal writes findings v5, while DiffPal
+currently writes v4.
 
 ## Product Hunt fields
 

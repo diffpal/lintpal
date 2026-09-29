@@ -1,15 +1,16 @@
-# Shared findings v5
+# LintPal findings v5
 
 `lintpal lint --format json` writes one UTF-8 JSON object followed by a
 newline. `--out PATH` writes the complete JSON object atomically regardless of
-stdout format. DiffPal also writes a v5 findings bundle. The canonical contract is in DiffPal at
-`schemas/findings/v5.schema.json`; LintPal keeps a pinned
-[offline copy](../schema/findings-v5.schema.json). The
+stdout format. The LintPal v5 contract is documented by the local
+[JSON schema](../schema/findings-v5.schema.json). DiffPal currently writes a
+v4 findings bundle; its [schema reference](https://github.com/diffpal/diffpal/blob/main/docs/reference/findings-schema.md)
+describes that separate contract. The
 [JSON](../../cmd/lintpal/testdata/golden/report.json) and
 [Markdown](../../cmd/lintpal/testdata/golden/report.md) goldens show LintPal output.
 
-Both tools use `version: "v5"`, `review_id`, `base_sha`, `head_sha`, and
-`findings`. LintPal also emits `merge_base_sha`, `skips`, and `stats`.
+LintPal uses `version: "v5"`, `review_id`, `base_sha`, `head_sha`, and
+`findings`. It also emits `merge_base_sha`, `skips`, and `stats`.
 `findings` is always an array, including on a clean review. The IDs are
 deterministic for the review inputs and finding location. Consumers should
 parse by field name; JSON key order is not a contract.
@@ -39,11 +40,11 @@ Severity comes from frontmatter or an explicit override. `blocking` indicates
 whether the finding meets the run's selected `--fail-on` or `--block-on`
 threshold. With `--block-on`, lint records the flag but does not gate.
 
-DiffPal code findings use `evidence.kind: "code"` with `anchor`,
-`reasoning_basis`, and `source`; they include structured `impact` and numeric
-`confidence`. These are the same fields previously used by DiffPal, now with
-an explicit evidence kind. See the [shared schema](../schema/findings-v5.schema.json)
-for exact types and optional metadata.
+The local LintPal v5 schema also defines code findings with
+`evidence.kind: "code"`, structured `impact`, and numeric `confidence`. Current
+DiffPal v4 output does not use this v5 evidence discriminator. See the
+[LintPal schema](../schema/findings-v5.schema.json) for exact v5 types and
+optional metadata.
 
 Each LintPal skip has `reason` and at least one of `old_path` or `new_path`.
 Reasons are `binary`, `non_regular`, and `no_changed_lines`. `stats` records
@@ -66,6 +67,6 @@ successful publication when any finding is blocking. See [CLI exit codes](cli.md
 The previous LintPal `lintpal.report.v1` object used `schema_version` and
 `diagnostics[]`. In v5, use `version` and `findings[]`. Move `rule_id` into
 `evidence.rule_id`, side and range into `changed_span`, and the numeric answer
-from `evidence` into `decision`. DiffPal v4 readers remain available in
-DiffPal, while its new writes use v5. Consumers of either tool should branch
-on `version` and adopt the [shared schema](../schema/findings-v5.schema.json).
+from `evidence` into `decision`. DiffPal currently writes v4 and LintPal
+writes v5. Consumers of either tool should branch on `version` and use the
+corresponding schema rather than assume the bundles are interchangeable.

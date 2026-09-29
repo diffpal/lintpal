@@ -153,11 +153,11 @@ workers, ten minutes, and 64 MiB. Context limits are passed through to
 `contextplan`. Provider results occupy stable batch slots before final sorting;
 the first failure cancels siblings, and no partial findings are exposed.
 `report.New` checks decisions against the original Git work items and sorts
-diagnostics and skips. The shared v5 findings artifact includes
+diagnostics and skips. The LintPal v5 findings artifact includes
 resolved revisions, evidence, skips, and count/usage stats without source state,
 question text, or credentials.
 
-`report.WriteJSON` writes shared findings v5; `report.WriteMarkdown` renders
+`report.WriteJSON` writes LintPal findings v5; `report.WriteMarkdown` renders
 the same validated findings for people. Both feedback commands validate a
 stored v5 bundle before using it. `feedback markdown` uses the local formatter;
 `feedback github` sends a deterministic gate/count result and inline rule
