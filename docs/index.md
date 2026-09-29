@@ -1,9 +1,19 @@
 # lintpal documentation
 
+<img src="assets/lintpal-thumbnail.png" alt="LintPal logo with the DiffPal family mark" width="96">
+
 lintpal reviews changes between two committed Git revisions. It asks a selected
 System One provider questions defined by repository Markdown rules, then
 reports findings tied to changed lines. Start with the [README](../README.md)
 for the short overview.
+
+## DiffPal family
+
+LintPal checks repository-owned Markdown rules against committed revisions.
+The original [DiffPal](https://github.com/diffpal/diffpal) handles broader
+AI pull-request review across GitHub, GitLab, and Azure DevOps. See the
+[DiffPal documentation](https://diffpal.github.io/docs) for its setup and
+capabilities. The tools have separate CLIs and share the findings v5 format.
 
 ## User Guides
 

@@ -1,5 +1,7 @@
 # LintPal
 
+<img src="docs/assets/lintpal-thumbnail.png" alt="LintPal logo with the DiffPal family mark" width="120">
+
 [![ci](https://github.com/diffpal/lintpal/actions/workflows/ci.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/ci.yml)
 [![lintpal-dev review](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml)
 [![npm](https://img.shields.io/npm/v/lintpal?label=npm)](https://www.npmjs.com/package/lintpal)
@@ -11,6 +13,11 @@ LintPal checks committed changes against Markdown rules owned by your
 repository. It produces findings on changed lines, applies a deterministic
 severity gate, and can publish the result directly to GitHub. Use it for
 specific requirements your team wants enforced on every change.
+
+LintPal is part of the [DiffPal family](https://github.com/diffpal/diffpal).
+It checks explicit repository rules; [DiffPal](https://diffpal.github.io/)
+provides broader AI pull-request review across GitHub, GitLab, and Azure DevOps.
+They are separate CLIs that share the findings v5 report format.
 
 [Quickstart](docs/guides/getting-started.md) ·
 [Documentation](docs/index.md) ·
