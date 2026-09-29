@@ -28,3 +28,21 @@ func TestExitCodeCategories(t *testing.T) {
 		}
 	}
 }
+
+func TestInvalidCommandInputExitCode(t *testing.T) {
+	t.Setenv("GITHUB_EVENT_PATH", "")
+	t.Setenv("GITHUB_REPOSITORY", "")
+	input := "../../../../docs/schema/testdata/diffpal-left.json"
+	for _, args := range [][]string{
+		{"rule", "view"}, {"rule", "view", "one", "two"},
+		{"rule", "import"}, {"rule", "list", "extra"}, {"rule", "validate", "extra"},
+		{"feedback", "extra"},
+		{"feedback", "github", "--in", input, "--dry-run"},
+	} {
+		root := NewRoot(nil, "test")
+		root.SetArgs(args)
+		if err := root.ExecuteContext(t.Context()); ExitCode(err) != 2 {
+			t.Fatalf("%v: error %v, exit %d", args, err, ExitCode(err))
+		}
+	}
+}

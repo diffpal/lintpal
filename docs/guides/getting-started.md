@@ -50,7 +50,8 @@ npx lintpal lint --base origin/main --head HEAD
 Run `lint --uncommitted` to review local working-tree changes (including unstaged
 edits, staged changes, and untracked regular files) against `HEAD` before
 committing. Or run `lint --base <base> --head <head>` to compare two committed
-revisions. If a shallow checkout lacks the base, fetch that history or choose
+revisions: LintPal reviews their unique merge base through head, so changes
+found only on the base branch are excluded. If a shallow checkout lacks the base, fetch that history or choose
 two commit IDs that exist locally. Markdown findings go to stdout. Exit code `10`
 means a finding met the severity gate after the complete report was written;
 see [CLI options and exit codes](../reference/cli.md). A remote provider receives bounded

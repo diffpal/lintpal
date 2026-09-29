@@ -14,7 +14,6 @@ import (
 	diff "github.com/go-git/go-git/v5/plumbing/format/diff"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage"
-	diffutil "github.com/go-git/go-git/v5/utils/diff"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -148,9 +147,9 @@ func (c *gitClient) diffTrees(ctx context.Context, baseTree, headTree *object.Tr
 		}
 		return nil, fmt.Errorf("diff patch: %w", err)
 	}
-	patchBytes := len(patch.String())
-	if patchBytes > maxPatchBytes {
-		return nil, ErrLimit
+	budget := patchBudget{remaining: maxPatchBytes}
+	if err := budget.add(patch); err != nil {
+		return nil, err
 	}
 
 	var fileChanges []fileChange
@@ -340,6 +339,7 @@ func (c *gitClient) diffCommitsRaw(ctx context.Context, baseCommit, headCommit *
 	sort.Strings(sortedPaths)
 
 	var fileChanges []fileChange
+	budget := patchBudget{remaining: maxPatchBytes}
 	for _, p := range sortedPaths {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -376,13 +376,15 @@ func (c *gitClient) diffCommitsRaw(ctx context.Context, baseCommit, headCommit *
 			headContent = b
 		}
 
+		spans, err := budget.addRaw(rf, baseContent, headContent)
+		if err != nil {
+			return nil, err
+		}
 		if isBinary(baseContent) || isBinary(headContent) {
 			fileChanges = append(fileChanges, fileChange{file: rf, binary: true})
 			continue
 		}
 
-		diffs := diffutil.Do(string(baseContent), string(headContent))
-		spans := spansFromDMP(diffs)
 		fileChanges = append(fileChanges, fileChange{file: rf, spans: spans})
 	}
 	return fileChanges, nil

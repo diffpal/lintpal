@@ -49,7 +49,7 @@ lintpal lint --base origin/main --head HEAD --provider custom \
 | Flag | Environment Variable | Default | Description |
 | --- | --- | --- | --- |
 | `--uncommitted` | — | `false` | Review uncommitted working tree changes (staged, unstaged, and untracked regular files) against `HEAD`. Mutually exclusive with `--base` and `--head`. |
-| `--base <rev>` | `LINTPAL_BASE` | — | Base commit or revision. Required unless `--uncommitted` is specified. |
+| `--base <rev>` | `LINTPAL_BASE` | — | Base revision used to find the unique merge base with head; the diff starts at that merge base. Required unless `--uncommitted` is specified. |
 | `--head <rev>` | `LINTPAL_HEAD` | — | Head commit or revision. Required unless `--uncommitted` is specified. |
 | `--provider <name>` | `LINTPAL_PROVIDER` | `jev` | System One provider: `jev` (TypeSafe), `openrouter`, or `custom`. |
 | `--model <name>` | `LINTPAL_MODEL` | `jev-latest` | System One model name or alias accepted by the provider. |
@@ -76,6 +76,13 @@ lintpal lint --base origin/main --head HEAD --provider custom \
 - **Precedence Order**: Explicit CLI flags override environment variables (`LINTPAL_*`), which override `.env` values, which override built-in defaults. Provider credentials in process environment take precedence over `.env`.
 - **Credential Protection**: Before writing any report or artifact, LintPal checks output bytes against the active credential. If found, the run fails with exit code `4` without writing output.
 - **Metrics**: `--metrics` prints fixed stage lines to stderr (e.g. `metric stage=compare status=ok count=1 duration_ms=18`). No source code, prompt, endpoint, or token data ever enters metrics.
+
+Committed comparisons review the unique merge base of `--base` and `--head`
+through `--head`, equivalent to the range selected by `git diff BASE...HEAD`.
+Changes found only on the base branch are excluded. Reports retain the requested
+base commit in `base_sha` and the actual old-side commit in `merge_base_sha`;
+LEFT anchors refer to that merge base. Missing or multiple merge bases fail
+with exit code `2`.
 
 ---
 
@@ -150,7 +157,7 @@ lintpal feedback github --in .artifacts/lintpal/findings.json \
 | `--pr-number <int>` | int | `0` | Pull request number. Auto-detected from `GITHUB_EVENT_PATH` if omitted. |
 | `--base <sha>` | string | — | Expected PR base commit SHA. Auto-detected from `GITHUB_EVENT_PATH` if omitted. |
 | `--head <sha>` | string | — | Expected PR head commit SHA. Auto-detected from `GITHUB_EVENT_PATH` if omitted. |
-| `--review-channel <name>` | string | `lintpal` | Publication channel tag to isolate reviews and update existing comments. |
+| `--review-channel <name>` | string | `lintpal` | Publication channel tag to isolate reviews and deduplicate unchanged findings. |
 | `--auth-token-env <name>` | string | `GITHUB_TOKEN` | Name of the environment variable containing the GitHub token. |
 | `--dry-run` | bool | `false` | Render intended review and inline bodies to stdout without GitHub API calls. |
 | `--gate` | bool | `false` | Exit with code `10` after output or publication if any stored finding is blocking. |
@@ -159,7 +166,7 @@ lintpal feedback github --in .artifacts/lintpal/findings.json \
 
 - Requires `pull-requests: write` permission to publish reviews; otherwise only `contents: read` is needed.
 - Fork pull requests are skipped cleanly before reading tokens or making API requests.
-- Repeated runs update the marked summary review and update inline comments, avoiding duplicate notifications.
+- An identical marked summary and unchanged inline finding digests are skipped. Changed feedback creates a new review and new inline comments for changed findings; existing comments are not edited. New reviews may generate GitHub notifications.
 
 ---
 
@@ -201,7 +208,7 @@ lintpal doctor --provider custom --base-url https://jev.example.internal --auth-
 
 ## `lintpal rule`
 
-Inspect, validate, and import repository Markdown rules in `.lintpal/rules/`. All rule commands execute locally without network access or provider credentials.
+Inspect, validate, and import repository Markdown rules in `.lintpal/rules/`. `list`, `view`, `validate`, and imports from local directories run without network access. Imports from GitHub use its API and raw content endpoints. Rule commands do not use provider credentials.
 
 ### Subcommands
 

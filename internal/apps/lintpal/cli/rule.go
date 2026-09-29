@@ -17,7 +17,7 @@ func newRuleCommand() *cobra.Command {
 	command := &cobra.Command{Use: "rule", Short: "Inspect repository rules"}
 	var prefix string
 	var force bool
-	importCommand := &cobra.Command{Use: "import SOURCE", Short: "Import Markdown rules into this repository", Args: cobra.ExactArgs(1),
+	importCommand := &cobra.Command{Use: "import SOURCE", Short: "Import Markdown rules into this repository", Args: validArgs(cobra.ExactArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := repositoryRoot(cmd)
 			if err != nil {
@@ -52,7 +52,7 @@ func newRuleCommand() *cobra.Command {
 	importCommand.Flags().StringVar(&prefix, "prefix", "", "Prefix imported rule IDs")
 	importCommand.Flags().BoolVar(&force, "force", false, "Replace colliding rule files")
 	command.AddCommand(importCommand)
-	command.AddCommand(&cobra.Command{Use: "list", Short: "List repository rule IDs", Args: cobra.NoArgs,
+	command.AddCommand(&cobra.Command{Use: "list", Short: "List repository rule IDs", Args: validArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			catalog, err := loadRuleCatalog(cmd)
 			if err != nil {
@@ -65,7 +65,7 @@ func newRuleCommand() *cobra.Command {
 			}
 			return nil
 		}})
-	command.AddCommand(&cobra.Command{Use: "view ID", Short: "Show a rule and its effective policy", Args: cobra.ExactArgs(1),
+	command.AddCommand(&cobra.Command{Use: "view ID", Short: "Show a rule and its effective policy", Args: validArgs(cobra.ExactArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			catalog, err := loadRuleCatalog(cmd)
 			if err != nil {
@@ -84,7 +84,7 @@ func newRuleCommand() *cobra.Command {
 			}
 			return ErrInvalidOptions
 		}})
-	command.AddCommand(&cobra.Command{Use: "validate", Short: "Validate repository rules", Args: cobra.NoArgs,
+	command.AddCommand(&cobra.Command{Use: "validate", Short: "Validate repository rules", Args: validArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			catalog, err := loadRuleCatalog(cmd)
 			if err != nil {

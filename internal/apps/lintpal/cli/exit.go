@@ -10,6 +10,7 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/app"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/contextplan"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/git"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/githubfeedback"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
@@ -48,7 +49,7 @@ func ExitCode(err error) int {
 	if errors.Is(err, ErrInvalidOptions) || errors.Is(err, ErrInvalidEnvFile) ||
 		errors.Is(err, ErrEnvFileLimit) || errors.Is(err, rulesource.ErrSource) ||
 		errors.Is(err, ruleimport.ErrConflict) || errors.Is(err, ruleimport.ErrStorage) ||
-		errors.Is(err, git.ErrInvalidRevision) ||
+		errors.Is(err, git.ErrInvalidRevision) || errors.Is(err, githubfeedback.ErrInvalidContext) ||
 		errors.Is(err, report.ErrInvalidReport) || errors.Is(err, report.ErrInvalidFormat) || errors.Is(err, report.ErrInvalidThreshold) ||
 		errors.Is(err, git.ErrAmbiguousBase) || errors.Is(err, git.ErrInvalidLimits) ||
 		errors.Is(err, git.ErrLimit) || errors.Is(err, contextplan.ErrInvalidLimits) ||

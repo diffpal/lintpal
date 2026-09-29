@@ -42,7 +42,7 @@ configuration, provider, or output errors. See [report fields](../reference/repo
 ## Common failures
 
 - Missing base or head: provide two locally available committed Git revisions
-  with `--base` and `--head`.
+  with `--base` and `--head`, or select `--uncommitted` for local changes.
 - Missing credential: select a provider and set only its key in process env or
   `.env`; run `lintpal doctor` to check presence.
 - Invalid rules: run `lintpal rule validate`, inspect the named Markdown files,
@@ -50,5 +50,6 @@ configuration, provider, or output errors. See [report fields](../reference/repo
 - Report path failure: create the parent directory and ensure it is writable.
 
 Credentials should stay out of Git, shell traces, rule files, and report
-paths. The selected provider receives bounded committed source and questions;
+paths. The selected provider receives bounded source from the selected committed or
+uncommitted comparison and rule questions;
 see [privacy](../architecture/privacy.md).

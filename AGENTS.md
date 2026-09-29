@@ -1,7 +1,8 @@
 # Working in lintpal
 
-lintpal is a Go CLI that reviews two committed Git revisions. Keep the
-committed-only input model, declarative rule boundary, report schema, and
+lintpal is a Go CLI that reviews committed Git changes and supports explicit
+`--uncommitted` working-tree review. Keep the default committed comparison and
+explicit uncommitted mode, declarative rule boundary, report schema, and
 selected-provider credential handling intact when changing behavior.
 
 ## Project commands
