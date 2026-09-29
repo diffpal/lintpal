@@ -17,8 +17,6 @@ specific requirements your team wants enforced on every change.
 LintPal is part of the [DiffPal family](https://github.com/diffpal/diffpal).
 It checks explicit repository rules; [DiffPal](https://diffpal.github.io/)
 provides broader AI pull-request review across GitHub, GitLab, and Azure DevOps.
-They have separate CLIs and report versions: LintPal writes findings v5,
-while DiffPal currently writes v4.
 
 [Quickstart](docs/guides/getting-started.md) ·
 [Documentation](docs/index.md) ·
