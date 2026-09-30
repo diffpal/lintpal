@@ -26,7 +26,7 @@ describes the current fields and media sizes.
 
 Snapshot from 2026-09-30. **The public Product Hunt launch is NO-GO.**
 The published release is **0.6.0** on GitHub and all seven npm latest identities.
-Community, gallery and private draft readiness remain unverified. The owner confirmed their personal
+Gallery and private draft readiness remain unverified. The owner confirmed their personal
 Product Hunt account is ready on 2026-09-30. Screenshot work and browser use remain excluded
 by operator direction.
 
@@ -34,7 +34,7 @@ by operator direction.
 | --- | --- | --- |
 | Source | `v0.6.0` points to `2ec7e149777b64d3c825c8b3ebee961ca245ba7d`, which passed CI, lint and security. The release workflow also passed its source checks before publication. **Passed.** | Keep launch claims tied to this published revision. |
 | Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36694800944) passed. GitHub Release and all seven npm latest identities are publicly available as 0.6.0. Five public asset checksums, CGO-disabled build metadata and fresh Linux x64 installs of both npm meta-packages passed. **Passed.** | Keep package claims tied to 0.6.0. Never republish an existing version. |
-| Community | Discussions is enabled; `q-a` and `ideas` categories exist. The [welcome thread](https://github.com/diffpal/lintpal/discussions/18) is public. Q&A and Ideas are the two retained forms; live form rendering remains unverified. Bugs and incorrect findings use Issues. **Incomplete.** | Confirm both forms are usable. Browser use remains excluded. |
+| Community | Discussions is enabled with GitHub's standard categories and composer. The [welcome thread](https://github.com/diffpal/lintpal/discussions/18) is public; README links to Q&A and Ideas. Bugs and incorrect findings use Issues. **Passed.** | Keep the forum and feedback links accessible. |
 | Page | The [mascot sticker](../assets/lintpal-thumbnail.png) is prepared. Two gallery images are absent. The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
 
 The [changelog](../../CHANGELOG.md) distinguishes the new behavior
@@ -97,23 +97,14 @@ output. No gallery images are supplied. The operator set all screenshot and
 browser-use work to NO-GO, so the page gate remains blocked. The thumbnail does
 not substitute for gallery media or private account/draft confirmation.
 
-## GitHub Discussions setup
+## GitHub Discussions
 
 Discussions was enabled with the owner's authorization on 2026-09-30.
 The API confirms `q-a` (question and answer) and `ideas` (open discussion).
-These are the two supported category forms; bugs and incorrect findings go to
-[Issues](https://github.com/diffpal/lintpal/issues/new). Live form rendering
-remains unverified. The categories must have these exact slugs:
-
-| Category | Format | Form |
-| --- | --- | --- |
-| Q&A (`q-a`) | Question and answer | [q-a.yml](../../.github/DISCUSSION_TEMPLATE/q-a.yml) |
-| Ideas (`ideas`) | Open discussion | [ideas.yml](../../.github/DISCUSSION_TEMPLATE/ideas.yml) |
-
-Announcements and Show and tell are optional additional categories. GitHub
-requires each [form filename to match the category slug](https://docs.github.com/en/discussions/managing-discussions-for-your-community/creating-discussion-category-forms).
-If GitHub assigns another slug, rename the corresponding form in a reviewed
-change. The forms already live on the default branch.
+Use GitHub's standard discussion composer. Ask setup questions in
+[Q&A](https://github.com/diffpal/lintpal/discussions/categories/q-a) and suggest
+workflow improvements in [Ideas](https://github.com/diffpal/lintpal/discussions/categories/ideas).
+Bugs and incorrect findings go to [Issues](https://github.com/diffpal/lintpal/issues/new).
 
 ### Published welcome discussion
 
@@ -140,14 +131,11 @@ Title: **Welcome to LintPal — what engineering rule should your repo enforce?*
 
 ## Remaining owner gates
 
-1. Confirm the Q&A and Ideas forms are usable. Discussions, both categories and
-   the welcome thread are already live. Bugs and incorrect findings use
-   [Issues](https://github.com/diffpal/lintpal/issues/new).
-2. The owner confirmed personal account readiness on 2026-09-30; Product Hunt
+1. The owner confirmed personal account readiness on 2026-09-30; Product Hunt
    gallery and private draft/page readiness remain unverified.
    Screenshot and browser work are excluded by the operator's 2026-09-29
    direction. Do not infer readiness from the logo thumbnail or this draft.
-3. If the operator later reopens these gates, repeat the public source,
+2. If the operator later reopens these gates, repeat the public source,
    package, feedback, and page audit before changing the Story from NO-GO to GO.
    Posting to Product Hunt remains an owner action.
 

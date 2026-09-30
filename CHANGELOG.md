@@ -3,6 +3,30 @@
 The [GitHub Releases](https://github.com/diffpal/lintpal/releases) page shows
 which versions have been published.
 
+## [0.6.1] - 2026-09-30
+
+This patch updates documentation and npm package copy. CLI runtime behavior
+is unchanged from 0.6.0.
+
+### Changed
+
+- README and npm descriptions use "Turn your engineering rules into
+  pull-request checks." without implying an English-language requirement.
+- The README explains provider evaluation, optional GitHub feedback,
+  comment deduplication, local setup and the rule-to-finding path.
+- README and documentation link to the live Q&A and Ideas Discussions categories.
+
+### Fixed
+
+- README rule imports use explicit `general` and `go` prefixes, so the
+  documented `rule view general/authorization.md` command resolves correctly.
+- Provider setup examples identify the published 0.6.0 capability baseline.
+
+### Removed
+
+- Custom Discussion forms. Discussions uses GitHub's standard composer;
+  bugs and incorrect findings use GitHub Issues.
+
 ## [0.6.0] - 2026-09-30
 
 ### Added
