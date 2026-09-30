@@ -34,7 +34,7 @@ by operator direction.
 | --- | --- | --- |
 | Source | `v0.6.0` points to `2ec7e149777b64d3c825c8b3ebee961ca245ba7d`, which passed CI, lint and security. The release workflow also passed its source checks before publication. **Passed.** | Keep launch claims tied to this published revision. |
 | Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36694800944) passed. GitHub Release and all seven npm latest identities are publicly available as 0.6.0. Five public asset checksums, CGO-disabled build metadata and fresh Linux x64 installs of both npm meta-packages passed. **Passed.** | Keep package claims tied to 0.6.0. Never republish an existing version. |
-| Community | API reports `has_discussions=false`, no categories and no threads. Three forms are on the default branch; Issues is live. **Blocked.** | Enable Discussions, confirm `q-a`, `ideas`, `rule-feedback` categories and usable forms, then publish the welcome thread after explicit authorization. |
+| Community | Discussions is enabled; `q-a` and `ideas` categories exist. The [welcome thread](https://github.com/diffpal/lintpal/discussions/18) is public. Three forms are on the default branch, but the `rule-feedback` category is missing and live form rendering remains unverified. Issues remains the rule-feedback route. **Incomplete.** | Owner creates `rule-feedback` as an open discussion category and confirms all three forms are usable. Browser use remains excluded. |
 | Page | The [mascot sticker](../assets/lintpal-thumbnail.png) is prepared. Two gallery images are absent. The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
 
 The [changelog](../../CHANGELOG.md) distinguishes the new behavior
@@ -78,7 +78,9 @@ an environment version override does not replace it.
 >
 > Try one rule your team already repeats. Was it easy to express? Did the
 > finding match your intent? Where did it produce too much or too little signal?
-> We'd value that feedback in GitHub Discussions once the forum is enabled.
+> We'd value that feedback in [GitHub Discussions](https://github.com/diffpal/lintpal/discussions).
+> Use [Issues](https://github.com/diffpal/lintpal/issues/new) for rule feedback
+> while its dedicated category is being prepared.
 
 The owner should review the first-person wording before posting. Invite
 feedback and discussion; do not ask for votes. See [Product Hunt's sharing
@@ -98,10 +100,12 @@ not substitute for gallery media or private account/draft confirmation.
 
 ## GitHub Discussions setup
 
-GitHub reported Discussions disabled for `diffpal/lintpal` on 2026-09-30,
-with no categories or threads. The
-three forms are on the default branch, but the owner must enable Discussions and
-create or confirm categories with these exact slugs before they become usable:
+Discussions was enabled with the owner's authorization on 2026-09-30.
+The API confirms `q-a` (question and answer) and `ideas` (open discussion).
+The `rule-feedback` category is still missing. Its creation requires owner
+action because the public API has no category-creation mutation and browser
+use is excluded. Three forms are on the default branch; their live rendering
+remains unverified. The categories must have these exact slugs:
 
 | Category | Format | Form |
 | --- | --- | --- |
@@ -114,7 +118,11 @@ requires each [form filename to match the category slug](https://docs.github.com
 If GitHub assigns another slug, rename the corresponding form in a reviewed
 change. The forms already live on the default branch.
 
-### Welcome discussion draft
+### Published welcome discussion
+
+The owner authorized the [welcome thread](https://github.com/diffpal/lintpal/discussions/18),
+published in Announcements on 2026-09-30. The text uses Issues for rule feedback
+until its dedicated category exists:
 
 Title: **Welcome to LintPal — what engineering rule should your repo enforce?**
 
@@ -122,17 +130,25 @@ Title: **Welcome to LintPal — what engineering rule should your repo enforce?*
 > owns. Start with one rule your team already repeats in reviews. Was it easy
 > to express, and did the resulting finding match your intent?
 >
-> Use Q&A for installation and provider questions, Ideas for workflow
-> suggestions, and Rule feedback for false positives, false negatives, or rules
-> that were hard to write. Please share only sanitized examples; do not post
-> credentials or proprietary source.
+> Get started at [lintpal.metalagman.dev](https://lintpal.metalagman.dev), or
+> install the CLI with `npm install -g lintpal`.
+>
+> Use [Q&A](https://github.com/diffpal/lintpal/discussions/categories/q-a) for
+> installation and provider questions, and
+> [Ideas](https://github.com/diffpal/lintpal/discussions/categories/ideas) for
+> workflow suggestions. For false positives, false negatives, or rules that were
+> hard to write, use [GitHub Issues](https://github.com/diffpal/lintpal/issues/new)
+> while the Rule feedback category is being prepared.
+>
+> Please share only sanitized examples; do not post credentials or proprietary source.
 
 ## Remaining owner gates
 
-1. The owner enables Discussions, confirms the `q-a`, `ideas`, and
-   `rule-feedback` category slugs and live forms, and posts the welcome
-   discussion. Until then, keep the working [Issues route](https://github.com/diffpal/lintpal/issues/new)
-   in the README.
+1. The owner creates the missing `rule-feedback` open discussion category and
+   confirms the three category forms are usable. Discussions and the welcome
+   thread are already live. Keep the working
+   [Issues route](https://github.com/diffpal/lintpal/issues/new) for rule feedback
+   until the dedicated category is verified.
 2. The owner confirmed personal account readiness on 2026-09-30; Product Hunt
    gallery and private draft/page readiness remain unverified.
    Screenshot and browser work are excluded by the operator's 2026-09-29

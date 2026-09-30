@@ -210,6 +210,8 @@ See [configuration](docs/guides/configuration.md) and [privacy](docs/architectur
 | Understand findings and gates | [Report reference](docs/reference/report.md) |
 | Automate the CLI | [CLI reference](docs/reference/cli.md) |
 | Review security and data flow | [Privacy](docs/architecture/privacy.md) and [architecture](docs/architecture/overview.md) |
+| Ask a setup question | [GitHub Discussions Q&A](https://github.com/diffpal/lintpal/discussions/categories/q-a) |
+| Suggest a workflow improvement | [GitHub Discussions Ideas](https://github.com/diffpal/lintpal/discussions/categories/ideas) |
 | Report a bug or share rule feedback | [GitHub Issues](https://github.com/diffpal/lintpal/issues/new) |
 | Contribute to LintPal | [Contributing](CONTRIBUTING.md) |
 

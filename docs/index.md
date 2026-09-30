@@ -26,6 +26,9 @@ Practical guides for setting up and running lintpal in local and CI environments
   and common setup failures.
 - [Demo pull request](https://github.com/diffpal/lintpal-demo/pull/3): review
   live GitHub Actions feedback and inline rule findings.
+- [Questions](https://github.com/diffpal/lintpal/discussions/categories/q-a)
+  and [ideas](https://github.com/diffpal/lintpal/discussions/categories/ideas):
+  ask about setup or suggest workflow improvements in GitHub Discussions.
 
 ## Rules System
 
