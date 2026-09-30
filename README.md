@@ -7,12 +7,12 @@
 [![npm](https://img.shields.io/npm/v/lintpal?label=npm)](https://www.npmjs.com/package/lintpal)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Turn plain-English engineering rules into pull-request checks.**
+**Turn your engineering rules into pull-request checks.**
 
-LintPal checks committed changes against Markdown rules owned by your
-repository. It produces findings on changed lines, applies a deterministic
-severity gate, and can publish the result directly to GitHub. Use it for
-specific requirements your team wants enforced on every change.
+LintPal is a Go CLI that checks Git changes against your team's Markdown rules.
+Your selected AI provider evaluates the rules; LintPal reports findings on
+changed lines and applies a deterministic severity gate. Run it locally or
+publish reviews directly to GitHub.
 
 LintPal is part of the [DiffPal family](https://github.com/diffpal/diffpal).
 It checks explicit repository rules; [DiffPal](https://diffpal.github.io/)
@@ -38,7 +38,7 @@ gate can then fail the check.
   review and commit the rules with your code.
 - **Gating:** choose which finding severities block CI while retaining the
   complete findings artifact after each successful evaluation.
-- **Platform feedback:** publish a deterministic GitHub review summary and
+- **Platform feedback:** publish a GitHub review summary and
   inline comments, or consume the same findings as JSON or Markdown in CI.
 
 ## Supported Providers
@@ -53,9 +53,10 @@ findings, and severity gate work the same way across providers.
 | [**OpenAI**](docs/guides/configuration.md#openai) | A preset for compatible OpenAI Decisions | `--provider openai --model <model-id>` | `OPENAI_API_KEY` |
 | [**Custom**](docs/guides/configuration.md#custom-compatible-service) | Your own compatible service, including a local endpoint | `--provider custom --base-url <url> --api-path <path>` | `LINTPAL_TOKEN` or your chosen token variable |
 
+All four provider options are included in
+[v0.6.0](https://github.com/diffpal/lintpal/releases/tag/v0.6.0).
 The OpenAI preset assumes a compatible `/v1/decisions` API; live availability
-has not been verified. These options describe this source revision; check
-[releases](https://github.com/diffpal/lintpal/releases) for published package support.
+has not been verified.
 See [provider setup and commands](docs/guides/configuration.md#supported-providers)
 for all four options. The quickstart below uses TypeSafe/Jev.
 
@@ -65,20 +66,22 @@ for all four options. The quickstart below uses TypeSafe/Jev.
 | --- | --- |
 | Rules | Loads the repository's `.lintpal/rules/**/*.md` requirements |
 | Diff | Reads changed lines from the unique merge base through head, or from `HEAD` to the working tree with `--uncommitted` |
-| Decisions | Evaluates each applicable rule through the configured provider |
-| Findings | Writes line-anchored findings in LintPal's findings v5 format |
-| Feedback | Publishes inline GitHub comments and applies the configured gate |
+| Evaluation | Evaluates each applicable rule through the selected AI provider |
+| Findings | Writes findings tied to changed lines as JSON or Markdown |
+| Feedback (optional) | `feedback github` publishes GitHub comments; `--gate` applies the stored severity gate after publication |
 
-LintPal is a focused policy checker. It does not generate a narrative code
-review or invent new review criteria during a run.
+Your repository defines the rules. Review and update them alongside the code
+as your team's requirements change.
 
 ## Minimal GitHub Quickstart
 
+Use Git and Node.js 16 or newer. npm packages provide native binaries for
+Linux and macOS (x64 and arm64), and Windows (x64).
 Install the CLI globally and add a versioned rule pack in your repository:
 
 ```bash
 npm install -g lintpal
-lintpal rule import github:diffpal/lintpal-rules//general@v1.1.0
+lintpal rule import github:diffpal/lintpal-rules//general@v1.1.0 --prefix general
 lintpal rule validate
 ```
 
@@ -133,8 +136,9 @@ jobs:
 
 Open a same-repository pull request. LintPal publishes a review with
 `No blocking findings`, `1 blocking finding`, or `N blocking findings`, plus
-one inline comment for each finding GitHub can attach to the diff. The gate
-runs after publication; the workflow keeps `.artifacts/lintpal/findings.json`
+inline comments for eligible new or changed findings. Unchanged comments are
+deduplicated on later runs. The gate runs after publication; the workflow
+keeps `.artifacts/lintpal/findings.json`
 even when a blocking finding fails the job. Draft and fork pull requests are
 skipped. GitHub supplies the pull-request context to the feedback command.
 
@@ -157,15 +161,20 @@ title: Unchecked error
 Handle errors returned by calls when failure changes the result or behavior.
 ```
 
+Save this rule as `.lintpal/rules/go/unchecked-error.md`. When the provider assigns
+a violation probability of at least `0.97`, a finding identifies the changed file and line,
+the `high` severity, and rule ID `go/unchecked-error.md`. Its message is
+`Changed code may violate go/unchecked-error.md.` The default severity gate
+blocks on high or critical findings.
+
 Rules are ordinary project files: review them, version them, and change them
-through the same pull-request process as code. LintPal ships without hidden or
-built-in mandates.
+through the same pull-request process as code.
 
 ```bash
 lintpal rule list
 lintpal rule view general/authorization.md
 lintpal rule validate
-lintpal rule import github:diffpal/lintpal-rules//go@v1.1.0
+lintpal rule import github:diffpal/lintpal-rules//go@v1.1.0 --prefix go
 ```
 
 Read [rule authoring](docs/rules/authoring.md) for the complete format and
@@ -173,7 +182,9 @@ Read [rule authoring](docs/rules/authoring.md) for the complete format and
 
 ## Run Locally
 
-Check uncommitted changes in your working tree before committing, or compare two committed revisions:
+Install the CLI and add rules using the [getting started guide](docs/guides/getting-started.md).
+Then run from your Git repository to check working-tree changes before committing
+or compare two committed revisions:
 
 ```bash
 export TYPESAFE_API_KEY='your-provider-key'
@@ -195,8 +206,9 @@ artifact, or `--format json` for JSON on stdout. The default gate returns exit
 code `10` when a high or critical finding blocks the run.
 
 Choose TypeSafe/Jev, OpenRouter, OpenAI, or a custom compatible endpoint
-from [Supported Providers](#supported-providers). Provider credentials stay in environment variables; the
-selected provider receives bounded source context and rule text.
+from [Supported Providers](#supported-providers). Configure credentials through
+environment variables or an uncommitted `.env` file. The selected remote
+provider receives bounded source context and rule text.
 See [configuration](docs/guides/configuration.md) and [privacy](docs/architecture/privacy.md).
 
 ## Documentation by Goal

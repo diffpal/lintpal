@@ -22,9 +22,8 @@ own compatible service. All four use the same rules, findings, and gate.
 | `custom` | `LINTPAL_TOKEN` by default | Required `--base-url`; optional `--api-path` and `--auth-token-env` |
 
 These commands assume a globally installed CLI (`npm install -g lintpal`),
-a Git worktree and [repository rules](../rules/authoring.md). They describe this
-source revision; check [releases](https://github.com/diffpal/lintpal/releases)
-for published package support.
+a Git worktree and [repository rules](../rules/authoring.md). All four provider
+options are included in [v0.6.0](https://github.com/diffpal/lintpal/releases/tag/v0.6.0).
 
 ### TypeSafe / Jev
 

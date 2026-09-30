@@ -8,9 +8,9 @@ npm install -g lintpal
 lintpal version
 ```
 
-The commands below describe this source revision. Check
-[releases](https://github.com/diffpal/lintpal/releases) for the features in a
-published npm version. Source builds are covered in [CONTRIBUTING](../../CONTRIBUTING.md).
+The commands below are supported by
+[v0.6.0](https://github.com/diffpal/lintpal/releases/tag/v0.6.0).
+Source builds are covered in [CONTRIBUTING](../../CONTRIBUTING.md).
 
 ## Add a mandate
 
