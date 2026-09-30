@@ -2,7 +2,7 @@
 
 This is a reviewable draft for the launch owner. It does not enable GitHub
 Discussions or create a Product Hunt post. The current published release is
-[v0.6.0](https://github.com/diffpal/lintpal/releases/tag/v0.6.0). The
+[v0.6.1](https://github.com/diffpal/lintpal/releases/tag/v0.6.1). The
 [README](../../README.md) and [privacy guide](../architecture/privacy.md)
 describe the product and data flow. LintPal is part of the
 [DiffPal family](https://github.com/diffpal/diffpal); the two tools have
@@ -25,15 +25,16 @@ describes the current fields and media sizes.
 ## Launch decision and evidence
 
 Snapshot from 2026-09-30. **The public Product Hunt launch is NO-GO.**
-The published release is **0.6.0** on GitHub and all seven npm latest identities.
+The published GitHub release is **0.6.1**. Both npm meta-packages install as
+0.6.1; registry availability for the macOS x64 package remains pending.
 Gallery and private draft readiness remain unverified. The owner confirmed their personal
 Product Hunt account is ready on 2026-09-30. Screenshot work and browser use remain excluded
 by operator direction.
 
 | Gate | Current evidence and status | Owner / exit condition |
 | --- | --- | --- |
-| Source | `v0.6.0` points to `2ec7e149777b64d3c825c8b3ebee961ca245ba7d`, which passed CI, lint and security. The release workflow also passed its source checks before publication. **Passed.** | Keep launch claims tied to this published revision. |
-| Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36694800944) passed. GitHub Release and all seven npm latest identities are publicly available as 0.6.0. Five public asset checksums, CGO-disabled build metadata and fresh Linux x64 installs of both npm meta-packages passed. **Passed.** | Keep package claims tied to 0.6.0. Never republish an existing version. |
+| Source | `v0.6.1` points to `3b349c08c5c52bef2f5d1b084a8ae4be60875d3f`, which passed CI, lint and security. The release workflow also passed its source checks before publication. **Passed.** | Keep launch claims tied to this published revision. |
+| Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36711277622) passed and created GitHub Release 0.6.1. Five downloaded asset checksums, CGO-disabled metadata, version and release commit passed. Both fresh npm installs and six registry identities passed. **macOS x64 registry availability pending.** | Verify all seven latest identities as 0.6.1. Never republish an existing version. |
 | Community | Discussions is enabled with GitHub's standard categories and composer. The [welcome thread](https://github.com/diffpal/lintpal/discussions/18) is public; README links to Q&A and Ideas. Bugs and incorrect findings use Issues. **Passed.** | Keep the forum and feedback links accessible. |
 | Page | The [mascot sticker](../assets/lintpal-thumbnail.png) is prepared. Two gallery images are absent. The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
 
@@ -44,7 +45,25 @@ published 0.5.4 package. OpenAI support explicitly assumes a compatible
 Decisions API; live availability is unverified. Launch copy must describe the
 final published version, and must not imply a verified OpenAI integration.
 
-### Published 0.6.0 verification
+### Published 0.6.1 verification
+
+The owner authorized the documentation and package-copy patch release on
+2026-09-30. Preparation on the real `v0.6.1` tag passed staging, offline installs
+of both meta-packages and five asset checksums. All five targets reported
+`CGO_ENABLED=0`, version 0.6.1 and the exact release commit. The publication
+workflow passed and created the GitHub Release on 2026-09-30. All five downloaded
+public assets passed checksum and build-metadata verification; the Linux x64
+binary ran successfully.
+
+Fresh registry installs of both `lintpal` and `@diffpal/lintpal` reported
+`lintpal 0.6.1` and working provider help, including `--api-path`. Both public
+package READMEs contain the corrected product description, supported providers,
+website link and rule-import prefixes. Their manifests share the same five
+exact-version platform dependencies. Six registry identities report version
+and `latest` as 0.6.1; the macOS x64 package is still awaiting registry
+availability. CLI runtime behavior is unchanged from 0.6.0.
+
+### Historical 0.6.0 verification
 
 Before publication, an isolated source snapshot passed `task release-stage`
 and `task release-dry-run`; preparation on the real `v0.6.0` tag also passed.
