@@ -1,6 +1,6 @@
 # LintPal
 
-<img src="docs/assets/lintpal-thumbnail.png" alt="DiffPal family mascot sticker with a white outline" width="120">
+<img src="docs/assets/lintpal-thumbnail.png" alt="Grayscale DiffPal family mascot sticker with a white outline" width="120">
 
 [![ci](https://github.com/diffpal/lintpal/actions/workflows/ci.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/ci.yml)
 [![lintpal-dev review](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml/badge.svg)](https://github.com/diffpal/lintpal/actions/workflows/lintpal-dev-review.yml)

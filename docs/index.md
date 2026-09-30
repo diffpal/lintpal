@@ -1,6 +1,6 @@
 # lintpal documentation
 
-<img src="assets/lintpal-thumbnail.png" alt="DiffPal family mascot sticker with a white outline" width="96">
+<img src="assets/lintpal-thumbnail.png" alt="Grayscale DiffPal family mascot sticker with a white outline" width="96">
 
 lintpal reviews committed changes from merge base through head, or explicit
 `--uncommitted` working-tree changes. It turns repository Markdown rules into
