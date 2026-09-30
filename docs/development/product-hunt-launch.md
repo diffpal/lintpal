@@ -62,10 +62,10 @@ guidance](https://help.producthunt.com/en/articles/2690626-how-do-i-share-my-pos
 
 ## Brand asset and media gate
 
-The [LintPal thumbnail](../assets/lintpal-thumbnail.png) is a 240×240 local
-composition of the LintPal name and the existing
+The [LintPal thumbnail](../assets/lintpal-thumbnail.png) uses only the existing
 [DiffPal mark](https://github.com/diffpal/diffpal.github.io/blob/main/public/logo-mark.png).
-The source mark is copied unchanged as [diffpal-mark.png](../assets/diffpal-mark.png).
+Both the thumbnail and [diffpal-mark.png](../assets/diffpal-mark.png) contain the
+unchanged mascot, without a text label.
 This identifies LintPal as part of the DiffPal family; it does not show product
 output. No gallery images are supplied. The operator set all screenshot and
 browser-use work to NO-GO, so the page gate remains blocked. The thumbnail does
