@@ -1,4 +1,4 @@
-package systemone
+package decisions
 
 import (
 	"bytes"
@@ -15,10 +15,10 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
 )
 
-var ErrMissingCredential = errors.New("system one credential is required")
-var ErrTransport = errors.New("system one transport failed")
-var ErrProtocol = errors.New("invalid System One response")
-var ErrBodyLimit = errors.New("system one body limit exceeded")
+var ErrMissingCredential = errors.New("decisions credential is required")
+var ErrTransport = errors.New("decisions transport failed")
+var ErrProtocol = errors.New("invalid Decisions response")
+var ErrBodyLimit = errors.New("decisions body limit exceeded")
 
 const maxRequestBytes = 1 << 20
 const maxResponseBytes = 2 << 20
@@ -29,9 +29,9 @@ const maxRetryDelay = 2 * time.Second
 // HTTPError exposes only a status code, never a provider response body.
 type HTTPError struct{ Status int }
 
-func (e HTTPError) Error() string { return fmt.Sprintf("System One HTTP status %d", e.Status) }
+func (e HTTPError) Error() string { return fmt.Sprintf("Decisions HTTP status %d", e.Status) }
 
-// Provider implements the native Jev decision port over one System One ABI.
+// Provider implements the typed decision port over the shared Decisions ABI.
 type Provider struct {
 	endpoint Endpoint
 	target   *url.URL

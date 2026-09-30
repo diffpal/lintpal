@@ -107,6 +107,8 @@ func selectedCredential(options cli.Options) string {
 		return os.Getenv("TYPESAFE_API_KEY")
 	case "openrouter":
 		return os.Getenv("OPENROUTER_API_KEY")
+	case "openai":
+		return os.Getenv("OPENAI_API_KEY")
 	case "custom":
 		return os.Getenv(options.AuthTokenEnv)
 	default:

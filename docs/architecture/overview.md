@@ -28,7 +28,7 @@ Build and verify locally with `go build ./...`, `go test ./...`, and
 `go vet ./...`. `go run ./cmd/lintpal --help` displays the command tree;
 `docs/reference/cli.md` records its flags and exit contract.
 
-Git scope, bounded context, rules, the System One transport, lint orchestration,
+Git scope, bounded context, rules, the Decisions transport, lint orchestration,
 and reports now live under `internal/apps/lintpal`. The CLI Story binds their
 constructors in `di` and owns process options and exit behavior. The ADK runtime
 does not own Jev answers.
@@ -70,7 +70,7 @@ request, a 24,000-byte portable context budget, 16 MiB total assembled state,
 questions per batch. Callers can lower limits but cannot exceed finite hard
 caps. One serialized UTF-8 byte counts as one token in the conservative local
 estimate; the actual provider tokenizer may differ. The request cap remains
-well below the System One transport's 1 MiB guard, and the byte budget reserves
+well below the Decisions transport's 1 MiB guard, and the byte budget reserves
 headroom beneath the portable 32K token target. Limit errors contain no source
 or question text. Source disclosure to a remote provider occurs when
 `app.Linter` sends a batch.
@@ -109,7 +109,7 @@ resolves a ref to a commit before fetching files. Imported rules become
 ordinary files to review and commit; normal lint makes no rule-source network
 request. See [rule import](../rules/import.md).
 
-## System One provider
+## Decisions providers
 
 `internal/apps/lintpal/jev.Provider` remains the native typed decision port.
 Its Noul, Choice, and Score questions carry the criteria documented by the
@@ -117,20 +117,27 @@ System One API; Choice and Score answers preserve distributions and confidence
 for later rule policy. `jev.ValidateRequest` and `jev.ValidateResponse` reject
 invalid or partial decisions without echoing state or question text.
 
-`internal/apps/lintpal/provider/systemone` shares request/answer codecs and
+`internal/apps/lintpal/provider/decisions` shares request/answer codecs and
 HTTP retry logic across provider-specific routes. `TypeSafe()` fixes
 `https://api.typesafe.ai/v1/systemone` and `TYPESAFE_API_KEY`; `OpenRouter()`
 fixes `https://openrouter.ai/api/alpha/decisions` and `OPENROUTER_API_KEY`.
+`OpenAI()` fixes `https://api.openai.com/v1/decisions` and `OPENAI_API_KEY`
+under the operator-assumed compatible shape; live availability is unverified.
+OpenAI requires an explicit model.
 The CLI defaults to `typesafe/jev-1.13` for OpenRouter and `jev-latest` for
 native/custom providers; explicitly configured models retain their precedence.
 The normalized response retains model, typed answers, tokens and optional cost;
 OpenRouter request `id` and `provider` metadata are ignored. `TrustedCustom(baseURL, tokenEnv)` must be called only
 from trusted process settings, never repository rules/config. It does not
 inherit preset tokens and rejects their environment variable names. Its
-route remains the trusted base URL plus `/v1/systemone`. Custom
+default route remains the trusted base URL plus `/v1/systemone`.
+`TrustedCustomPath(baseURL, apiPath, tokenEnv)` adds a validated, unescaped path
+to the same base prefix. CLI `--api-path` / `LINTPAL_API_PATH` configure it;
+explicit empty, ambiguous or traversal paths fail before HTTP. See
+[provider setup](../guides/configuration.md#supported-providers). Custom
 HTTP is limited to loopback; remote endpoints require HTTPS. Redirects are not
-followed with credentials. The final CLI Story owns trusted option precedence
-and should avoid a raw token argument.
+followed with credentials. The CLI owns trusted option precedence and selected-key binding; tokens are
+never supplied as raw flag values.
 
 Each call has a 1 MiB request and 2 MiB response limit, at most three attempts,
 and a 15-second per-attempt deadline. Transient network failures, 429, 529,

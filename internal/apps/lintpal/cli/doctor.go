@@ -7,12 +7,12 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/decisions"
 	"github.com/spf13/cobra"
 )
 
 func newDoctorCommand() *cobra.Command {
-	var provider, baseURL, tokenEnv string
+	var provider, baseURL, apiPath, tokenEnv string
 	var envFile string
 	var noEnvFile bool
 	command := &cobra.Command{Use: "doctor", Short: "Check local lintpal prerequisites", Args: func(_ *cobra.Command, args []string) error {
@@ -22,8 +22,9 @@ func newDoctorCommand() *cobra.Command {
 		return nil
 	}}
 	flags := command.Flags()
-	flags.StringVar(&provider, "provider", "", "Provider to check: jev, openrouter, or custom")
+	flags.StringVar(&provider, "provider", "", "Provider to check: jev, openrouter, openai, or custom")
 	flags.StringVar(&baseURL, "base-url", "", "Trusted custom provider base URL")
+	flags.StringVar(&apiPath, "api-path", "", "Trusted custom API path (default /v1/systemone)")
 	flags.StringVar(&tokenEnv, "auth-token-env", "", "Trusted custom token environment name")
 	flags.StringVar(&envFile, "env-file", "", "Load settings from this .env file")
 	flags.BoolVar(&noEnvFile, "no-env-file", false, "Do not load a .env file")
@@ -51,6 +52,11 @@ func newDoctorCommand() *cobra.Command {
 		selected := choose("provider", provider, "LINTPAL_PROVIDER", "jev")
 		url := choose("base-url", baseURL, "LINTPAL_BASE_URL", "")
 		name := choose("auth-token-env", tokenEnv, "LINTPAL_AUTH_TOKEN_ENV", "")
+		path := choose("api-path", apiPath, "LINTPAL_API_PATH", "")
+		_, pathEnvSet := lookup("LINTPAL_API_PATH")
+		if selected != "custom" && (pathEnvSet || flags.Changed("api-path") || flags.Changed("base-url") || flags.Changed("auth-token-env")) {
+			return ErrInvalidOptions
+		}
 		switch selected {
 		case "jev":
 			if url != "" || name != "" {
@@ -62,11 +68,19 @@ func newDoctorCommand() *cobra.Command {
 				return ErrInvalidOptions
 			}
 			name = "OPENROUTER_API_KEY"
+		case "openai":
+			if url != "" || name != "" {
+				return ErrInvalidOptions
+			}
+			name = "OPENAI_API_KEY"
 		case "custom":
+			if !flags.Changed("api-path") && !pathEnvSet {
+				path = "/v1/systemone"
+			}
 			if name == "" {
 				name = "LINTPAL_TOKEN"
 			}
-			if _, err := systemone.TrustedCustom(url, name); err != nil {
+			if _, err := decisions.TrustedCustomPath(url, path, name); err != nil {
 				return ErrInvalidOptions
 			}
 		default:

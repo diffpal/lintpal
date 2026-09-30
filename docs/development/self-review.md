@@ -22,6 +22,8 @@ default provider is `jev`, with the repository's `.lintpal/rules/` and a
 `high` severity gate.
 Use `PROVIDER=openrouter` with `OPENROUTER_API_KEY`; without a model override,
 it selects `typesafe/jev-1.13`. Set `LINTPAL_MODEL` to choose another model.
+Use `PROVIDER=openai`, `OPENAI_API_KEY`, and an explicit `LINTPAL_MODEL` for
+the assumed compatible OpenAI Decisions API (live availability unverified).
 You can also put the selected
 provider settings and credential in a project-root `.env` as described in the
 [CLI guide](../reference/cli.md). The Taskfile never prints the credential.
@@ -37,7 +39,8 @@ BASE=origin/main HEAD=HEAD task self-review
 Set `FAIL_ON=none` to keep
 findings in the report without failing the severity gate. `PROVIDER`, `RULES`,
 and `FAIL_ON` are optional. For a custom provider, set `PROVIDER=custom` and
-configure `LINTPAL_BASE_URL` and `LINTPAL_TOKEN` through process environment
+configure `LINTPAL_BASE_URL`, optional `LINTPAL_API_PATH` (default `/v1/systemone`),
+and `LINTPAL_TOKEN` through process environment
 or `.env`.
 
 A clean run exits successfully. When a finding reaches the gate, lintpal

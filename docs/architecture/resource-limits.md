@@ -10,8 +10,8 @@ All limits below are enforced on a single lint run. Zero-valued internal limits 
 | State per group / all states | `contextplan` | 20,000 B / 16 MiB | 28,000 B / 128 MiB | `contextplan/assemble_test.go`, `contextplan/contracts_test.go` |
 | Request / byte budget | `contextplan` | 24,000 B each | 30,000 B each | `contextplan/boundary_test.go`, `contextplan/plan_test.go` |
 | Planned request data | `contextplan` | 16 MiB | 128 MiB | `contextplan/plan_test.go` |
-| Provider request / response | `provider/systemone` | 1 MiB / 2 MiB | Fixed | `provider/systemone/retry_test.go` |
-| Provider attempts / attempt timeout / retry delay | `provider/systemone` | 3 / 15 s / 2 s | Fixed | `provider/systemone/retry_test.go` |
+| Provider request / response | `provider/decisions` | 1 MiB / 2 MiB | Fixed | `provider/decisions/retry_test.go` |
+| Provider attempts / attempt timeout / retry delay | `provider/decisions` | 3 / 15 s / 2 s | Fixed | `provider/decisions/retry_test.go` |
 | Provider concurrency / run timeout | `app` | 4 / 2 min | 16 / 10 min | `app/linter_test.go`, `cli/options_test.go` |
 | JSON report size | `app` | 16 MiB | 64 MiB | `app/linter_test.go` |
 | Stored findings input for `feedback markdown` / `feedback github` | `report` | 64 MiB | Fixed | `report/feedback_test.go` |

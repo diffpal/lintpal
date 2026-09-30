@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
-	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/decisions"
 )
 
 func TestPlanRequestMatchesTransportEncoding(t *testing.T) {
@@ -34,11 +34,11 @@ func TestPlanRequestMatchesTransportEncoding(t *testing.T) {
 		_, _ = io.WriteString(w, `{"model":"jev-1.13.0","answers":{"n":{"type":"noul","noul":0.8},"c":{"type":"choice","choice":"b","probabilities":{"a":0.2,"b":0.8},"confidence":0.8},"s":{"type":"score","score":0.8,"legend":{"0":"low","1":"high"},"probabilities":{"0":0.2,"1":0.8},"confidence":0.8}},"usage":{"input_tokens":1,"output_tokens":1}}`)
 	}))
 	defer server.Close()
-	endpoint, err := systemone.TrustedCustom(server.URL, "")
+	endpoint, err := decisions.TrustedCustom(server.URL, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	provider, err := systemone.New(endpoint, server.Client())
+	provider, err := decisions.New(endpoint, server.Client())
 	if err != nil {
 		t.Fatal(err)
 	}
