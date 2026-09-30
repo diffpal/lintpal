@@ -24,7 +24,7 @@ profiles:
         distributions:
             npm:
                 package: lintpal
-                description: Turn your engineering rules into pull-request checks.
+                description: Turn your freeform engineering rules into PR checks. A Go CLI with Markdown rules, line-level findings, and deterministic CI gates.
                 aliases:
                     - '@diffpal/lintpal'
                 platform-package: '@diffpal/lintpal'

@@ -8,7 +8,7 @@
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Product Hunt](https://img.shields.io/badge/Product%20Hunt-DA552F?logo=producthunt&logoColor=white)](https://www.producthunt.com/products/lintpal?launch=lintpal)
 
-**Turn your engineering rules into pull-request checks.**
+**Turn your freeform engineering rules into PR checks.**
 
 LintPal is a Go CLI that checks Git changes against your team's Markdown rules.
 Your selected AI provider evaluates the rules; LintPal reports findings on
