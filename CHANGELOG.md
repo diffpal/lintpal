@@ -24,8 +24,8 @@ is unchanged from 0.6.0.
 
 ### Removed
 
-- The separate Rule feedback Discussion form. Bugs and incorrect findings
-  use GitHub Issues.
+- Custom Discussion forms. Discussions uses GitHub's standard composer;
+  bugs and incorrect findings use GitHub Issues.
 
 ## [0.6.0] - 2026-09-30
 
