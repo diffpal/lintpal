@@ -10,10 +10,10 @@
 
 **Turn your freeform engineering rules into PR checks.**
 
-LintPal is a Go CLI that checks Git changes against your team's Markdown rules.
-Your selected AI provider evaluates the rules; LintPal reports findings on
-changed lines and applies a deterministic severity gate. Run it locally or
-publish reviews directly to GitHub.
+Use System One models like Jev through compatible Decisions APIs.
+LintPal checks Git changes against your team's Markdown rules and reports
+findings on changed lines. Gate CI by severity, run locally, or publish reviews
+directly to GitHub.
 
 LintPal is part of the [DiffPal family](https://github.com/diffpal/diffpal).
 It checks explicit repository rules; [DiffPal](https://diffpal.github.io/)

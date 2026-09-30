@@ -24,7 +24,7 @@ profiles:
         distributions:
             npm:
                 package: lintpal
-                description: Turn your freeform engineering rules into PR checks. A Go CLI with Markdown rules, line-level findings, and deterministic CI gates.
+                description: Turn your freeform engineering rules into PR checks. Use System One models like Jev through compatible Decisions APIs.
                 aliases:
                     - '@diffpal/lintpal'
                 platform-package: '@diffpal/lintpal'
