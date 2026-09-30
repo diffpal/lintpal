@@ -3,7 +3,7 @@
 Omnidist builds the same `./cmd/lintpal` executable for Linux amd64/arm64,
 macOS amd64/arm64, and Windows amd64. The npm meta packages `lintpal` and
 `@diffpal/lintpal` both point to one set of five `@diffpal/lintpal-*`
-platform packages. Omnidist reads the version from the exact SemVer Git tag
+platform packages. The release workflow reads the version from the exact SemVer Git tag
 at `HEAD` and embeds it in `lintpal version`. The first public lintpal release was
 [v0.2.0](https://github.com/diffpal/lintpal/releases/tag/v0.2.0); both npm meta
 packages and all five platform packages were published. See
@@ -33,6 +33,12 @@ Pushing a `v*` tag runs those checks, builds and verifies all npm packages,
 publishes with npm trusted publishing, then creates a GitHub Release with the
 five binaries and checksums. The [manual stage workflow](../../.github/workflows/stage.yml)
 stores build and npm artifacts without publishing.
+
+An unpublished candidate can be staged in an isolated temporary checkout with
+its own local SemVer tag. A version environment override does not replace the
+configured `git-tag` version source. The temporary tag is not pushed; public
+publication still requires the reviewed exact tag and trusted workflow.
+All release targets use `CGO_ENABLED=0` via the configured `build.cgo: false`.
 
 Staging and the dry run do not publish. The [v0.3.0 release runbook](../releases/release-v0.3.0.md)
 records the exact package and asset set, preflight commands, and public

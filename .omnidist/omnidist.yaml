@@ -24,7 +24,7 @@ profiles:
         distributions:
             npm:
                 package: lintpal
-                description: Jev-powered freeform linter for any programming language.
+                description: Turn plain-English engineering rules into pull-request checks.
                 aliases:
                     - '@diffpal/lintpal'
                 platform-package: '@diffpal/lintpal'

@@ -3,6 +3,41 @@
 The [GitHub Releases](https://github.com/diffpal/lintpal/releases) page shows
 which versions have been published.
 
+## [0.6.0] - Unreleased
+
+### Added
+
+- An OpenAI provider preset for an assumed compatible Decisions API, requiring
+  an explicit model. Live API availability has not been verified.
+- Configurable custom provider paths through `--api-path` and `LINTPAL_API_PATH`,
+  retaining `/v1/systemone` when no path is configured.
+
+### Changed
+
+- The README quickstart installs the CLI globally and runs lint and GitHub
+  feedback commands directly; all four provider options have setup examples.
+- LintPal uses the DiffPal family mascot with a white sticker outline for
+  visibility on dark backgrounds, without a text label.
+- Release tooling uses Omnidist 0.1.40 and its corrected checksum command.
+- npm descriptions use the product tagline.
+
+### Fixed
+
+- OpenRouter now uses `/api/alpha/decisions` and the provider-specific default
+  model `typesafe/jev-1.13`.
+- CLI argument validation and Git resource limits match their documented
+  contracts; rule imports and Git comparison documentation describe actual
+  behavior.
+
+### Known limitations
+
+- OpenAI support assumes a compatible `/v1/decisions` service; neither its live
+  endpoint nor a model identifier has been verified.
+- Remote providers receive bounded source context and rule text. Findings are
+  not a model-accuracy guarantee; see [privacy](docs/architecture/privacy.md).
+- This candidate is not yet published. Product Hunt community/gallery/account
+  gates remain separate from source and package preparation.
+
 ## [0.5.4] - 2026-09-29
 
 ### Added
