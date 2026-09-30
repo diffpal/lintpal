@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/diffpal/lintpal/internal/apps/lintpal/app"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/decisions"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
 )
@@ -21,7 +22,7 @@ var ErrInvalidOptions = errors.New("invalid lint options")
 // explicit empty flag from an absent flag when environment values are present.
 type RawOptions struct {
 	Base, Head, Provider, Model, Rules, Format, Out, FailOn, BlockOn string
-	Timeout, MaxConcurrency, BaseURL, AuthTokenEnv                   string
+	Timeout, MaxConcurrency, BaseURL, APIPath, AuthTokenEnv          string
 	RuleThreshold, RuleSeverity                                      string
 	Include, Exclude                                                 []string
 	Metrics                                                          bool
@@ -31,7 +32,7 @@ type RawOptions struct {
 
 type Options struct {
 	Base, Head, Provider, Model, Rules, Out string
-	BaseURL, AuthTokenEnv                   string
+	BaseURL, APIPath, AuthTokenEnv          string
 	Credential                              string
 	CredentialResolved                      bool
 	Format                                  report.Format
@@ -96,8 +97,11 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 	}
 	provider := choose("provider", raw.Provider, "LINTPAL_PROVIDER", "jev")
 	defaultModel := "jev-latest"
-	if provider == "openrouter" {
+	switch provider {
+	case "openrouter":
 		defaultModel = "typesafe/jev-1.13"
+	case "openai":
+		defaultModel = ""
 	}
 	o := Options{
 		Base:             base,
@@ -108,6 +112,7 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		Rules:            choose("rules", raw.Rules, "LINTPAL_RULES", ""),
 		Out:              choose("out", raw.Out, "LINTPAL_OUT", ""),
 		BaseURL:          choose("base-url", raw.BaseURL, "LINTPAL_BASE_URL", ""),
+		APIPath:          choose("api-path", raw.APIPath, "LINTPAL_API_PATH", ""),
 		AuthTokenEnv:     choose("auth-token-env", raw.AuthTokenEnv, "LINTPAL_AUTH_TOKEN_ENV", ""),
 		Format:           report.Format(choose("format", raw.Format, "LINTPAL_FORMAT", "markdown")),
 		FailOn:           report.Threshold(threshold),
@@ -139,11 +144,11 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		return Options{}, ErrInvalidOptions
 	}
 	if len(o.Base) > 256 || len(o.Head) > 256 || !modelName.MatchString(o.Model) ||
-		len(o.Rules) > 4096 || len(o.Out) > 4096 || len(o.BaseURL) > 2048 || len(o.AuthTokenEnv) > 128 {
+		len(o.Rules) > 4096 || len(o.Out) > 4096 || len(o.BaseURL) > 2048 || len(o.APIPath) > 2048 || len(o.AuthTokenEnv) > 128 {
 		return Options{}, ErrInvalidOptions
 	}
 	switch o.Provider {
-	case "jev", "openrouter", "custom":
+	case "jev", "openrouter", "openai", "custom":
 	default:
 		return Options{}, ErrInvalidOptions
 	}
@@ -157,14 +162,21 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 	default:
 		return Options{}, ErrInvalidOptions
 	}
+	_, pathEnvSet := lookup("LINTPAL_API_PATH")
 	if o.Provider == "custom" {
+		if !raw.Changed["api-path"] && !pathEnvSet {
+			o.APIPath = "/v1/systemone"
+		}
 		if o.BaseURL == "" {
 			return Options{}, ErrInvalidOptions
 		}
 		if o.AuthTokenEnv == "" {
 			o.AuthTokenEnv = "LINTPAL_TOKEN"
 		}
-	} else if o.BaseURL != "" || o.AuthTokenEnv != "" {
+		if _, err := decisions.TrustedCustomPath(o.BaseURL, o.APIPath, o.AuthTokenEnv); err != nil {
+			return Options{}, ErrInvalidOptions
+		}
+	} else if o.BaseURL != "" || o.AuthTokenEnv != "" || pathEnvSet || raw.Changed["api-path"] || raw.Changed["base-url"] || raw.Changed["auth-token-env"] {
 		return Options{}, ErrInvalidOptions
 	}
 	switch o.Provider {
@@ -172,6 +184,8 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		o.Credential, _ = lookup("TYPESAFE_API_KEY")
 	case "openrouter":
 		o.Credential, _ = lookup("OPENROUTER_API_KEY")
+	case "openai":
+		o.Credential, _ = lookup("OPENAI_API_KEY")
 	case "custom":
 		o.Credential, _ = lookup(o.AuthTokenEnv)
 	}

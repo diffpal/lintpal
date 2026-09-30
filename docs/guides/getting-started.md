@@ -1,11 +1,11 @@
 # Getting started
 
 Run LintPal from the Git repository you want to check. The npm package
-provides a native CLI; use `npx lintpal` after installing it in the project:
+provides a native CLI for repositories in any language; install it globally:
 
 ```bash
-npm install --save-dev lintpal
-npx lintpal version
+npm install -g lintpal
+lintpal version
 ```
 
 The commands below describe this source revision. Check
@@ -22,13 +22,21 @@ mkdir -p .lintpal/rules/go
 cat > .lintpal/rules/go/errors.md <<'RULE'
 Handle errors returned by calls when failure can change the result or behavior.
 RULE
-npx lintpal rule validate
+lintpal rule validate
 ```
 
 LintPal finds that directory at the Git worktree root even when you run from a
 subdirectory. It does not supply built-in rules. See [rule authoring](../rules/authoring.md)
 for optional frontmatter and [rule import](../rules/import.md) for copying a team
 catalog into the same directory.
+
+## Choose a provider
+
+LintPal supports TypeSafe/Jev (`jev`, the default), OpenRouter (`openrouter`),
+OpenAI (`openai`, assuming a compatible Decisions API), and your own compatible
+endpoint (`custom`). Follow [provider setup](configuration.md#supported-providers)
+for credentials and commands for each. OpenAI live availability is unverified
+and its preset requires an explicit model. The example below uses TypeSafe/Jev.
 
 ## Lint uncommitted or committed changes
 
@@ -38,13 +46,13 @@ provider request:
 
 ```bash
 export TYPESAFE_API_KEY='your-provider-key'
-npx lintpal doctor
+lintpal doctor
 
 # Review uncommitted working-tree changes before committing
-npx lintpal lint --uncommitted
+lintpal lint --uncommitted
 
 # Or review committed revisions
-npx lintpal lint --base origin/main --head HEAD
+lintpal lint --base origin/main --head HEAD
 ```
 
 Run `lint --uncommitted` to review local working-tree changes (including unstaged

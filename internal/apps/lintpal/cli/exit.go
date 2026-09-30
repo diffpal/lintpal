@@ -12,7 +12,7 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/git"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/githubfeedback"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
-	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/decisions"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/ruleimport"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
@@ -33,13 +33,13 @@ func ExitCode(err error) int {
 	if errors.Is(err, report.ErrGate) {
 		return 10
 	}
-	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, systemone.ErrTransport) {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, decisions.ErrTransport) {
 		return 3
 	}
 	if strings.HasPrefix(err.Error(), "unknown command") {
 		return 2
 	}
-	var status systemone.HTTPError
+	var status decisions.HTTPError
 	if errors.As(err, &status) {
 		if status.Status == http.StatusTooManyRequests || status.Status == 529 || status.Status >= 500 && status.Status <= 599 {
 			return 3
@@ -53,8 +53,8 @@ func ExitCode(err error) int {
 		errors.Is(err, report.ErrInvalidReport) || errors.Is(err, report.ErrInvalidFormat) || errors.Is(err, report.ErrInvalidThreshold) ||
 		errors.Is(err, git.ErrAmbiguousBase) || errors.Is(err, git.ErrInvalidLimits) ||
 		errors.Is(err, git.ErrLimit) || errors.Is(err, contextplan.ErrInvalidLimits) ||
-		errors.Is(err, contextplan.ErrLimit) || errors.Is(err, systemone.ErrInvalidEndpoint) ||
-		errors.Is(err, systemone.ErrMissingCredential) || errors.Is(err, jev.ErrInvalidRequest) ||
+		errors.Is(err, contextplan.ErrLimit) || errors.Is(err, decisions.ErrInvalidEndpoint) ||
+		errors.Is(err, decisions.ErrMissingCredential) || errors.Is(err, jev.ErrInvalidRequest) ||
 		errors.Is(err, rules.ErrInvalidPack) || errors.Is(err, rules.ErrInvalidRule) ||
 		errors.Is(err, rules.ErrUnsupportedSchema) || errors.Is(err, rules.ErrPackLimit) ||
 		errors.Is(err, os.ErrNotExist) {

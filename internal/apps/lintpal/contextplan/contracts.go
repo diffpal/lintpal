@@ -44,7 +44,7 @@ const (
 
 	hardStateBytes        = 28_000
 	hardTotalStateBytes   = 128 << 20
-	hardRequestBytes      = 30_000 // below the 1 MiB System One transport cap
+	hardRequestBytes      = 30_000 // below the 1 MiB Decisions transport cap
 	hardByteBudget        = 30_000 // below the portable 32K context target
 	hardMaxItems          = 100_000
 	hardMaxGroups         = 100_000

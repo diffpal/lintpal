@@ -15,7 +15,7 @@ import (
 	"github.com/diffpal/lintpal/internal/apps/lintpal/cli"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/git"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/jev"
-	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/decisions"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rules"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/rulesource"
@@ -105,16 +105,18 @@ func loadPack(ctx context.Context, dir string, options cli.Options) (rules.Pack,
 	return applyPolicy(pack)
 }
 
-func newProvider(options cli.Options, client *http.Client) (*systemone.Provider, error) {
-	var endpoint systemone.Endpoint
+func newProvider(options cli.Options, client *http.Client) (*decisions.Provider, error) {
+	var endpoint decisions.Endpoint
 	switch options.Provider {
 	case "jev":
-		endpoint = systemone.TypeSafe()
+		endpoint = decisions.TypeSafe()
 	case "openrouter":
-		endpoint = systemone.OpenRouter()
+		endpoint = decisions.OpenRouter()
+	case "openai":
+		endpoint = decisions.OpenAI()
 	case "custom":
 		var err error
-		endpoint, err = systemone.TrustedCustom(options.BaseURL, options.AuthTokenEnv)
+		endpoint, err = decisions.TrustedCustomPath(options.BaseURL, customAPIPath(options.APIPath), options.AuthTokenEnv)
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +124,15 @@ func newProvider(options cli.Options, client *http.Client) (*systemone.Provider,
 		return nil, cli.ErrInvalidOptions
 	}
 	if options.CredentialResolved {
-		return systemone.NewWithToken(endpoint, client, options.Credential)
+		return decisions.NewWithToken(endpoint, client, options.Credential)
 	}
-	return systemone.New(endpoint, client)
+	return decisions.New(endpoint, client)
+}
+
+// Direct internal callers retain the historical custom default.
+func customAPIPath(path string) string {
+	if path == "" {
+		return "/v1/systemone"
+	}
+	return path
 }

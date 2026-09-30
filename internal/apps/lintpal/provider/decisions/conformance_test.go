@@ -1,4 +1,4 @@
-package systemone
+package decisions
 
 import (
 	"encoding/json"
@@ -20,6 +20,7 @@ func (f roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) 
 func TestPresetAndCustomConformance(t *testing.T) {
 	t.Setenv("TYPESAFE_API_KEY", "native-secret")
 	t.Setenv("OPENROUTER_API_KEY", "router-secret")
+	t.Setenv("OPENAI_API_KEY", "openai-secret")
 	for _, tc := range []struct {
 		name     string
 		endpoint Endpoint
@@ -28,6 +29,7 @@ func TestPresetAndCustomConformance(t *testing.T) {
 	}{
 		{"typesafe", TypeSafe(), "https://api.typesafe.ai/v1/systemone", "native-secret"},
 		{"openrouter", OpenRouter(), "https://openrouter.ai/api/alpha/decisions", "router-secret"},
+		{"openai", OpenAI(), "https://api.openai.com/v1/decisions", "openai-secret"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
@@ -185,6 +187,58 @@ func TestOpenRouterDecisionsContract(t *testing.T) {
 		strings.Replace(openRouterResponse, `"noul":0.7`, `"noul":1.7`, 1),
 		strings.Replace(openRouterResponse, `"input_tokens":12`, `"input_tokens":-1`, 1),
 		strings.Replace(openRouterResponse, `"n":{"type":"noul","noul":0.7},`, ``, 1),
+	} {
+		if _, err := decodeResponse([]byte(body), request); !errors.Is(err, ErrProtocol) {
+			t.Fatalf("invalid Decisions envelope accepted: %v", err)
+		}
+	}
+}
+
+// Fixture for the operator-assumed compatible OpenAI contract, not a live response.
+const openAIResponse = `{"id":"gen-decision-fixture","provider":"TypeSafe","model":"decision-test-model-20260917","answers":{"n":{"type":"noul","noul":0.7},"c":{"type":"choice","choice":"risk","probabilities":{"safe":0.2,"risk":0.8},"confidence":0.6},"s":{"type":"score","score":0.8,"legend":{"0":"low","1":"high"},"probabilities":{"0":0.2,"1":0.8},"confidence":0.6}},"usage":{"input_tokens":12,"output_tokens":3,"cost":0.00002}}`
+
+func TestOpenAIAssumedDecisionsContract(t *testing.T) {
+	t.Setenv("TYPESAFE_API_KEY", "unselected-native-secret")
+	request := typedRequest()
+	request.Model = "decision-test-model"
+	calls := 0
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		calls++
+		if r.Method != http.MethodPost || r.URL.String() != "https://api.openai.com/v1/decisions" || r.Header.Get("Authorization") != "Bearer openai-secret" || r.Header.Get("Content-Type") != "application/json" {
+			t.Fatalf("wrong Decisions destination/headers: %s %s", r.Method, r.URL)
+		}
+		var payload struct {
+			Model     string
+			State     map[string]any
+			Questions map[string]map[string]any
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatal(err)
+		}
+		if payload.Model != request.Model || payload.State["file"] != "safe bounded state" || len(payload.Questions) != 3 || payload.Questions["n"]["type"] != "noul" || payload.Questions["c"]["type"] != "choice" || payload.Questions["s"]["type"] != "score" {
+			t.Fatalf("invalid Decisions payload: %+v", payload)
+		}
+		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(openAIResponse))}, nil
+	})}
+	provider, err := NewWithToken(OpenAI(), client, "openai-secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := provider.Evaluate(t.Context(), request)
+	if err != nil || calls != 1 {
+		t.Fatalf("calls=%d err=%v", calls, err)
+	}
+	if response.Model != "decision-test-model-20260917" || response.Usage.InputTokens != 12 || response.Usage.OutputTokens != 3 || response.Usage.CostUSD == nil || *response.Usage.CostUSD != 0.00002 || len(response.Answers) != 3 {
+		t.Fatalf("normalization: %+v", response)
+	}
+	if response.Answers["n"].(jev.NoulAnswer).Probability != .7 || response.Answers["c"].(jev.ChoiceAnswer).Choice != "risk" || response.Answers["s"].(jev.ScoreAnswer).Score != .8 {
+		t.Fatalf("typed answers: %+v", response.Answers)
+	}
+	for _, body := range []string{
+		strings.Replace(openAIResponse, `"type":"noul"`, `"type":"unsupported"`, 1),
+		strings.Replace(openAIResponse, `"noul":0.7`, `"noul":1.7`, 1),
+		strings.Replace(openAIResponse, `"input_tokens":12`, `"input_tokens":-1`, 1),
+		strings.Replace(openAIResponse, `"n":{"type":"noul","noul":0.7},`, ``, 1),
 	} {
 		if _, err := decodeResponse([]byte(body), request); !errors.Is(err, ErrProtocol) {
 			t.Fatalf("invalid Decisions envelope accepted: %v", err)

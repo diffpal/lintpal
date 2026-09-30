@@ -8,22 +8,92 @@ file or `--no-env-file` to disable file loading. A missing default file is
 fine; a missing explicit file is an error. See [`.env.example`](../../.env.example)
 and the full [CLI reference](../reference/cli.md).
 
+## Supported providers
+
+Choose TypeSafe/Jev for direct native access, OpenRouter to use your OpenRouter
+account, OpenAI for its compatible Decisions preset, or custom to connect your
+own compatible service. All four use the same rules, findings, and gate.
+
 | Provider | Credential | Additional setting |
 | --- | --- | --- |
-| `jev` (default) | `TYPESAFE_API_KEY` | Preset endpoint; optional model alias |
+| `jev` (default) | `TYPESAFE_API_KEY` | Fixed native endpoint; optional model alias |
 | `openrouter` | `OPENROUTER_API_KEY` | Fixed Decisions endpoint; optional model identifier |
-| `custom` | `LINTPAL_TOKEN` by default | Required `--base-url` or `LINTPAL_BASE_URL` |
+| `openai` | `OPENAI_API_KEY` | Fixed assumed Decisions endpoint; required `--model` or `LINTPAL_MODEL` |
+| `custom` | `LINTPAL_TOKEN` by default | Required `--base-url`; optional `--api-path` and `--auth-token-env` |
 
-The model defaults to `typesafe/jev-1.13` for OpenRouter and `jev-latest`
-for `jev` or `custom`. Use `--model` or `LINTPAL_MODEL` for a model your
-provider accepts; explicit values are sent unchanged. When switching providers,
-review any existing model override in your environment or `.env`.
+These commands assume a globally installed CLI (`npm install -g lintpal`),
+a Git worktree and [repository rules](../rules/authoring.md). They describe this
+source revision; check [releases](https://github.com/diffpal/lintpal/releases)
+for published package support.
 
-`jev` calls `https://api.typesafe.ai/v1/systemone`. OpenRouter calls
-`https://openrouter.ai/api/alpha/decisions`. A custom endpoint uses its trusted
-base URL plus `/v1/systemone`. A custom loopback endpoint may use HTTP; remote
-custom endpoints require HTTPS. `doctor` checks local Git and credential
-presence without contacting a provider. `lint` makes provider requests.
+### TypeSafe / Jev
+
+```bash
+export TYPESAFE_API_KEY='your-typesafe-key'
+lintpal doctor --provider jev
+lintpal lint --uncommitted --provider jev
+```
+
+The native endpoint is `https://api.typesafe.ai/v1/systemone`, with model
+`jev-latest` by default.
+
+### OpenRouter
+
+```bash
+export OPENROUTER_API_KEY='your-openrouter-key'
+lintpal doctor --provider openrouter
+lintpal lint --uncommitted --provider openrouter
+```
+
+OpenRouter uses `https://openrouter.ai/api/alpha/decisions`, with model
+`typesafe/jev-1.13` by default.
+
+### OpenAI
+
+The preset assumes OpenAI exposes `https://api.openai.com/v1/decisions` with
+the compatible Decisions shape. Its live availability and model identifiers
+have not been verified. Replace the model placeholder with one accepted by
+that service; LintPal requires an explicit model and supplies no OpenAI default.
+
+```bash
+export OPENAI_API_KEY='your-openai-key'
+lintpal doctor --provider openai
+lintpal lint --uncommitted --provider openai --model '<model-id>'
+```
+
+`doctor` checks local configuration and credential presence, not API or model
+availability.
+
+### Custom compatible service
+
+```bash
+export MY_DECISIONS_API_KEY='your-service-key'
+lintpal doctor --provider custom --base-url https://decisions.example.test/api \
+  --api-path /v1/decisions --auth-token-env MY_DECISIONS_API_KEY
+lintpal lint --uncommitted --provider custom \
+  --base-url https://decisions.example.test/api --api-path /v1/decisions \
+  --auth-token-env MY_DECISIONS_API_KEY --model '<model-id>'
+```
+
+The target is `https://decisions.example.test/api/v1/decisions`: the API path
+is appended to the base prefix, preserving `/api`. Without `--api-path` or
+`LINTPAL_API_PATH`, custom retains `/v1/systemone`; an explicitly empty path
+is invalid. Paths must start with one `/` and contain no query, fragment,
+percent escapes, whitespace, backslashes, repeated slashes or `.`/`..` segments.
+A base URL must not already end in the selected API path. Loopback custom
+endpoints may use HTTP; remote endpoints require HTTPS. Custom services must
+accept the same typed `model`, `state`, `questions` request and
+`model`, `answers`, `usage` response; this is not a general chat API adapter.
+
+Custom defaults to `LINTPAL_TOKEN` and model `jev-latest`. Select your own
+model with `--model` or `LINTPAL_MODEL`, and token variable with
+`--auth-token-env` or `LINTPAL_AUTH_TOKEN_ENV`. Custom cannot use the preset
+key names `TYPESAFE_API_KEY`, `OPENROUTER_API_KEY`, or `OPENAI_API_KEY`.
+Presets reject custom base URL, API path and token-source overrides.
+
+For any provider, explicit model values are sent unchanged. Review existing
+model and custom-setting overrides when switching providers. `lint` makes
+provider requests; `doctor` never does.
 
 ## Rules and reports
 

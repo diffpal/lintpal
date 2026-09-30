@@ -3,9 +3,9 @@
 <img src="assets/lintpal-thumbnail.png" alt="LintPal logo with the DiffPal family mark" width="96">
 
 lintpal reviews committed changes from merge base through head, or explicit
-`--uncommitted` working-tree changes. It asks a selected
-System One provider questions defined by repository Markdown rules, then
-reports findings tied to changed lines. Start with the [README](../README.md)
+`--uncommitted` working-tree changes. It turns repository Markdown rules into
+typed Decisions questions, sends them to the selected provider, and reports
+findings tied to changed lines. Start with the [README](../README.md)
 for the short overview.
 
 ## DiffPal family
@@ -22,7 +22,7 @@ Practical guides for setting up and running lintpal in local and CI environments
 
 - [Getting started](guides/getting-started.md): install through npm and lint a first
   committed or local comparison.
-- [Configuration](guides/configuration.md): providers, `.env`, rule selection, output,
+- [Configuration](guides/configuration.md): TypeSafe/Jev, OpenRouter, OpenAI and custom provider setup, `.env`, rule selection, output,
   and common setup failures.
 - [Demo pull request](https://github.com/diffpal/lintpal-demo/pull/3): review
   live GitHub Actions feedback and inline rule findings.

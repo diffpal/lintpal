@@ -1,5 +1,5 @@
-// Package systemone implements the typed TypeSafe System One and OpenRouter Decisions HTTP transport.
-package systemone
+// Package decisions implements the shared typed Decisions HTTP transport.
+package decisions
 
 import (
 	"errors"
@@ -11,10 +11,11 @@ import (
 	"strings"
 )
 
-var ErrInvalidEndpoint = errors.New("invalid System One endpoint")
+var ErrInvalidEndpoint = errors.New("invalid Decisions endpoint")
 
 const typeSafeBase = "https://api.typesafe.ai"
 const openRouterBase = "https://openrouter.ai/api"
+const openAIBase = "https://api.openai.com"
 
 var envName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
@@ -38,25 +39,61 @@ func OpenRouter() Endpoint {
 	return Endpoint{base: base, apiPath: "/alpha/decisions", tokenEnv: "OPENROUTER_API_KEY"}
 }
 
+// OpenAI uses the assumed compatible Decisions destination and its own key.
+func OpenAI() Endpoint {
+	base, _ := url.Parse(openAIBase)
+	return Endpoint{base: base, apiPath: "/v1/decisions", tokenEnv: "OPENAI_API_KEY"}
+}
+
 // TrustedCustom constructs a custom endpoint from process-trusted settings.
 // Callers must not pass repository-controlled URLs or token env names here.
 // An empty tokenEnv creates an uncredentialed endpoint.
 func TrustedCustom(baseURL, tokenEnv string) (Endpoint, error) {
-	if tokenEnv == "TYPESAFE_API_KEY" || tokenEnv == "OPENROUTER_API_KEY" ||
+	return TrustedCustomPath(baseURL, "/v1/systemone", tokenEnv)
+}
+
+// TrustedCustomPath constructs a custom endpoint with a process-trusted path.
+// Paths are unescaped and appended to the base prefix without URL resolution.
+func TrustedCustomPath(baseURL, apiPath, tokenEnv string) (Endpoint, error) {
+	if !validAPIPath(apiPath) {
+		return Endpoint{}, ErrInvalidEndpoint
+	}
+	if tokenEnv == "TYPESAFE_API_KEY" || tokenEnv == "OPENROUTER_API_KEY" || tokenEnv == "OPENAI_API_KEY" ||
 		(tokenEnv != "" && !envName.MatchString(tokenEnv)) {
 		return Endpoint{}, ErrInvalidEndpoint
 	}
 	base, err := url.Parse(baseURL)
 	if err != nil || base == nil || base.Opaque != "" || base.User != nil || base.Host == "" ||
 		base.RawQuery != "" || base.Fragment != "" || base.RawFragment != "" || base.RawPath != "" ||
-		strings.Contains(base.Path, "..") || strings.HasSuffix(base.Path, "/v1/systemone") {
+		strings.Contains(base.Path, "..") || strings.HasSuffix(strings.TrimRight(base.Path, "/"), apiPath) || !validBasePath(base.Path) {
 		return Endpoint{}, ErrInvalidEndpoint
 	}
 	if base.Scheme != "https" && (base.Scheme != "http" || !loopbackHost(base.Hostname())) {
 		return Endpoint{}, ErrInvalidEndpoint
 	}
 	base.Path = strings.TrimRight(base.Path, "/")
-	return Endpoint{base: base, apiPath: "/v1/systemone", tokenEnv: tokenEnv}, nil
+	return Endpoint{base: base, apiPath: apiPath, tokenEnv: tokenEnv}, nil
+}
+
+// Reject escaping and normalization aliases so HTTP clients and servers agree
+// on the literal destination, including the trusted base prefix.
+func validAPIPath(path string) bool {
+	return len(path) > 0 && len(path) <= 2048 && strings.HasPrefix(path, "/") &&
+		!strings.HasPrefix(path, "//") && validBasePath(path)
+}
+
+func validBasePath(path string) bool {
+	for _, r := range path {
+		if r <= ' ' || r >= 127 || strings.ContainsRune("%\\?#", r) {
+			return false
+		}
+	}
+	for segment := range strings.SplitSeq(path, "/") {
+		if segment == "." || segment == ".." {
+			return false
+		}
+	}
+	return !strings.Contains(path, "//")
 }
 
 func loopbackHost(host string) bool {

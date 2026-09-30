@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/diffpal/lintpal/internal/apps/lintpal/git"
-	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/systemone"
+	"github.com/diffpal/lintpal/internal/apps/lintpal/provider/decisions"
 	"github.com/diffpal/lintpal/internal/apps/lintpal/report"
 )
 
@@ -16,8 +16,8 @@ func TestExitCodeCategories(t *testing.T) {
 		code int
 	}{
 		{nil, 0}, {ErrInvalidOptions, 2}, {git.ErrInvalidRevision, 2},
-		{systemone.ErrMissingCredential, 2}, {systemone.HTTPError{Status: 401}, 2},
-		{systemone.ErrTransport, 3}, {systemone.HTTPError{Status: 429}, 3},
+		{decisions.ErrMissingCredential, 2}, {decisions.HTTPError{Status: 401}, 2},
+		{decisions.ErrTransport, 3}, {decisions.HTTPError{Status: 429}, 3},
 		{context.DeadlineExceeded, 3}, {report.ErrExport, 4}, {errors.New("unknown"), 5},
 		{report.ErrGate, 10}, {context.Canceled, 130},
 		{errors.Join(context.Canceled, report.ErrExport), 130},

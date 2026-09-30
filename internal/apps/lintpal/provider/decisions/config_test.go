@@ -1,4 +1,4 @@
-package systemone
+package decisions
 
 import (
 	"errors"
@@ -10,6 +10,7 @@ import (
 func TestPresetDestinationsAndTokenSources(t *testing.T) {
 	t.Setenv("TYPESAFE_API_KEY", "native-secret")
 	t.Setenv("OPENROUTER_API_KEY", "router-secret")
+	t.Setenv("OPENAI_API_KEY", "openai-secret")
 	for _, tc := range []struct {
 		name  string
 		value Endpoint
@@ -18,6 +19,7 @@ func TestPresetDestinationsAndTokenSources(t *testing.T) {
 	}{
 		{"typesafe", TypeSafe(), "https://api.typesafe.ai/v1/systemone", "native-secret"},
 		{"openrouter", OpenRouter(), "https://openrouter.ai/api/alpha/decisions", "router-secret"},
+		{"openai", OpenAI(), "https://api.openai.com/v1/decisions", "openai-secret"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			target, err := tc.value.target()
@@ -31,6 +33,7 @@ func TestPresetDestinationsAndTokenSources(t *testing.T) {
 func TestCustomRequiresExplicitTokenSource(t *testing.T) {
 	t.Setenv("TYPESAFE_API_KEY", "native-secret")
 	t.Setenv("OPENROUTER_API_KEY", "router-secret")
+	t.Setenv("OPENAI_API_KEY", "openai-secret")
 	t.Setenv("LINTPAL_TOKEN", "custom-secret")
 	endpoint, err := TrustedCustom("http://127.0.0.1:9090/api", "")
 	if err != nil || endpoint.token() != "" {
@@ -55,7 +58,7 @@ func TestRejectUnsafeEndpoint(t *testing.T) {
 	if _, err := TrustedCustom("https://example.test", "BAD-NAME"); !errors.Is(err, ErrInvalidEndpoint) {
 		t.Fatalf("invalid token env name error = %v", err)
 	}
-	for _, presetEnv := range []string{"TYPESAFE_API_KEY", "OPENROUTER_API_KEY"} {
+	for _, presetEnv := range []string{"TYPESAFE_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY"} {
 		if _, err := TrustedCustom("https://example.test", presetEnv); !errors.Is(err, ErrInvalidEndpoint) {
 			t.Fatalf("custom endpoint accepted preset token source %s: %v", presetEnv, err)
 		}

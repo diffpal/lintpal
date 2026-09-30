@@ -29,6 +29,8 @@ gate can then fail the check.
 
 ## Features
 
+- **Provider choice:** use TypeSafe/Jev, OpenRouter, OpenAI, or your own
+  compatible Decisions service with the same repository rules and CI workflow.
 - **Freeform rules:** write one clear requirement per Markdown file, with
   optional severity and decision-threshold policy in frontmatter.
 - **Rule packs:** import a local directory or a versioned GitHub catalog, then
@@ -37,6 +39,24 @@ gate can then fail the check.
   complete findings artifact after each successful evaluation.
 - **Platform feedback:** publish a deterministic GitHub review summary and
   inline comments, or consume the same findings as JSON or Markdown in CI.
+
+## Supported Providers
+
+Choose the provider that fits your account and deployment. Your Markdown rules,
+findings, and severity gate work the same way across providers.
+
+| Provider | Choose it for | CLI option | Credential |
+| --- | --- | --- | --- |
+| [**TypeSafe / Jev**](docs/guides/configuration.md#typesafe--jev) | Direct access to Jev; the default setup | `--provider jev` | `TYPESAFE_API_KEY` |
+| [**OpenRouter**](docs/guides/configuration.md#openrouter) | Decisions through your OpenRouter account | `--provider openrouter` | `OPENROUTER_API_KEY` |
+| [**OpenAI**](docs/guides/configuration.md#openai) | A preset for compatible OpenAI Decisions | `--provider openai --model <model-id>` | `OPENAI_API_KEY` |
+| [**Custom**](docs/guides/configuration.md#custom-compatible-service) | Your own compatible service, including a local endpoint | `--provider custom --base-url <url> --api-path <path>` | `LINTPAL_TOKEN` or your chosen token variable |
+
+The OpenAI preset assumes a compatible `/v1/decisions` API; live availability
+has not been verified. These options describe this source revision; check
+[releases](https://github.com/diffpal/lintpal/releases) for published package support.
+See [provider setup and commands](docs/guides/configuration.md#supported-providers)
+for all four options. The quickstart below uses TypeSafe/Jev.
 
 ## How It Works
 
@@ -141,10 +161,10 @@ through the same pull-request process as code. LintPal ships without hidden or
 built-in mandates.
 
 ```bash
-npx lintpal rule list
-npx lintpal rule view general/authorization.md
-npx lintpal rule validate
-npx lintpal rule import github:diffpal/lintpal-rules//go@v1.1.0
+lintpal rule list
+lintpal rule view general/authorization.md
+lintpal rule validate
+lintpal rule import github:diffpal/lintpal-rules//go@v1.1.0
 ```
 
 Read [rule authoring](docs/rules/authoring.md) for the complete format and
@@ -156,13 +176,13 @@ Check uncommitted changes in your working tree before committing, or compare two
 
 ```bash
 export TYPESAFE_API_KEY='your-provider-key'
-npx lintpal doctor
+lintpal doctor
 
 # Lint uncommitted working-tree changes (staged, unstaged, and untracked regular files)
-npx lintpal lint --uncommitted
+lintpal lint --uncommitted
 
 # Or lint committed revisions
-npx lintpal lint --base origin/main --head HEAD
+lintpal lint --base origin/main --head HEAD
 ```
 
 Committed comparisons start at the unique merge base of base and head; changes
@@ -173,8 +193,8 @@ Markdown findings go to stdout. Use `--out` to retain the complete JSON
 artifact, or `--format json` for JSON on stdout. The default gate returns exit
 code `10` when a high or critical finding blocks the run.
 
-The default provider is Jev. LintPal also supports OpenRouter and a trusted
-custom endpoint. Provider credentials stay in environment variables; the
+Choose TypeSafe/Jev, OpenRouter, OpenAI, or a custom compatible endpoint
+from [Supported Providers](#supported-providers). Provider credentials stay in environment variables; the
 selected provider receives bounded source context and rule text.
 See [configuration](docs/guides/configuration.md) and [privacy](docs/architecture/privacy.md).
 

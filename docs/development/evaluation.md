@@ -2,7 +2,7 @@
 
 The required evaluation is offline. Run `go test ./internal/apps/lintpal/eval -count=1` to check the frozen corpus in `internal/apps/lintpal/eval/testdata/corpus.json` against `summary.json` and `reports.json` in the same directory. These eight labeled examples use **fake Noul probabilities** with fixture Markdown rules and the real selection, decision, and report code. The baseline has 3 true positives, 3 true negatives, 1 false positive, and 1 false negative. Those counts test the evaluator and threshold behavior; they are not measured model precision.
 
-The normal `go test ./...` run also checks the CLI JSON and Markdown goldens, parser fuzz seeds, temporary Git repositories, fake System One transport, redaction, cancellation, and resource limits. The required CI workflow has no live provider secret or endpoint. To update an offline baseline after reviewing changed labels, source examples, and diagnostic diffs, run `UPDATE_EVAL_BASELINE=1 go test ./internal/apps/lintpal/eval -count=1` and review both resulting JSON files. This update is a source change that needs normal code review.
+The normal `go test ./...` run also checks the CLI JSON and Markdown goldens, parser fuzz seeds, temporary Git repositories, fake Decisions transport, redaction, cancellation, and resource limits. The required CI workflow has no live provider secret or endpoint. To update an offline baseline after reviewing changed labels, source examples, and diagnostic diffs, run `UPDATE_EVAL_BASELINE=1 go test ./internal/apps/lintpal/eval -count=1` and review both resulting JSON files. This update is a source change that needs normal code review.
 
 ## Optional live run
 
@@ -21,7 +21,11 @@ export LINTPAL_EVAL_OUTPUT=/tmp/lintpal-live-before.json
 scripts/eval-live.sh
 ```
 
-For the fixed presets, set `LINTPAL_EVAL_PROVIDER=jev` with `TYPESAFE_API_KEY`, or `openrouter` with `OPENROUTER_API_KEY`; omit the custom base URL. A custom token variable can be selected with `LINTPAL_EVAL_AUTH_TOKEN_ENV`. The helper refuses a missing credential and the default `jev-latest` alias. No live job is part of pull-request CI, and the helper makes no request until an operator runs it.
+For the fixed presets, set `LINTPAL_EVAL_PROVIDER=jev` with `TYPESAFE_API_KEY`, or `openrouter` with `OPENROUTER_API_KEY`, or `openai` with `OPENAI_API_KEY`
+and an explicit accepted model under the assumed compatible OpenAI Decisions
+contract (live availability unverified); omit custom endpoint settings for presets. A custom token variable can be selected with `LINTPAL_EVAL_AUTH_TOKEN_ENV`;
+`LINTPAL_EVAL_API_PATH` selects the custom path (default `/v1/systemone`).
+Custom rejects preset key variable names. The helper refuses a missing credential and the default `jev-latest` alias. No live job is part of pull-request CI, and the helper makes no request until an operator runs it.
 
 The local manifest pins the provider, model, corpus SHA-256, binary SHA-256, corpus schema, and case IDs. The selected rule fixture files are part of this source revision and should be reviewed with the manifest when comparing runs. The manifest records per-case decisions, elapsed milliseconds, input/output tokens, and aggregate false-positive/false-negative counts. It does not contain source snippets, questions, paths, raw provider bodies, or credentials. The helper writes temporary reports privately and checks the final manifest against the selected credential before an atomic local write. If pricing is known, set both `LINTPAL_EVAL_INPUT_USD_PER_MILLION` and `LINTPAL_EVAL_OUTPUT_USD_PER_MILLION` to nonnegative USD rates. Estimated cost is `(input_tokens × input_rate + output_tokens × output_rate) / 1,000,000`; with no rates, `cost_usd` is `null` and cost is unknown. Prices and latency are observations/inputs, not guarantees.
 

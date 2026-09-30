@@ -242,7 +242,7 @@ func requestFits(request jev.Request, limits Limits) (bool, error) {
 	return len(body) <= limits.MaxRequestBytes && len(body) <= limits.ByteBudget, nil
 }
 
-// requestBody mirrors the System One transport's request JSON fields so the
+// requestBody mirrors the Decisions transport's request JSON fields so the
 // byte cap includes escaping, IDs, instructions, criteria and metadata.
 func requestBody(request jev.Request) ([]byte, error) {
 	questions := make(map[string]any, len(request.Questions))

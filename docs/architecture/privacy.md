@@ -8,9 +8,12 @@ permitted for the repository before configuring a provider. A `custom`
 loopback endpoint can keep the provider exchange on the local machine.
 
 Provider presets read only their selected credential (`TYPESAFE_API_KEY` for
-`jev`, `OPENROUTER_API_KEY` for `openrouter`); `custom` reads the variable named
-by `--auth-token-env` (`LINTPAL_TOKEN` by default). Tokens are not accepted as
-CLI flag values. Before exporting a report, lintpal checks its complete JSON
+`jev`, `OPENROUTER_API_KEY` for `openrouter`, `OPENAI_API_KEY` for `openai`); `custom` reads the variable named
+by `--auth-token-env` (`LINTPAL_TOKEN` by default). Custom cannot select any preset key variable name. Presets bind the key to a
+fixed destination and reject custom URL/path/token overrides; redirects are not
+followed. OpenAI assumes a compatible `/v1/decisions` API, with unverified live
+availability. See [provider setup](../guides/configuration.md#supported-providers).
+Tokens are not accepted as CLI flag values. Before exporting a report, lintpal checks its complete JSON
 and rendered output against the **selected credential value** and fails if it
 appears. This guard does not scan for unrelated process secrets, and it does
 not prevent source transfer to the chosen provider. Avoid putting secrets in

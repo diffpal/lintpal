@@ -56,10 +56,13 @@ func TestAuxiliaryCommandsDoNotRunLint(t *testing.T) {
 }
 
 func TestLintProviderSelection(t *testing.T) {
-	for _, provider := range []string{"jev", "openrouter", "custom"} {
+	for _, provider := range []string{"jev", "openrouter", "openai", "custom"} {
 		var selected string
 		root := NewRoot(func(_ context.Context, o Options, _, _ io.Writer) error { selected = o.Provider; return nil }, "dev")
 		args := []string{"lint", "--base", "a", "--head", "b", "--provider", provider}
+		if provider == "openai" {
+			args = append(args, "--model", "decision-test-model")
+		}
 		if provider == "custom" {
 			args = append(args, "--base-url", "http://127.0.0.1:1")
 		}

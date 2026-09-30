@@ -18,6 +18,7 @@ fi
 case "$LINTPAL_EVAL_PROVIDER" in
   jev) token_env=TYPESAFE_API_KEY ;;
   openrouter) token_env=OPENROUTER_API_KEY ;;
+  openai) token_env=OPENAI_API_KEY ;;
   custom)
     : "${LINTPAL_EVAL_BASE_URL:?custom evaluation requires LINTPAL_EVAL_BASE_URL}"
     token_env="${LINTPAL_EVAL_AUTH_TOKEN_ENV:-LINTPAL_TOKEN}"
@@ -26,6 +27,11 @@ case "$LINTPAL_EVAL_PROVIDER" in
 esac
 if [[ ! "$token_env" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
   echo 'invalid credential variable name' >&2
+  exit 2
+fi
+if [[ "$LINTPAL_EVAL_PROVIDER" == custom &&
+      ( "$token_env" == TYPESAFE_API_KEY || "$token_env" == OPENROUTER_API_KEY || "$token_env" == OPENAI_API_KEY ) ]]; then
+  echo 'custom evaluation requires its own credential variable' >&2
   exit 2
 fi
 token="${!token_env:-}"
@@ -95,7 +101,7 @@ while IFS= read -r case_json; do
     --model "$LINTPAL_EVAL_MODEL" --rules "$repo_root/internal/apps/lintpal/eval/testdata/rules" --out "" --format json --fail-on none
     --timeout 2m --max-concurrency 4)
   if [[ "$LINTPAL_EVAL_PROVIDER" == custom ]]; then
-    args+=(--base-url "$LINTPAL_EVAL_BASE_URL" --auth-token-env "$token_env")
+    args+=(--base-url "$LINTPAL_EVAL_BASE_URL" --api-path "${LINTPAL_EVAL_API_PATH-/v1/systemone}" --auth-token-env "$token_env")
   fi
   started="$(python3 -c 'import time; print(time.monotonic_ns() // 1000000)')"
   if ! (cd "$case_dir" && "$LINTPAL_EVAL_BIN" "${args[@]}") >"$case_dir/report.json" 2>"$case_dir/error.txt"; then

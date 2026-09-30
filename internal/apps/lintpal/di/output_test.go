@@ -39,12 +39,14 @@ func TestSelectedCredentialCannotEnterReport(t *testing.T) {
 	t.Setenv("TYPESAFE_API_KEY", "secret-sentinel")
 	t.Setenv("OPENROUTER_API_KEY", "router-sentinel")
 	t.Setenv("LINTPAL_TOKEN", "custom-sentinel")
+	t.Setenv("OPENAI_API_KEY", "openai-sentinel")
 	for _, test := range []struct {
 		options cli.Options
 		want    string
 	}{
 		{cli.Options{Provider: "jev"}, "secret-sentinel"},
 		{cli.Options{Provider: "openrouter"}, "router-sentinel"},
+		{cli.Options{Provider: "openai"}, "openai-sentinel"},
 		{cli.Options{Provider: "custom", AuthTokenEnv: "LINTPAL_TOKEN"}, "custom-sentinel"},
 	} {
 		credential := selectedCredential(test.options)

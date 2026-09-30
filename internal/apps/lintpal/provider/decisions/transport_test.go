@@ -1,4 +1,4 @@
-package systemone
+package decisions
 
 import (
 	"context"

@@ -36,11 +36,15 @@ lintpal lint --uncommitted
 export OPENROUTER_API_KEY='...'
 lintpal lint --base origin/main --head HEAD --provider openrouter --format json
 
+# Use the assumed compatible OpenAI Decisions endpoint with an explicit model
+export OPENAI_API_KEY='...'
+lintpal lint --base origin/main --head HEAD --provider openai --model '<model-id>'
+
 # Use a custom endpoint and write an atomic JSON artifact
 export LINTPAL_TOKEN='...'
 mkdir -p .artifacts/lintpal
 lintpal lint --base origin/main --head HEAD --provider custom \
-  --base-url https://jev.example.internal --model jev-latest \
+  --base-url https://decisions.example.test/api --api-path /v1/decisions --model '<model-id>' \
   --format json --out .artifacts/lintpal/findings.json
 ```
 
@@ -51,8 +55,8 @@ lintpal lint --base origin/main --head HEAD --provider custom \
 | `--uncommitted` | — | `false` | Review uncommitted working tree changes (staged, unstaged, and untracked regular files) against `HEAD`. Mutually exclusive with `--base` and `--head`. |
 | `--base <rev>` | `LINTPAL_BASE` | — | Base revision used to find the unique merge base with head; the diff starts at that merge base. Required unless `--uncommitted` is specified. |
 | `--head <rev>` | `LINTPAL_HEAD` | — | Head commit or revision. Required unless `--uncommitted` is specified. |
-| `--provider <name>` | `LINTPAL_PROVIDER` | `jev` | Decision provider: `jev` (TypeSafe), `openrouter`, or `custom`. |
-| `--model <name>` | `LINTPAL_MODEL` | `typesafe/jev-1.13` for OpenRouter; `jev-latest` otherwise | Model identifier accepted by the selected provider. Explicit values are sent unchanged. |
+| `--provider <name>` | `LINTPAL_PROVIDER` | `jev` | Decision provider: `jev` (TypeSafe), `openrouter`, `openai`, or `custom`. |
+| `--model <name>` | `LINTPAL_MODEL` | `typesafe/jev-1.13` for OpenRouter; required for OpenAI; `jev-latest` for jev/custom | Model identifier accepted by the selected provider. Explicit values are sent unchanged. |
 | `--rules <path>` | `LINTPAL_RULES` | `.lintpal/rules/` | Override Markdown rules directory for this single run. |
 | `--include <glob>` | — | — | Include changed source paths matching glob (repeatable). |
 | `--exclude <glob>` | — | — | Exclude changed source paths matching glob (repeatable). |
@@ -65,6 +69,7 @@ lintpal lint --base origin/main --head HEAD --provider custom \
 | `--timeout <duration>` | `LINTPAL_TIMEOUT` | `2m` | Whole-run execution deadline (maximum `10m`). |
 | `--max-concurrency <int>` | `LINTPAL_MAX_CONCURRENCY` | `4` | Maximum concurrent provider requests (maximum `16`). |
 | `--base-url <url>` | `LINTPAL_BASE_URL` | — | Base URL for `custom` provider. Required for `custom`; rejected for presets. |
+| `--api-path <path>` | `LINTPAL_API_PATH` | `/v1/systemone` for custom | API path appended to the custom base prefix; rejected for presets. Explicit empty input is invalid. |
 | `--auth-token-env <name>` | `LINTPAL_AUTH_TOKEN_ENV` | `LINTPAL_TOKEN` | Environment variable name holding bearer token for `custom` provider. |
 | `--metrics` | — | `false` | Print local run metrics (stage counts and durations) to stderr. |
 | `--env-file <path>` | — | — | Load settings and credentials from a specified `.env` file. |
@@ -72,11 +77,21 @@ lintpal lint --base origin/main --head HEAD --provider custom \
 
 ### Operational Details
 
-The `jev` provider calls TypeSafe at `https://api.typesafe.ai/v1/systemone`;
-`openrouter` calls `https://openrouter.ai/api/alpha/decisions`. The `custom`
-provider appends `/v1/systemone` to its trusted base URL. With no configured
-model, OpenRouter uses `typesafe/jev-1.13`; other providers use `jev-latest`.
-An explicit `--model` or `LINTPAL_MODEL` overrides that provider default.
+Supported providers are TypeSafe/Jev (`jev`), OpenRouter (`openrouter`),
+OpenAI (`openai`), and `custom`. See [provider setup](../guides/configuration.md#supported-providers)
+for complete commands, endpoint and credential choices.
+
+`jev` uses `https://api.typesafe.ai/v1/systemone`; OpenRouter uses
+`https://openrouter.ai/api/alpha/decisions`. OpenAI fixes
+`https://api.openai.com/v1/decisions` under the assumed compatible API contract;
+live availability is not verified. OpenAI requires `--model` or `LINTPAL_MODEL`.
+Without an override, OpenRouter uses `typesafe/jev-1.13`; jev/custom use `jev-latest`.
+
+Custom appends `--api-path` (default `/v1/systemone`) to the trusted base URL
+prefix after trimming trailing base slashes. Only unescaped absolute paths are
+accepted: no query, fragment, whitespace, backslashes, repeated slashes or
+`.`/`..` segments. Presets reject custom endpoint/path/token options; custom
+rejects all three preset key variable names. Invalid configuration fails before HTTP.
 
 - **Uncommitted vs. Committed**: With `--uncommitted`, LintPal reviews working-tree modifications, staged edits, and untracked regular files against `HEAD`. Combining `--uncommitted` with `--base` or `--head` is rejected. In this mode, `head_sha` in reports is set to `UNCOMMITTED` and `base_sha` is the current `HEAD` commit SHA (or the Git empty tree if no commits exist). Untracked empty and binary files are skipped.
 - **Precedence Order**: Explicit CLI flags override environment variables (`LINTPAL_*`), which override `.env` values, which override built-in defaults. Provider credentials in process environment take precedence over `.env`.
@@ -196,16 +211,22 @@ lintpal doctor
 export OPENROUTER_API_KEY='...'
 lintpal doctor --provider openrouter
 
+# Check OpenAI credential presence without contacting the assumed endpoint
+export OPENAI_API_KEY='...'
+lintpal doctor --provider openai
+
 # Check custom provider settings
-lintpal doctor --provider custom --base-url https://jev.example.internal --auth-token-env CUSTOM_TOKEN
+lintpal doctor --provider custom --base-url https://decisions.example.test/api \
+  --api-path /v1/decisions --auth-token-env CUSTOM_TOKEN
 ```
 
 ### Flags
 
 | Flag | Environment Variable | Default | Description |
 | --- | --- | --- | --- |
-| `--provider <name>` | `LINTPAL_PROVIDER` | `jev` | Provider to verify: `jev`, `openrouter`, or `custom`. |
+| `--provider <name>` | `LINTPAL_PROVIDER` | `jev` | Provider to verify: `jev`, `openrouter`, `openai`, or `custom`. |
 | `--base-url <url>` | `LINTPAL_BASE_URL` | — | Custom provider base URL (required when `--provider custom`). |
+| `--api-path <path>` | `LINTPAL_API_PATH` | `/v1/systemone` for custom | API path appended to the custom base prefix; rejected for presets. Explicit empty input is invalid. |
 | `--auth-token-env <name>` | `LINTPAL_AUTH_TOKEN_ENV` | `LINTPAL_TOKEN` | Token environment variable name to check for `custom` provider. |
 | `--env-file <path>` | — | — | Load settings from this `.env` file before checking. |
 | `--no-env-file` | — | `false` | Do not load `.env` from the Git worktree root. |
@@ -317,9 +338,10 @@ All `lintpal` commands adhere to the following exit codes:
 | --- | --- | --- |
 | `TYPESAFE_API_KEY` | — | API key for the default `jev` (TypeSafe) provider. |
 | `OPENROUTER_API_KEY` | — | API key for the `openrouter` provider. |
+| `OPENAI_API_KEY` | — | API key for the `openai` preset (assumed compatible Decisions API). |
 | `LINTPAL_TOKEN` | `--auth-token-env` | Default environment variable checked for bearer token when `--provider custom` is used. |
 | `GITHUB_TOKEN` | `--auth-token-env` | Default token variable for `lintpal feedback github`. |
-| `LINTPAL_PROVIDER` | `--provider` | Default provider (`jev`, `openrouter`, or `custom`). |
+| `LINTPAL_PROVIDER` | `--provider` | Default provider (`jev`, `openrouter`, `openai`, or `custom`). |
 | `LINTPAL_MODEL` | `--model` | Model name or alias. |
 | `LINTPAL_BASE` | `--base` | Base commit revision. |
 | `LINTPAL_HEAD` | `--head` | Head commit revision. |
@@ -332,6 +354,7 @@ All `lintpal` commands adhere to the following exit codes:
 | `LINTPAL_TIMEOUT` | `--timeout` | Whole-run execution timeout. |
 | `LINTPAL_MAX_CONCURRENCY`| `--max-concurrency`| Maximum concurrent provider requests. |
 | `LINTPAL_BASE_URL` | `--base-url` | Custom provider base URL. |
+| `LINTPAL_API_PATH` | `--api-path` | Custom API path; defaults to `/v1/systemone` when absent. |
 | `LINTPAL_AUTH_TOKEN_ENV` | `--auth-token-env` | Environment variable name for custom provider bearer token. |
 | `GITHUB_REPOSITORY` | `--repo` | In GitHub Actions, auto-detects `owner/repo`. |
 | `GITHUB_EVENT_PATH` | `--pr-number`, `--base`, `--head` | In GitHub Actions, auto-detects PR number, base SHA, and head SHA. |
