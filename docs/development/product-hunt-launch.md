@@ -36,7 +36,7 @@ by operator direction.
 | Source | `v0.6.1` points to `3b349c08c5c52bef2f5d1b084a8ae4be60875d3f`, which passed CI, lint and security. The release workflow also passed its source checks before publication. **Passed.** | Keep launch claims tied to this published revision. |
 | Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36711277622) passed and created GitHub Release 0.6.1. Five downloaded asset checksums, CGO-disabled metadata, version and release commit passed. Both fresh npm installs, corrected public package copy and all seven registry identities passed as 0.6.1. **Passed.** | Keep the launch tied to these verified packages. Never republish an existing version. |
 | Community | Discussions is enabled with GitHub's standard categories and composer. The [welcome thread](https://github.com/diffpal/lintpal/discussions/18) is public; README links to Q&A and Ideas. Bugs and incorrect findings use Issues. **Passed.** | Keep the forum and feedback links accessible. |
-| Page | The [mascot sticker](../assets/lintpal-thumbnail.png) is prepared. Two gallery images are absent. The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
+| Page | The [mascot sticker](../assets/lintpal-logo-grayscale.png) is prepared. Two gallery images are absent. The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
 
 The [changelog](../../CHANGELOG.md) distinguishes the new behavior
 from the historical 0.5.4 release. OpenRouter's corrected route, custom API
@@ -107,7 +107,7 @@ guidance](https://help.producthunt.com/en/articles/2690626-how-do-i-share-my-pos
 
 ## Brand asset and media gate
 
-The [LintPal thumbnail](../assets/lintpal-thumbnail.png) uses the existing
+The [LintPal thumbnail](../assets/lintpal-logo-grayscale.png) uses the existing
 [DiffPal mark](https://github.com/diffpal/diffpal.github.io/blob/main/public/logo-mark.png).
 The thumbnail uses grayscale shading, a white sticker outline and a transparent
 background for visibility on dark themes, without a text label. The original
