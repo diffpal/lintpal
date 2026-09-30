@@ -94,12 +94,17 @@ func Resolve(raw RawOptions, lookup LookupEnv) (Options, error) {
 		base = ""
 		head = ""
 	}
+	provider := choose("provider", raw.Provider, "LINTPAL_PROVIDER", "jev")
+	defaultModel := "jev-latest"
+	if provider == "openrouter" {
+		defaultModel = "typesafe/jev-1.13"
+	}
 	o := Options{
 		Base:             base,
 		Head:             head,
 		Uncommitted:      raw.Uncommitted,
-		Provider:         choose("provider", raw.Provider, "LINTPAL_PROVIDER", "jev"),
-		Model:            choose("model", raw.Model, "LINTPAL_MODEL", "jev-latest"),
+		Provider:         provider,
+		Model:            choose("model", raw.Model, "LINTPAL_MODEL", defaultModel),
 		Rules:            choose("rules", raw.Rules, "LINTPAL_RULES", ""),
 		Out:              choose("out", raw.Out, "LINTPAL_OUT", ""),
 		BaseURL:          choose("base-url", raw.BaseURL, "LINTPAL_BASE_URL", ""),

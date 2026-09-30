@@ -20,7 +20,9 @@ BASE=origin/main HEAD=HEAD task self-review
 resolve in this worktree; a shallow checkout may need a deeper fetch. The
 default provider is `jev`, with the repository's `.lintpal/rules/` and a
 `high` severity gate.
-Use `PROVIDER=openrouter` with `OPENROUTER_API_KEY`, or put the selected
+Use `PROVIDER=openrouter` with `OPENROUTER_API_KEY`; without a model override,
+it selects `typesafe/jev-1.13`. Set `LINTPAL_MODEL` to choose another model.
+You can also put the selected
 provider settings and credential in a project-root `.env` as described in the
 [CLI guide](../reference/cli.md). The Taskfile never prints the credential.
 

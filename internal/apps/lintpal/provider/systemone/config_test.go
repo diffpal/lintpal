@@ -16,8 +16,8 @@ func TestPresetDestinationsAndTokenSources(t *testing.T) {
 		url   string
 		token string
 	}{
-		{"typesafe", TypeSafe(), typeSafeBase + "/v1/systemone", "native-secret"},
-		{"openrouter", OpenRouter(), openRouterBase + "/v1/systemone", "router-secret"},
+		{"typesafe", TypeSafe(), "https://api.typesafe.ai/v1/systemone", "native-secret"},
+		{"openrouter", OpenRouter(), "https://openrouter.ai/api/alpha/decisions", "router-secret"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			target, err := tc.value.target()

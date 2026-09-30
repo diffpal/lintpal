@@ -51,8 +51,8 @@ lintpal lint --base origin/main --head HEAD --provider custom \
 | `--uncommitted` | — | `false` | Review uncommitted working tree changes (staged, unstaged, and untracked regular files) against `HEAD`. Mutually exclusive with `--base` and `--head`. |
 | `--base <rev>` | `LINTPAL_BASE` | — | Base revision used to find the unique merge base with head; the diff starts at that merge base. Required unless `--uncommitted` is specified. |
 | `--head <rev>` | `LINTPAL_HEAD` | — | Head commit or revision. Required unless `--uncommitted` is specified. |
-| `--provider <name>` | `LINTPAL_PROVIDER` | `jev` | System One provider: `jev` (TypeSafe), `openrouter`, or `custom`. |
-| `--model <name>` | `LINTPAL_MODEL` | `jev-latest` | System One model name or alias accepted by the provider. |
+| `--provider <name>` | `LINTPAL_PROVIDER` | `jev` | Decision provider: `jev` (TypeSafe), `openrouter`, or `custom`. |
+| `--model <name>` | `LINTPAL_MODEL` | `typesafe/jev-1.13` for OpenRouter; `jev-latest` otherwise | Model identifier accepted by the selected provider. Explicit values are sent unchanged. |
 | `--rules <path>` | `LINTPAL_RULES` | `.lintpal/rules/` | Override Markdown rules directory for this single run. |
 | `--include <glob>` | — | — | Include changed source paths matching glob (repeatable). |
 | `--exclude <glob>` | — | — | Exclude changed source paths matching glob (repeatable). |
@@ -71,6 +71,12 @@ lintpal lint --base origin/main --head HEAD --provider custom \
 | `--no-env-file` | — | `false` | Disable automatic `.env` file loading from the worktree root. |
 
 ### Operational Details
+
+The `jev` provider calls TypeSafe at `https://api.typesafe.ai/v1/systemone`;
+`openrouter` calls `https://openrouter.ai/api/alpha/decisions`. The `custom`
+provider appends `/v1/systemone` to its trusted base URL. With no configured
+model, OpenRouter uses `typesafe/jev-1.13`; other providers use `jev-latest`.
+An explicit `--model` or `LINTPAL_MODEL` overrides that provider default.
 
 - **Uncommitted vs. Committed**: With `--uncommitted`, LintPal reviews working-tree modifications, staged edits, and untracked regular files against `HEAD`. Combining `--uncommitted` with `--base` or `--head` is rejected. In this mode, `head_sha` in reports is set to `UNCOMMITTED` and `base_sha` is the current `HEAD` commit SHA (or the Git empty tree if no commits exist). Untracked empty and binary files are skipped.
 - **Precedence Order**: Explicit CLI flags override environment variables (`LINTPAL_*`), which override `.env` values, which override built-in defaults. Provider credentials in process environment take precedence over `.env`.

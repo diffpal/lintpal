@@ -11,11 +11,17 @@ and the full [CLI reference](../reference/cli.md).
 | Provider | Credential | Additional setting |
 | --- | --- | --- |
 | `jev` (default) | `TYPESAFE_API_KEY` | Preset endpoint; optional model alias |
-| `openrouter` | `OPENROUTER_API_KEY` | Preset endpoint; optional model alias |
+| `openrouter` | `OPENROUTER_API_KEY` | Fixed Decisions endpoint; optional model identifier |
 | `custom` | `LINTPAL_TOKEN` by default | Required `--base-url` or `LINTPAL_BASE_URL` |
 
-The model defaults to `jev-latest`; use `--model` or `LINTPAL_MODEL` for a
-model your provider accepts. A custom loopback endpoint may use HTTP; remote
+The model defaults to `typesafe/jev-1.13` for OpenRouter and `jev-latest`
+for `jev` or `custom`. Use `--model` or `LINTPAL_MODEL` for a model your
+provider accepts; explicit values are sent unchanged. When switching providers,
+review any existing model override in your environment or `.env`.
+
+`jev` calls `https://api.typesafe.ai/v1/systemone`. OpenRouter calls
+`https://openrouter.ai/api/alpha/decisions`. A custom endpoint uses its trusted
+base URL plus `/v1/systemone`. A custom loopback endpoint may use HTTP; remote
 custom endpoints require HTTPS. `doctor` checks local Git and credential
 presence without contacting a provider. `lint` makes provider requests.
 

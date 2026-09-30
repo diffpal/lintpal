@@ -1,4 +1,4 @@
-// Package systemone implements the typed Jev System One HTTP transport.
+// Package systemone implements the typed TypeSafe System One and OpenRouter Decisions HTTP transport.
 package systemone
 
 import (
@@ -22,19 +22,20 @@ var envName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 // repository-controlled configuration cannot retarget a preset credential.
 type Endpoint struct {
 	base     *url.URL
+	apiPath  string
 	tokenEnv string
 }
 
 // TypeSafe uses the fixed native System One destination and token source.
 func TypeSafe() Endpoint {
 	base, _ := url.Parse(typeSafeBase)
-	return Endpoint{base: base, tokenEnv: "TYPESAFE_API_KEY"}
+	return Endpoint{base: base, apiPath: "/v1/systemone", tokenEnv: "TYPESAFE_API_KEY"}
 }
 
-// OpenRouter uses its TypeSafe-compatible System One destination.
+// OpenRouter uses its fixed Decisions destination and token source.
 func OpenRouter() Endpoint {
 	base, _ := url.Parse(openRouterBase)
-	return Endpoint{base: base, tokenEnv: "OPENROUTER_API_KEY"}
+	return Endpoint{base: base, apiPath: "/alpha/decisions", tokenEnv: "OPENROUTER_API_KEY"}
 }
 
 // TrustedCustom constructs a custom endpoint from process-trusted settings.
@@ -55,7 +56,7 @@ func TrustedCustom(baseURL, tokenEnv string) (Endpoint, error) {
 		return Endpoint{}, ErrInvalidEndpoint
 	}
 	base.Path = strings.TrimRight(base.Path, "/")
-	return Endpoint{base: base, tokenEnv: tokenEnv}, nil
+	return Endpoint{base: base, apiPath: "/v1/systemone", tokenEnv: tokenEnv}, nil
 }
 
 func loopbackHost(host string) bool {
@@ -67,11 +68,11 @@ func loopbackHost(host string) bool {
 }
 
 func (e Endpoint) target() (*url.URL, error) {
-	if e.base == nil {
+	if e.base == nil || e.apiPath == "" {
 		return nil, ErrInvalidEndpoint
 	}
 	target := *e.base
-	target.Path = strings.TrimRight(target.Path, "/") + "/v1/systemone"
+	target.Path = strings.TrimRight(target.Path, "/") + e.apiPath
 	return &target, nil
 }
 
