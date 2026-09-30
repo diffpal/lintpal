@@ -25,16 +25,15 @@ describes the current fields and media sizes.
 ## Launch decision and evidence
 
 Snapshot from 2026-09-30. **The public Product Hunt launch is NO-GO.**
-The published GitHub release is **0.6.0**. npm publication completed, with the
-last platform's registry availability check still pending. Community, gallery
-and private draft readiness remain unverified. The owner confirmed their personal
+The published release is **0.6.0** on GitHub and all seven npm latest identities.
+Community, gallery and private draft readiness remain unverified. The owner confirmed their personal
 Product Hunt account is ready on 2026-09-30. Screenshot work and browser use remain excluded
 by operator direction.
 
 | Gate | Current evidence and status | Owner / exit condition |
 | --- | --- | --- |
 | Source | `v0.6.0` points to `2ec7e149777b64d3c825c8b3ebee961ca245ba7d`, which passed CI, lint and security. The release workflow also passed its source checks before publication. **Passed.** | Keep launch claims tied to this published revision. |
-| Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36694800944) passed. GitHub Release, five public asset checksums, CGO-disabled build metadata and fresh Linux x64 installs of both npm meta-packages passed. **Final registry availability check pending.** | Verify all seven latest identities are publicly available as 0.6.0. Never republish an existing version. |
+| Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36694800944) passed. GitHub Release and all seven npm latest identities are publicly available as 0.6.0. Five public asset checksums, CGO-disabled build metadata and fresh Linux x64 installs of both npm meta-packages passed. **Passed.** | Keep package claims tied to 0.6.0. Never republish an existing version. |
 | Community | API reports `has_discussions=false`, no categories and no threads. Three forms are on the default branch; Issues is live. **Blocked.** | Enable Discussions, confirm `q-a`, `ideas`, `rule-feedback` categories and usable forms, then publish the welcome thread after explicit authorization. |
 | Page | The [mascot sticker](../assets/lintpal-thumbnail.png) is prepared. Two gallery images are absent. The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
 
@@ -56,7 +55,9 @@ Fresh registry installs with separate caches of both `lintpal` and
 `@diffpal/lintpal` reported `lintpal 0.6.0` and working help, including
 `--api-path`. Both public package READMEs contain the current supported-provider
 section and website link; their manifests share the same five exact-version
-platform dependencies and product description.
+platform dependencies and product description. All seven registry identities
+were checked after npm finished processing their publication; each reports
+version 0.6.0 and `latest=0.6.0`.
 
 All five downloaded GitHub assets passed their published checksums. Go metadata
 for each reports `CGO_ENABLED=0`, version 0.6.0 and the exact release commit.
@@ -128,18 +129,15 @@ Title: **Welcome to LintPal — what engineering rule should your repo enforce?*
 
 ## Remaining owner gates
 
-1. Complete the all-seven registry availability check for 0.6.0; npm is still
-   processing the Linux arm64 package. Release authorization, tag push and the
-   Omnidist publication workflow are complete. Do not republish the version.
-2. The owner enables Discussions, confirms the `q-a`, `ideas`, and
+1. The owner enables Discussions, confirms the `q-a`, `ideas`, and
    `rule-feedback` category slugs and live forms, and posts the welcome
    discussion. Until then, keep the working [Issues route](https://github.com/diffpal/lintpal/issues/new)
    in the README.
-3. The owner confirmed personal account readiness on 2026-09-30; Product Hunt
+2. The owner confirmed personal account readiness on 2026-09-30; Product Hunt
    gallery and private draft/page readiness remain unverified.
    Screenshot and browser work are excluded by the operator's 2026-09-29
    direction. Do not infer readiness from the logo thumbnail or this draft.
-4. If the operator later reopens these gates, repeat the public source,
+3. If the operator later reopens these gates, repeat the public source,
    package, feedback, and page audit before changing the Story from NO-GO to GO.
    Posting to Product Hunt remains an owner action.
 
