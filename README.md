@@ -53,14 +53,15 @@ review or invent new review criteria during a run.
 
 ## Minimal GitHub Quickstart
 
-Install LintPal and add a versioned rule pack:
+Install the CLI globally and add a versioned rule pack in your repository:
 
 ```bash
-npm install --save-dev lintpal
-npx lintpal rule import github:diffpal/lintpal-rules//general@v1.1.0
-npx lintpal rule validate
+npm install -g lintpal
+lintpal rule import github:diffpal/lintpal-rules//general@v1.1.0
+lintpal rule validate
 ```
 
+Review and commit `.lintpal/rules/` so the workflow can load the rules.
 The selected remote provider receives bounded source context and rule text.
 Check whether that transfer is permitted for your repository before adding
 `TYPESAFE_API_KEY` as an Actions secret; see [privacy](docs/architecture/privacy.md).
@@ -87,15 +88,19 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - uses: diffpal/lintpal-action@v1
-        with:
-          lintpal-version: "0.5.4"
-          base: ${{ github.event.pull_request.base.sha }}
-          head: ${{ github.event.pull_request.head.sha }}
-          block-on: high
-          gate: true
+      - run: npm install -g lintpal
+      - name: Lint pull request
+        run: |
+          mkdir -p .artifacts/lintpal
+          lintpal lint --no-env-file --provider jev \
+            --base ${{ github.event.pull_request.base.sha }} \
+            --head ${{ github.event.pull_request.head.sha }} \
+            --block-on high --format json --out .artifacts/lintpal/findings.json
         env:
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      - name: Publish review and apply gate
+        run: lintpal feedback github --in .artifacts/lintpal/findings.json --gate
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         if: always()
@@ -107,11 +112,14 @@ jobs:
 
 Open a same-repository pull request. LintPal publishes a review with
 `No blocking findings`, `1 blocking finding`, or `N blocking findings`, plus
-one inline comment for each finding GitHub can attach to the diff. The workflow
-also keeps `.artifacts/lintpal/findings.json` for later steps.
+one inline comment for each finding GitHub can attach to the diff. The gate
+runs after publication; the workflow keeps `.artifacts/lintpal/findings.json`
+even when a blocking finding fails the job. Draft and fork pull requests are
+skipped. GitHub supplies the pull-request context to the feedback command.
 
-See the [LintPal Action](https://github.com/diffpal/lintpal-action) for every
-input, artifact upload, provider selection, and fork pull-request guidance.
+See the [CLI reference](docs/reference/cli.md) for provider selection,
+feedback commands, and exit codes. The [LintPal Action](https://github.com/diffpal/lintpal-action)
+is also available for workflows that prefer an Action wrapper.
 
 ## Write Rules in Markdown
 
