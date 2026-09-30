@@ -6,7 +6,7 @@ lintpal reviews committed changes from merge base through head, or explicit
 `--uncommitted` working-tree changes. It turns repository Markdown rules into
 typed Decisions questions, sends them to the selected provider, and reports
 findings tied to changed lines. Start with the [README](../README.md)
-for the short overview.
+for the short overview, or visit the [LintPal website](https://lintpal.metalagman.dev).
 
 ## DiffPal family
 
