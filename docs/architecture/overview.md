@@ -117,12 +117,17 @@ System One API; Choice and Score answers preserve distributions and confidence
 for later rule policy. `jev.ValidateRequest` and `jev.ValidateResponse` reject
 invalid or partial decisions without echoing state or question text.
 
-`internal/apps/lintpal/provider/systemone` implements the port with one
-`POST /v1/systemone` transport. `TypeSafe()` fixes the native destination and
-`TYPESAFE_API_KEY`; `OpenRouter()` fixes its destination and
-`OPENROUTER_API_KEY`. `TrustedCustom(baseURL, tokenEnv)` must be called only
+`internal/apps/lintpal/provider/systemone` shares request/answer codecs and
+HTTP retry logic across provider-specific routes. `TypeSafe()` fixes
+`https://api.typesafe.ai/v1/systemone` and `TYPESAFE_API_KEY`; `OpenRouter()`
+fixes `https://openrouter.ai/api/alpha/decisions` and `OPENROUTER_API_KEY`.
+The CLI defaults to `typesafe/jev-1.13` for OpenRouter and `jev-latest` for
+native/custom providers; explicitly configured models retain their precedence.
+The normalized response retains model, typed answers, tokens and optional cost;
+OpenRouter request `id` and `provider` metadata are ignored. `TrustedCustom(baseURL, tokenEnv)` must be called only
 from trusted process settings, never repository rules/config. It does not
-inherit preset tokens and rejects their environment variable names. Custom
+inherit preset tokens and rejects their environment variable names. Its
+route remains the trusted base URL plus `/v1/systemone`. Custom
 HTTP is limited to loopback; remote endpoints require HTTPS. Redirects are not
 followed with credentials. The final CLI Story owns trusted option precedence
 and should avoid a raw token argument.

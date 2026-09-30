@@ -166,3 +166,52 @@ func TestResolveUncommitted(t *testing.T) {
 		t.Fatalf("accepted missing base/head when uncommitted is false: %v", err)
 	}
 }
+
+func TestProviderModelDefaultsAndPrecedence(t *testing.T) {
+	for _, provider := range []string{"jev", "openrouter", "custom"} {
+		t.Run(provider, func(t *testing.T) {
+			raw := RawOptions{Base: "base", Head: "head", Provider: provider, Changed: map[string]bool{"base": true, "head": true, "provider": true}}
+			if provider == "custom" {
+				raw.BaseURL = "http://127.0.0.1:1234"
+				raw.Changed["base-url"] = true
+			}
+			want := "jev-latest"
+			if provider == "openrouter" {
+				want = "typesafe/jev-1.13"
+			}
+			options, err := Resolve(raw, nil)
+			if err != nil || options.Model != want {
+				t.Fatalf("default: model=%s err=%v", options.Model, err)
+			}
+			file := map[string]string{"LINTPAL_MODEL": "file/model"}
+			process := func(key string) (string, bool) {
+				if key == "LINTPAL_MODEL" {
+					return "process/model", true
+				}
+				return "", false
+			}
+			options, err = Resolve(raw, LayeredLookup(nil, file))
+			if err != nil || options.Model != "file/model" {
+				t.Fatalf("file: model=%s err=%v", options.Model, err)
+			}
+			options, err = Resolve(raw, LayeredLookup(process, file))
+			if err != nil || options.Model != "process/model" {
+				t.Fatalf("process: model=%s err=%v", options.Model, err)
+			}
+			raw.Model = "explicit/model"
+			raw.Changed["model"] = true
+			options, err = Resolve(raw, LayeredLookup(process, file))
+			if err != nil || options.Model != raw.Model {
+				t.Fatalf("flag: model=%s err=%v", options.Model, err)
+			}
+		})
+	}
+	options, err := Resolve(RawOptions{Base: "a", Head: "b", Changed: map[string]bool{"base": true, "head": true}}, LayeredLookup(nil, map[string]string{"LINTPAL_PROVIDER": "openrouter"}))
+	if err != nil || options.Model != "typesafe/jev-1.13" {
+		t.Fatalf("provider from file: model=%s err=%v", options.Model, err)
+	}
+	options, err = Resolve(RawOptions{Base: "a", Head: "b", Provider: "jev", Changed: map[string]bool{"base": true, "head": true, "provider": true}}, LayeredLookup(nil, map[string]string{"LINTPAL_PROVIDER": "openrouter"}))
+	if err != nil || options.Model != "jev-latest" {
+		t.Fatalf("provider override: model=%s err=%v", options.Model, err)
+	}
+}
