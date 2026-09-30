@@ -13,7 +13,7 @@ separate CLIs and share the findings v5 schema.
 | Field | Draft |
 | --- | --- |
 | Name | LintPal |
-| Product URL | `https://github.com/diffpal/lintpal` |
+| Product URL | [LintPal website](https://lintpal.metalagman.dev) |
 | Tagline | Turn plain-English engineering rules into pull-request checks |
 | Description | LintPal checks committed pull-request changes against Markdown rules owned by your repo. Get findings on changed lines, then gate CI by severity. Use your selected provider for rule evaluation. |
 
