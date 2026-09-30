@@ -2,7 +2,7 @@
 
 This is a reviewable draft for the launch owner. It does not enable GitHub
 Discussions or create a Product Hunt post. The current published release is
-[v0.5.4](https://github.com/diffpal/lintpal/releases/tag/v0.5.4). The
+[v0.6.0](https://github.com/diffpal/lintpal/releases/tag/v0.6.0). The
 [README](../../README.md) and [privacy guide](../architecture/privacy.md)
 describe the product and data flow. LintPal is part of the
 [DiffPal family](https://github.com/diffpal/diffpal); the two tools have
@@ -25,41 +25,45 @@ describes the current fields and media sizes.
 ## Launch decision and evidence
 
 Snapshot from 2026-09-30. **The public Product Hunt launch is NO-GO.**
-The published release is still **0.5.4**; **0.6.0 is an unpublished candidate**
-for the changes now on `main`. Community, gallery and private draft readiness remain unverified. The owner confirmed their personal
+The published release is **0.6.0** on GitHub and all seven npm latest identities.
+Community, gallery and private draft readiness remain unverified. The owner confirmed their personal
 Product Hunt account is ready on 2026-09-30. Screenshot work and browser use remain excluded
 by operator direction.
 
 | Gate | Current evidence and status | Owner / exit condition |
 | --- | --- | --- |
-| Source | `main` at `88eacdf8cb8a04165b89c998caf1e1b16c1bad0c` has passed CI, lint and security. Provider support, runtime fixes, global CLI quickstart and the mascot sticker landed after 0.5.4. The release-refresh branch has passed local package preparation checks. **Current main passed; candidate merge pending.** | Review and merge the candidate, then verify its exact CI commit. |
-| Package | GitHub latest release and all seven npm latest identities remain 0.5.4. The 0.5.4 release record below is historical; it does not verify newer CLI flags or README assets. Registry and local-tag checks found 0.6.0 unused. **Local 0.6.0 staging passed; public release pending.** | Review the candidate and authorize the tag push; verify workflow, seven public identities and fresh installs. Never republish an existing version. |
+| Source | `v0.6.0` points to `2ec7e149777b64d3c825c8b3ebee961ca245ba7d`, which passed CI, lint and security. The release workflow also passed its source checks before publication. **Passed.** | Keep launch claims tied to this published revision. |
+| Package | [Release workflow](https://github.com/diffpal/lintpal/actions/runs/36694800944) passed. GitHub Release and all seven npm latest identities are publicly available as 0.6.0. Five public asset checksums, CGO-disabled build metadata and fresh Linux x64 installs of both npm meta-packages passed. **Passed.** | Keep package claims tied to 0.6.0. Never republish an existing version. |
 | Community | API reports `has_discussions=false`, no categories and no threads. Three forms are on the default branch; Issues is live. **Blocked.** | Enable Discussions, confirm `q-a`, `ideas`, `rule-feedback` categories and usable forms, then publish the welcome thread after explicit authorization. |
-| Page | The [mascot sticker](../assets/lintpal-thumbnail.png) is prepared. Two gallery images are absent; The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
+| Page | The [mascot sticker](../assets/lintpal-thumbnail.png) is prepared. Two gallery images are absent. The owner confirmed personal account readiness; private draft/page and gallery readiness remain unverified. **Blocked.** | Owner supplies the required gallery/page evidence within permitted scope. Screenshot/browser restrictions remain in force; the mascot does not satisfy the gallery gate. |
 
-The [candidate changelog](../../CHANGELOG.md) distinguishes the new behavior
+The [changelog](../../CHANGELOG.md) distinguishes the new behavior
 from the historical 0.5.4 release. OpenRouter's corrected route, custom API
 paths and the OpenAI preset are source changes, not additions to the already
 published 0.5.4 package. OpenAI support explicitly assumes a compatible
 Decisions API; live availability is unverified. Launch copy must describe the
 final published version, and must not imply a verified OpenAI integration.
 
-### Local 0.6.0 candidate verification
+### Published 0.6.0 verification
 
-An isolated temporary source snapshot with a local-only `v0.6.0` tag passed
-`task release-stage` and `task release-dry-run`. All seven staged identities
-use 0.6.0 and the current product description. Both npm meta-package READMEs
-contain the current supported-provider section and custom API path examples.
-Fresh offline installs of both `lintpal` and `@diffpal/lintpal` reported
-`lintpal 0.6.0` and working help. All five release asset checksums passed;
-Go metadata for each target reports `CGO_ENABLED=0`. Only Linux x64 binaries
-were executed locally; the other targets were verified as cross-built files.
+Before publication, an isolated source snapshot passed `task release-stage`
+and `task release-dry-run`; preparation on the real `v0.6.0` tag also passed.
+The owner then authorized the tag push. The release workflow completed npm
+publication and created the GitHub Release on 2026-09-30.
 
-The configured Git-tag version source does not accept an environment version
-override as a replacement for the tag. The isolated tag is not in the public
-repository and has not been pushed. No registry publication occurred: the
-public package version is still 0.5.4. After merging the reviewed candidate,
-repeat the exact-tag preparation on the real release commit before a tag push.
+Fresh registry installs with separate caches of both `lintpal` and
+`@diffpal/lintpal` reported `lintpal 0.6.0` and working help, including
+`--api-path`. Both public package READMEs contain the current supported-provider
+section and website link; their manifests share the same five exact-version
+platform dependencies and product description. All seven registry identities
+were checked after npm finished processing their publication; each reports
+version 0.6.0 and `latest=0.6.0`.
+
+All five downloaded GitHub assets passed their published checksums. Go metadata
+for each reports `CGO_ENABLED=0`, version 0.6.0 and the exact release commit.
+Only Linux x64 binaries were executed locally; the other targets were inspected
+as cross-built files. The configured Git-tag version source requires the tag;
+an environment version override does not replace it.
 
 ## Maker's first comment draft
 
@@ -125,19 +129,15 @@ Title: **Welcome to LintPal — what engineering rule should your repo enforce?*
 
 ## Remaining owner gates
 
-1. Review the 0.6.0 release candidate and its staging evidence, then explicitly
-   authorize the release tag push. Verify the existing Omnidist workflow and
-   all seven public package identities before presenting new features as
-   installable. The candidate does not itself authorize publication.
-2. The owner enables Discussions, confirms the `q-a`, `ideas`, and
+1. The owner enables Discussions, confirms the `q-a`, `ideas`, and
    `rule-feedback` category slugs and live forms, and posts the welcome
    discussion. Until then, keep the working [Issues route](https://github.com/diffpal/lintpal/issues/new)
    in the README.
-3. The owner confirmed personal account readiness on 2026-09-30; Product Hunt
+2. The owner confirmed personal account readiness on 2026-09-30; Product Hunt
    gallery and private draft/page readiness remain unverified.
    Screenshot and browser work are excluded by the operator's 2026-09-29
    direction. Do not infer readiness from the logo thumbnail or this draft.
-4. If the operator later reopens these gates, repeat the public source,
+3. If the operator later reopens these gates, repeat the public source,
    package, feedback, and page audit before changing the Story from NO-GO to GO.
    Posting to Product Hunt remains an owner action.
 

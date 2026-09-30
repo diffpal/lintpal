@@ -3,7 +3,7 @@
 The [GitHub Releases](https://github.com/diffpal/lintpal/releases) page shows
 which versions have been published.
 
-## [0.6.0] - Unreleased
+## [0.6.0] - 2026-09-30
 
 ### Added
 
@@ -35,8 +35,8 @@ which versions have been published.
   endpoint nor a model identifier has been verified.
 - Remote providers receive bounded source context and rule text. Findings are
   not a model-accuracy guarantee; see [privacy](docs/architecture/privacy.md).
-- This candidate is not yet published. Product Hunt community/gallery/account
-  gates remain separate from source and package preparation.
+- Product Hunt community, gallery and draft readiness remain separate launch
+  gates; account readiness has been confirmed by the owner.
 
 ## [0.5.4] - 2026-09-29
 
