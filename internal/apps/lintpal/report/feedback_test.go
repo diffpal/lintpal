@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestParseAndRenderSharedFindings(t *testing.T) {
+func TestParseAndRenderCompatibleFindings(t *testing.T) {
 	for _, name := range []string{"lintpal-right.json", "diffpal-left.json"} {
 		data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "docs", "schema", "testdata", name))
 		if err != nil {
@@ -19,6 +19,9 @@ func TestParseAndRenderSharedFindings(t *testing.T) {
 		bundle, err := ParseBundle(data)
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
+		}
+		if bundle.Stats.Review != nil {
+			t.Fatalf("legacy fixture unexpectedly has review metrics: %+v", bundle.Stats.Review)
 		}
 		output := string(RenderMarkdown(bundle))
 		if !strings.Contains(output, "# LintPal findings") || !strings.Contains(output, bundle.Findings[0].ChangedSpan.Side) || !strings.Contains(output, bundle.Findings[0].Message) {
@@ -166,12 +169,15 @@ func TestRenderGitHubFindingCleanRuleCodeSpan(t *testing.T) {
 }
 
 func TestRenderGitHubResultSummaryTable(t *testing.T) {
-	emptyBundle := Bundle{BaseSHA: strings.Repeat("a", 40), HeadSHA: strings.Repeat("b", 40), Findings: []Finding{}}
+	cost := 0.125
+	emptyBundle := Bundle{BaseSHA: strings.Repeat("a", 40), HeadSHA: strings.Repeat("b", 40), Findings: []Finding{},
+		Stats: Stats{Review: &ReviewMetrics{RequestCount: 3, ReviewDurationMS: 42, CostUSD: &cost}}}
 	emptyOutput, err := RenderGitHubResult(emptyBundle, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(emptyOutput), "### Findings summary") {
+	if strings.Contains(string(emptyOutput), "### Findings summary") ||
+		!strings.Contains(string(emptyOutput), "- Requests: 3\n- Duration: 42 ms\n- Cost: USD 0.125000") {
 		t.Fatalf("empty bundle should not contain summary table, got:\n%s", emptyOutput)
 	}
 
@@ -183,7 +189,8 @@ func TestRenderGitHubResultSummaryTable(t *testing.T) {
 	finding.ChangedSpan.EndLine = 63
 	finding.ChangedSpan.Side = "RIGHT"
 
-	nonEmptyBundle := Bundle{BaseSHA: strings.Repeat("a", 40), HeadSHA: strings.Repeat("b", 40), Findings: []Finding{finding}}
+	nonEmptyBundle := Bundle{BaseSHA: strings.Repeat("a", 40), HeadSHA: strings.Repeat("b", 40), Findings: []Finding{finding},
+		Stats: Stats{Review: &ReviewMetrics{RequestCount: 1, ReviewDurationMS: 7}}}
 	nonEmptyOutput, err := RenderGitHubResult(nonEmptyBundle, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -191,11 +198,31 @@ func TestRenderGitHubResultSummaryTable(t *testing.T) {
 	outText := string(nonEmptyOutput)
 	for _, expected := range []string{
 		"### Findings summary",
+		"- Requests: 1\n- Duration: 7 ms\n- Cost: unknown",
 		"| Severity | Rule | Location | Title |",
 		"| **critical** (blocking) | `general/authorization.md` | `internal/orders/handler.go:60-63` | Enforce authorization |",
 	} {
 		if !strings.Contains(outText, expected) {
 			t.Fatalf("missing %q in summary table output:\n%s", expected, outText)
 		}
+	}
+	repeated, err := RenderGitHubResult(nonEmptyBundle, nil)
+	if err != nil || !bytes.Equal(nonEmptyOutput, repeated) {
+		t.Fatalf("nondeterministic metrics rendering: %v\nfirst:\n%s\nsecond:\n%s", err, nonEmptyOutput, repeated)
+	}
+}
+
+func TestRenderGitHubResultPreservesLegacyOutput(t *testing.T) {
+	base := strings.Repeat("a", 40)
+	head := strings.Repeat("b", 40)
+	output, err := RenderGitHubResult(Bundle{BaseSHA: base, HeadSHA: head, Findings: []Finding{}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "# LintPal findings\n\n- Base: " + base + "\n- Head: " + head +
+		"\n\n## Gate status\n\nNo blocking findings\n\n## Publication\n\n" +
+		"- Findings: 0\n- Inline: 0\n- Not attached inline: 0\n"
+	if string(output) != want {
+		t.Fatalf("legacy output changed:\n%s", output)
 	}
 }

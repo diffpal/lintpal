@@ -28,10 +28,12 @@ used by both the provider and the report-output guard.
 
 `--metrics` prints fixed stage counts and durations to stderr. The in-process
 ADK/OpenTelemetry recorder has no exporter or global registration by default,
-so it makes no telemetry request. Metrics are excluded from reports. The
-selected credential is also checked before a metrics snapshot is printed;
-matching output is suppressed. Local artifacts and stdout remain under the
-operator's control.
+so it makes no telemetry request. Completed findings reports include only the
+numeric review aggregates `request_count`, `review_duration_ms`, and optional
+provider-reported `cost_usd`; they do not include per-request traces, endpoints,
+prompts, responses, credentials, or errors. The selected credential is also
+checked before a metrics snapshot is printed; matching output is suppressed.
+Local artifacts and stdout remain under the operator's control.
 
 Git patch, source, context, request, response, concurrency, run duration, and
 report sizes have finite limits documented in [resource limits](resource-limits.md).

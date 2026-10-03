@@ -66,7 +66,7 @@ func validQuestion(question Question) bool {
 // ValidateResponse rejects partial or inconsistent decisions before policy uses them.
 func ValidateResponse(request Request, response Response) error {
 	if strings.TrimSpace(response.Model) == "" || len(response.Answers) != len(request.Questions) ||
-		response.Usage.InputTokens < 0 || response.Usage.OutputTokens < 0 ||
+		response.Usage.InputTokens < 0 || response.Usage.OutputTokens < 0 || response.Usage.RequestCount <= 0 ||
 		(response.Usage.CostUSD != nil && (!finite(*response.Usage.CostUSD) || *response.Usage.CostUSD < 0)) {
 		return ErrInvalidResponse
 	}

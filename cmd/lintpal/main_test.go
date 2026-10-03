@@ -29,7 +29,7 @@ func TestProcessExitAndStreams(t *testing.T) {
 	}
 	assertGoldenReport(t, "report.json", stdout, base, head)
 	metricsOut, metricsErr, metricsCode := runBinary(t, binary, dir, append(append([]string{}, common...), "--fail-on", "none", "--metrics"))
-	if metricsCode != 0 || metricsOut != stdout ||
+	if metricsCode != 0 || normalizeReviewDuration(metricsOut) != normalizeReviewDuration(stdout) ||
 		!strings.Contains(metricsErr, "metric stage=compare status=ok count=1 duration_ms=") ||
 		!strings.Contains(metricsErr, "metric stage=evaluate status=ok count=1 duration_ms=") ||
 		!strings.Contains(metricsErr, "metric stage=write status=ok count=2 duration_ms=") ||
@@ -415,12 +415,18 @@ func TestProcessLintUncommitted(t *testing.T) {
 }
 
 var itemHash = regexp.MustCompile(`\b[0-9a-f]{64}\b`)
+var reviewDuration = regexp.MustCompile(`("review_duration_ms": )[0-9]+`)
+
+func normalizeReviewDuration(output string) string {
+	return reviewDuration.ReplaceAllString(output, "${1}0")
+}
 
 func assertGoldenReport(t *testing.T, name, output, base, head string) {
 	t.Helper()
 	normalized := strings.ReplaceAll(output, base, "<base>")
 	normalized = strings.ReplaceAll(normalized, head, "<head>")
 	normalized = itemHash.ReplaceAllString(normalized, "<item>")
+	normalized = normalizeReviewDuration(normalized)
 	path := filepath.Join("testdata", "golden", name)
 	if os.Getenv("UPDATE_GOLDEN") == "1" {
 		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {

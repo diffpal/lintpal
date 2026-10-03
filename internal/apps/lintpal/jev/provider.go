@@ -85,4 +85,5 @@ type Usage struct {
 	InputTokens  int
 	OutputTokens int
 	CostUSD      *float64
+	RequestCount int
 }

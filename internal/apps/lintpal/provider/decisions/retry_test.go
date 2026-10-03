@@ -30,7 +30,7 @@ func TestHTTPRetryClasses(t *testing.T) {
 		attempts int
 	}{
 		{400, 1}, {401, 1}, {403, 1}, {404, 1}, {413, 1}, {422, 1},
-		{429, 2}, {529, 2}, {500, 2}, {503, 2},
+		{429, 2}, {529, 2}, {500, 2}, {503, 3},
 	} {
 		t.Run(http.StatusText(tc.status), func(t *testing.T) {
 			attempts := 0
@@ -49,7 +49,7 @@ func TestHTTPRetryClasses(t *testing.T) {
 				_, _ = io.WriteString(w, validResponse)
 			}))
 			defer server.Close()
-			_, err := testProvider(t, server).Evaluate(t.Context(), typedRequest())
+			response, err := testProvider(t, server).Evaluate(t.Context(), typedRequest())
 			if attempts != tc.attempts {
 				t.Fatalf("attempts = %d, want %d", attempts, tc.attempts)
 			}
@@ -60,6 +60,8 @@ func TestHTTPRetryClasses(t *testing.T) {
 				}
 			} else if err != nil {
 				t.Fatal(err)
+			} else if response.Usage.RequestCount != tc.attempts {
+				t.Fatalf("request count = %d, want %d", response.Usage.RequestCount, tc.attempts)
 			}
 		})
 	}

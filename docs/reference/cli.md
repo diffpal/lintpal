@@ -96,7 +96,7 @@ rejects all three preset key variable names. Invalid configuration fails before 
 - **Uncommitted vs. Committed**: With `--uncommitted`, LintPal reviews working-tree modifications, staged edits, and untracked regular files against `HEAD`. Combining `--uncommitted` with `--base` or `--head` is rejected. In this mode, `head_sha` in reports is set to `UNCOMMITTED` and `base_sha` is the current `HEAD` commit SHA (or the Git empty tree if no commits exist). Untracked empty and binary files are skipped.
 - **Precedence Order**: Explicit CLI flags override environment variables (`LINTPAL_*`), which override `.env` values, which override built-in defaults. Provider credentials in process environment take precedence over `.env`.
 - **Credential Protection**: Before writing any report or artifact, LintPal checks output bytes against the active credential. If found, the run fails with exit code `4` without writing output.
-- **Metrics**: `--metrics` prints fixed stage lines to stderr (e.g. `metric stage=compare status=ok count=1 duration_ms=18`). No source code, prompt, endpoint, or token data ever enters metrics.
+- **Metrics**: `--metrics` prints fixed stage lines to stderr (e.g. `metric stage=compare status=ok count=1 duration_ms=18`). Every successful findings artifact also stores numeric review aggregates under `stats.review`: provider request attempts, evaluate-stage duration, and optional provider-reported USD cost. This uses the existing `--out` path and requires no new flag. No source code, prompt, endpoint, credential, response, or error text enters these metrics.
 
 Committed comparisons review the unique merge base of `--base` and `--head`
 through `--head`, equivalent to the range selected by `git diff BASE...HEAD`.
@@ -109,7 +109,7 @@ with exit code `2`.
 
 ## `lintpal feedback`
 
-Render or publish stored findings v5 JSON reports without rerunning analysis or calling AI providers.
+Render or publish stored findings v5 JSON reports without rerunning analysis or calling AI providers. Review metrics are read from the same input artifact; there is no separate metrics file.
 
 ### `lintpal feedback markdown`
 

@@ -10,7 +10,7 @@ import (
 )
 
 // The internal diagnostic keeps the validated rule decision and Git work item.
-// MarshalJSON writes the common v5 findings contract used by both CLIs.
+// MarshalJSON writes LintPal's v5 findings contract.
 type wireBundle struct {
 	Version      string        `json:"version"`
 	ReviewID     string        `json:"review_id"`

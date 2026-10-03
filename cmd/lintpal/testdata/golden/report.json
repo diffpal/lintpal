@@ -73,6 +73,10 @@
     "questions": 2,
     "diagnostics": 2,
     "input_tokens": 1,
-    "output_tokens": 1
+    "output_tokens": 1,
+    "review": {
+      "request_count": 1,
+      "review_duration_ms": 0
+    }
   }
 }

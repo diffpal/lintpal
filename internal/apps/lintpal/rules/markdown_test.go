@@ -177,7 +177,7 @@ func TestMarkdownDecisionUsesFixedReportFields(t *testing.T) {
 			bindings[0].QuestionID: bindings[0].Question}},
 		ItemByQuestion: map[string]string{bindings[0].QuestionID: bindings[0].WorkItemID}}
 	response := jev.Response{Model: "test", Answers: map[string]jev.Answer{
-		bindings[0].QuestionID: jev.NoulAnswer{Probability: 0.8}}}
+		bindings[0].QuestionID: jev.NoulAnswer{Probability: 0.8}}, Usage: jev.Usage{RequestCount: 1}}
 	decisions, err := Decide(t.Context(), batch, selections, response)
 	if err != nil || len(decisions) != 1 || decisions[0].RuleID != "review/requirement.md" ||
 		decisions[0].Severity != Critical || decisions[0].Title != "Possible rule violation" ||

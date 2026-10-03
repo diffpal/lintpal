@@ -2,10 +2,10 @@
 
 `lintpal lint --format json` writes one UTF-8 JSON object followed by a
 newline. `--out PATH` writes the complete JSON object atomically regardless of
-stdout format. The LintPal v5 contract is documented by the local
-[JSON schema](../schema/findings-v5.schema.json). DiffPal also writes v5
-bundles; its [schema reference](https://github.com/diffpal/diffpal/blob/main/docs/reference/findings-schema.md)
-describes code findings and legacy bundle reads. The
+stdout format. LintPal owns and evolves the v5 contract documented by its
+[JSON schema](../schema/findings-v5.schema.json). The format originated from
+the DiffPal v5 schema, which remains a compatibility baseline and design
+reference rather than an authority for LintPal changes. The
 [JSON](../../cmd/lintpal/testdata/golden/report.json) and
 [Markdown](../../cmd/lintpal/testdata/golden/report.md) goldens show LintPal output.
 
@@ -40,7 +40,7 @@ Severity comes from frontmatter or an explicit override. `blocking` indicates
 whether the finding meets the run's selected `--fail-on` or `--block-on`
 threshold. With `--block-on`, lint records the flag but does not gate.
 
-The shared v5 schema also defines DiffPal code findings with
+The LintPal v5 schema retains support for DiffPal-style code findings with
 `evidence.kind: "code"`, structured `impact`, and numeric `confidence`. See the
 [LintPal schema](../schema/findings-v5.schema.json) for exact v5 types and
 optional metadata.
@@ -48,8 +48,11 @@ optional metadata.
 Each LintPal skip has `reason` and at least one of `old_path` or `new_path`.
 Reasons are `binary`, `non_regular`, and `no_changed_lines`. `stats` records
 work items, skips, groups, batches, questions, findings (under the historical
-counter name `diagnostics`), and provider-reported token totals. A zero token
-count does not prove the provider used no tokens.
+counter name `diagnostics`), and provider-reported token totals. Its optional
+`review` object records provider request attempts, evaluate-stage wall-clock
+milliseconds, and optional provider-reported USD cost. A missing `cost_usd`
+means the aggregate cost is unknown. A zero token count does not prove the
+provider used no tokens.
 
 The gate runs after the complete report is written. The default
 `--fail-on high` returns exit code `10` for a high or critical finding;
@@ -66,6 +69,6 @@ successful publication when any finding is blocking. See [CLI exit codes](cli.md
 The previous LintPal `lintpal.report.v1` object used `schema_version` and
 `diagnostics[]`. In v5, use `version` and `findings[]`. Move `rule_id` into
 `evidence.rule_id`, side and range into `changed_span`, and the numeric answer
-from `evidence` into `decision`. DiffPal and LintPal both write v5 bundles.
-Consumers should branch on `version` and `evidence.kind` when handling stored
-findings from either tool.
+from `evidence` into `decision`. Compatibility with DiffPal is intentional
+where useful but is not guaranteed in lockstep. Consumers should branch on
+`version` and `evidence.kind` when handling stored findings.

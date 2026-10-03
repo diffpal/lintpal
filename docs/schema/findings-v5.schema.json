@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/diffpal/diffpal/blob/main/schemas/findings/v5.schema.json",
-  "title": "DiffPal and LintPal findings bundle v5",
+  "$id": "https://github.com/diffpal/lintpal/blob/main/docs/schema/findings-v5.schema.json",
+  "title": "LintPal findings bundle v5",
   "type": "object",
   "required": ["version", "review_id", "base_sha", "head_sha", "findings"],
   "properties": {
@@ -18,12 +18,41 @@
     "files": {"type": "array", "items": {"type": "object", "required": ["path"], "properties": {"path": {"$ref": "#/$defs/nonempty"}, "status": {"type": "string"}}}},
     "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
     "skips": {"type": "array", "items": {"type": "object", "required": ["reason"], "properties": {"old_path": {"type": "string"}, "new_path": {"type": "string"}, "reason": {"enum": ["binary", "non_regular", "no_changed_lines"]}}}},
-    "stats": {"type": "object", "properties": {"work_items": {"$ref": "#/$defs/count"}, "skipped": {"$ref": "#/$defs/count"}, "groups": {"$ref": "#/$defs/count"}, "batches": {"$ref": "#/$defs/count"}, "questions": {"$ref": "#/$defs/count"}, "diagnostics": {"$ref": "#/$defs/count"}, "input_tokens": {"$ref": "#/$defs/count"}, "output_tokens": {"$ref": "#/$defs/count"}}}
+    "stats": {
+      "type": "object",
+      "properties": {
+        "work_items": {"$ref": "#/$defs/count"},
+        "skipped": {"$ref": "#/$defs/count"},
+        "groups": {"$ref": "#/$defs/count"},
+        "batches": {"$ref": "#/$defs/count"},
+        "questions": {"$ref": "#/$defs/count"},
+        "diagnostics": {"$ref": "#/$defs/count"},
+        "input_tokens": {"$ref": "#/$defs/count"},
+        "output_tokens": {"$ref": "#/$defs/count"},
+        "review": {"$ref": "#/$defs/review_metrics"}
+      }
+    }
   },
   "additionalProperties": false,
   "$defs": {
     "nonempty": {"type": "string", "minLength": 1},
     "count": {"type": "integer", "minimum": 0},
+    "review_metrics": {
+      "type": "object",
+      "required": ["request_count", "review_duration_ms"],
+      "properties": {
+        "request_count": {"$ref": "#/$defs/count"},
+        "review_duration_ms": {"type": "integer", "minimum": 0},
+        "cost_usd": {"type": "number", "minimum": 0}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"request_count": {"const": 0}}, "required": ["request_count"]},
+          "then": {"properties": {"cost_usd": {"const": 0}}, "required": ["cost_usd"]}
+        }
+      ],
+      "additionalProperties": false
+    },
     "span": {
       "type": "object",
       "required": ["path", "start_line", "end_line", "side"],

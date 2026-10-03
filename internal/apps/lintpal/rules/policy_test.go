@@ -54,7 +54,7 @@ func responseAt(selections []Selection, value float64) jev.Response {
 				Probabilities: map[string]float64{"0": 1 - value, "1": value}, Confidence: value}
 		}
 	}
-	return jev.Response{Model: "jev-1.13.0", Answers: answers}
+	return jev.Response{Model: "jev-1.13.0", Answers: answers, Usage: jev.Usage{RequestCount: 1}}
 }
 
 func TestDecisionThresholdsAndFixedMetadata(t *testing.T) {

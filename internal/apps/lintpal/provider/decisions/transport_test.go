@@ -64,7 +64,7 @@ func TestTypedSystemOneRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response.Model != "jev-1.13.0" || len(response.Answers) != 3 || response.Usage.InputTokens != 12 {
+	if response.Model != "jev-1.13.0" || len(response.Answers) != 3 || response.Usage.InputTokens != 12 || response.Usage.RequestCount != 1 {
 		t.Fatalf("response = %+v", response)
 	}
 }

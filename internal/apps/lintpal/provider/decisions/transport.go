@@ -96,6 +96,7 @@ func (p *Provider) Evaluate(ctx context.Context, request jev.Request) (jev.Respo
 		}
 		response, retry, delay, err := p.doOnce(ctx, body, token, request)
 		if err == nil {
+			response.Usage.RequestCount = attempt + 1
 			return response, nil
 		}
 		lastErr = err
@@ -250,7 +251,7 @@ func decodeResponse(data []byte, request jev.Request) (jev.Response, error) {
 	response := jev.Response{
 		Model:   wire.Model,
 		Answers: make(map[string]jev.Answer, len(wire.Answers)),
-		Usage:   jev.Usage{InputTokens: *wire.Usage.InputTokens, OutputTokens: *wire.Usage.OutputTokens, CostUSD: wire.Usage.Cost},
+		Usage:   jev.Usage{InputTokens: *wire.Usage.InputTokens, OutputTokens: *wire.Usage.OutputTokens, CostUSD: wire.Usage.Cost, RequestCount: 1},
 	}
 	for id, raw := range wire.Answers {
 		var answer answerWire
