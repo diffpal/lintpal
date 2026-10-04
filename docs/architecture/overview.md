@@ -127,8 +127,10 @@ OpenAI requires an explicit model.
 The CLI defaults to `typesafe/jev-1.13` for OpenRouter and `jev-latest` for
 native/custom providers; explicitly configured models retain their precedence.
 The normalized response retains model, typed answers, tokens, request attempts,
-and optional provider-reported cost;
-OpenRouter request `id` and `provider` metadata are ignored. `TrustedCustom(baseURL, tokenEnv)` must be called only
+and optional provider-specific cost. The direct TypeSafe adapter derives cost
+from reported input tokens at its documented Jev rate; gateway adapters retain
+provider-reported cost. OpenRouter request `id` and `provider` metadata are
+ignored. `TrustedCustom(baseURL, tokenEnv)` must be called only
 from trusted process settings, never repository rules/config. It does not
 inherit preset tokens and rejects their environment variable names. Its
 default route remains the trusted base URL plus `/v1/systemone`.

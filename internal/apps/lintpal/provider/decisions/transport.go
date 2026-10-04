@@ -157,6 +157,7 @@ func (p *Provider) doOnce(ctx context.Context, body []byte, token string, reques
 	if err != nil {
 		return jev.Response{}, false, 0, err
 	}
+	response.Usage.CostUSD = p.endpoint.costUSD(response.Usage.InputTokens, response.Usage.OutputTokens, response.Usage.CostUSD)
 	return response, false, 0, nil
 }
 

@@ -2,6 +2,7 @@ package decisions
 
 import (
 	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -46,6 +47,20 @@ func TestCustomRequiresExplicitTokenSource(t *testing.T) {
 	endpoint, err = TrustedCustom("https://jev.example.test", "LINTPAL_TOKEN")
 	if err != nil || endpoint.token() != "custom-secret" {
 		t.Fatalf("trusted custom token source: error = %v, matched = %v", err, endpoint.token() == "custom-secret")
+	}
+}
+
+func TestProviderSpecificCost(t *testing.T) {
+	reported := 0.25
+	calculated := TypeSafe().costUSD(46_048, 17_548, nil)
+	if calculated == nil || math.Abs(*calculated-0.001934016) > 1e-12 {
+		t.Fatalf("TypeSafe cost = %v", calculated)
+	}
+	if got := TypeSafe().costUSD(46_048, 17_548, &reported); got != &reported {
+		t.Fatalf("reported TypeSafe cost was replaced: %v", got)
+	}
+	if got := OpenRouter().costUSD(46_048, 17_548, nil); got != nil {
+		t.Fatalf("missing OpenRouter cost was estimated: %v", got)
 	}
 }
 

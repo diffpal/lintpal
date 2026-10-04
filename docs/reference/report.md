@@ -50,9 +50,12 @@ Reasons are `binary`, `non_regular`, and `no_changed_lines`. `stats` records
 work items, skips, groups, batches, questions, findings (under the historical
 counter name `diagnostics`), and provider-reported token totals. Its optional
 `review` object records provider request attempts, evaluate-stage wall-clock
-milliseconds, and optional provider-reported USD cost. A missing `cost_usd`
-means the aggregate cost is unknown. A zero token count does not prove the
-provider used no tokens.
+milliseconds, and optional provider-specific USD cost. The direct TypeSafe
+adapter calculates Jev cost from reported input tokens at the
+[published $0.042 per million rate](https://typesafe.ai/blog/introducing-system-one-models-and-jev);
+output tokens are free. Other adapters use `usage.cost` from the provider. A
+missing `cost_usd` means the aggregate cost is unknown. A zero token count does
+not prove the provider used no tokens.
 
 The gate runs after the complete report is written. The default
 `--fail-on high` returns exit code `10` for a high or critical finding;

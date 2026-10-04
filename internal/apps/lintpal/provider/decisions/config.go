@@ -17,20 +17,27 @@ const typeSafeBase = "https://api.typesafe.ai"
 const openRouterBase = "https://openrouter.ai/api"
 const openAIBase = "https://api.openai.com"
 
+// typeSafeInputUSDPerMillion is TypeSafe's published direct Jev list price.
+const typeSafeInputUSDPerMillion = 0.042
+
 var envName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // Endpoint binds a destination to one token source. Its fields are private so
 // repository-controlled configuration cannot retarget a preset credential.
 type Endpoint struct {
-	base     *url.URL
-	apiPath  string
-	tokenEnv string
+	base                *url.URL
+	apiPath             string
+	tokenEnv            string
+	usagePricing        bool
+	inputUSDPerMillion  float64
+	outputUSDPerMillion float64
 }
 
 // TypeSafe uses the fixed native System One destination and token source.
 func TypeSafe() Endpoint {
 	base, _ := url.Parse(typeSafeBase)
-	return Endpoint{base: base, apiPath: "/v1/systemone", tokenEnv: "TYPESAFE_API_KEY"}
+	return Endpoint{base: base, apiPath: "/v1/systemone", tokenEnv: "TYPESAFE_API_KEY",
+		usagePricing: true, inputUSDPerMillion: typeSafeInputUSDPerMillion}
 }
 
 // OpenRouter uses its fixed Decisions destination and token source.
@@ -118,6 +125,14 @@ func (e Endpoint) token() string {
 		return ""
 	}
 	return os.Getenv(e.tokenEnv)
+}
+
+func (e Endpoint) costUSD(inputTokens, outputTokens int, reported *float64) *float64 {
+	if reported != nil || !e.usagePricing {
+		return reported
+	}
+	cost := (float64(inputTokens)*e.inputUSDPerMillion + float64(outputTokens)*e.outputUSDPerMillion) / 1_000_000
+	return &cost
 }
 
 func secureClient(client *http.Client) *http.Client {
