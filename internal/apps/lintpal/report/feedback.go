@@ -82,7 +82,7 @@ func compiledBundleSchema() (*jsonschema.Schema, error) {
 	return bundleSchema, bundleSchemaErr
 }
 
-// ParseBundle validates a shared findings v5 artifact before using its fields.
+// ParseBundle validates a LintPal findings v5 artifact before using its fields.
 func ParseBundle(data []byte) (Bundle, error) {
 	if len(data) == 0 || len(data) > MaxBundleBytes || !utf8.Valid(data) || !json.Valid(data) {
 		return Bundle{}, ErrInvalidReport
@@ -182,6 +182,15 @@ func RenderGitHubResult(bundle Bundle, unanchoredIDs []string) ([]byte, error) {
 	fmt.Fprintf(&out, "# LintPal findings\n\n- Base: %s\n- Head: %s\n\n", markdownText(bundle.BaseSHA), markdownText(bundle.HeadSHA))
 	out.WriteString("## Gate status\n\n")
 	fmt.Fprintf(&out, "%s\n\n", blockingStatus(BlockingCount(bundle)))
+	if metrics := bundle.Stats.Review; metrics != nil {
+		out.WriteString("## Review metrics\n\n")
+		fmt.Fprintf(&out, "- Requests: %d\n- Duration: %d ms\n", metrics.RequestCount, metrics.ReviewDurationMS)
+		if metrics.CostUSD == nil {
+			out.WriteString("- Cost: unknown\n\n")
+		} else {
+			fmt.Fprintf(&out, "- Cost: USD %.6f\n\n", *metrics.CostUSD)
+		}
+	}
 	if len(bundle.Findings) > 0 {
 		out.WriteString("### Findings summary\n\n")
 		out.WriteString("| Severity | Rule | Location | Title |\n")

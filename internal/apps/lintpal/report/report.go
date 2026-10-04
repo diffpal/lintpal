@@ -46,14 +46,21 @@ type Skip struct {
 }
 
 type Stats struct {
-	WorkItems    int `json:"work_items"`
-	Skipped      int `json:"skipped"`
-	Groups       int `json:"groups"`
-	Batches      int `json:"batches"`
-	Questions    int `json:"questions"`
-	Diagnostics  int `json:"diagnostics"`
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
+	WorkItems    int            `json:"work_items"`
+	Skipped      int            `json:"skipped"`
+	Groups       int            `json:"groups"`
+	Batches      int            `json:"batches"`
+	Questions    int            `json:"questions"`
+	Diagnostics  int            `json:"diagnostics"`
+	InputTokens  int            `json:"input_tokens"`
+	OutputTokens int            `json:"output_tokens"`
+	Review       *ReviewMetrics `json:"review,omitempty"`
+}
+
+type ReviewMetrics struct {
+	RequestCount     int      `json:"request_count"`
+	ReviewDurationMS int64    `json:"review_duration_ms"`
+	CostUSD          *float64 `json:"cost_usd,omitempty"`
 }
 
 type Report struct {
@@ -156,7 +163,7 @@ func Validate(report Report) error {
 		report.Stats.WorkItems < 0 || report.Stats.Skipped != len(report.Skips) ||
 		report.Stats.Groups < 0 || report.Stats.Batches < 0 || report.Stats.Questions < 0 ||
 		report.Stats.Diagnostics != len(report.Diagnostics) ||
-		report.Stats.InputTokens < 0 || report.Stats.OutputTokens < 0 {
+		report.Stats.InputTokens < 0 || report.Stats.OutputTokens < 0 || !validReviewMetrics(report.Stats.Review) {
 		return ErrInvalidReport
 	}
 	seen := make(map[string]bool, len(report.Diagnostics))
@@ -184,6 +191,17 @@ func Validate(report Report) error {
 		}
 	}
 	return nil
+}
+
+func validReviewMetrics(metrics *ReviewMetrics) bool {
+	if metrics == nil {
+		return true
+	}
+	if metrics.RequestCount < 0 || metrics.ReviewDurationMS < 0 ||
+		(metrics.CostUSD != nil && (!finite(*metrics.CostUSD) || *metrics.CostUSD < 0)) {
+		return false
+	}
+	return metrics.RequestCount != 0 || metrics.CostUSD != nil && *metrics.CostUSD == 0
 }
 
 func diagnosticLess(a, b Diagnostic) bool {

@@ -26,10 +26,11 @@ func TestPresetAndCustomConformance(t *testing.T) {
 		endpoint Endpoint
 		url      string
 		token    string
+		costUSD  *float64
 	}{
-		{"typesafe", TypeSafe(), "https://api.typesafe.ai/v1/systemone", "native-secret"},
-		{"openrouter", OpenRouter(), "https://openrouter.ai/api/alpha/decisions", "router-secret"},
-		{"openai", OpenAI(), "https://api.openai.com/v1/decisions", "openai-secret"},
+		{"typesafe", TypeSafe(), "https://api.typesafe.ai/v1/systemone", "native-secret", func() *float64 { value := 12 * typeSafeInputUSDPerMillion / 1_000_000; return &value }()},
+		{"openrouter", OpenRouter(), "https://openrouter.ai/api/alpha/decisions", "router-secret", nil},
+		{"openai", OpenAI(), "https://api.openai.com/v1/decisions", "openai-secret", nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
@@ -45,7 +46,9 @@ func TestPresetAndCustomConformance(t *testing.T) {
 				t.Fatal(err)
 			}
 			response, err := provider.Evaluate(t.Context(), typedRequest())
-			if err != nil || calls != 1 || len(response.Answers) != 3 {
+			if err != nil || calls != 1 || len(response.Answers) != 3 ||
+				(response.Usage.CostUSD == nil) != (tc.costUSD == nil) ||
+				response.Usage.CostUSD != nil && *response.Usage.CostUSD != *tc.costUSD {
 				t.Fatalf("calls = %d, response = %+v, error = %v", calls, response, err)
 			}
 		})

@@ -59,8 +59,8 @@ func TestMarkdownRepresentativeSafeAndBuggyAnswers(t *testing.T) {
 		batch.Request.Questions[binding.QuestionID] = binding.Question
 		batch.ItemByQuestion[binding.QuestionID] = binding.WorkItemID
 	}
-	safe := jev.Response{Model: "jev-1.13.0", Answers: map[string]jev.Answer{}}
-	buggy := jev.Response{Model: "jev-1.13.0", Answers: map[string]jev.Answer{}}
+	safe := jev.Response{Model: "jev-1.13.0", Answers: map[string]jev.Answer{}, Usage: jev.Usage{RequestCount: 1}}
+	buggy := jev.Response{Model: "jev-1.13.0", Answers: map[string]jev.Answer{}, Usage: jev.Usage{RequestCount: 1}}
 	for _, selection := range selected {
 		safe.Answers[selection.QuestionID] = jev.NoulAnswer{Probability: 0.1}
 		probability := 0.1

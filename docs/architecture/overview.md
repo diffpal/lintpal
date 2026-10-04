@@ -126,8 +126,11 @@ under the operator-assumed compatible shape; live availability is unverified.
 OpenAI requires an explicit model.
 The CLI defaults to `typesafe/jev-1.13` for OpenRouter and `jev-latest` for
 native/custom providers; explicitly configured models retain their precedence.
-The normalized response retains model, typed answers, tokens and optional cost;
-OpenRouter request `id` and `provider` metadata are ignored. `TrustedCustom(baseURL, tokenEnv)` must be called only
+The normalized response retains model, typed answers, tokens, request attempts,
+and optional provider-specific cost. The direct TypeSafe adapter derives cost
+from reported input tokens at its documented Jev rate; gateway adapters retain
+provider-reported cost. OpenRouter request `id` and `provider` metadata are
+ignored. `TrustedCustom(baseURL, tokenEnv)` must be called only
 from trusted process settings, never repository rules/config. It does not
 inherit preset tokens and rejects their environment variable names. Its
 default route remains the trusted base URL plus `/v1/systemone`.
@@ -165,9 +168,12 @@ workers, ten minutes, and 64 MiB. Context limits are passed through to
 `contextplan`. Provider results occupy stable batch slots before final sorting;
 the first failure cancels siblings, and no partial findings are exposed.
 `report.New` checks decisions against the original Git work items and sorts
-diagnostics and skips. The LintPal v5 findings artifact includes
-resolved revisions, evidence, skips, and count/usage stats without source state,
-question text, or credentials.
+diagnostics and skips. The LintPal-owned v5 findings artifact includes resolved
+revisions, evidence, skips, and count/usage stats. Its optional `stats.review`
+records total provider attempts, evaluate-stage wall-clock milliseconds, and
+optional provider-reported USD cost. These numeric aggregates contain no source
+state, question text, endpoint, response, credential, or error details. DiffPal
+is the original format baseline, not an authority for LintPal schema changes.
 
 `report.WriteJSON` writes LintPal findings v5; `report.WriteMarkdown` renders
 the same validated findings for people. Both feedback commands validate a

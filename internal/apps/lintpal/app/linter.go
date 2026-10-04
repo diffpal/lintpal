@@ -166,12 +166,16 @@ func (l *Linter) Lint(parent context.Context, request Request) (report.Report, e
 	stats := report.Stats{WorkItems: len(result.Items), Skipped: len(result.Skips), Groups: len(groups), Batches: len(batches), Questions: len(bindings)}
 	started = time.Now()
 	results, err := l.evaluate(ctx, batches, selections, limits.Concurrency)
+	reviewDuration := time.Since(started)
 	l.observe(StageEvaluate, started, len(results), err)
 	if err != nil {
 		return report.Report{}, stageError(parent, ctx, "evaluate", err)
 	}
 	decisions := make([]rules.Decision, 0)
 	model := request.Model
+	requestCount := 0
+	costUSD := 0.0
+	costKnown := true
 	for index, output := range results {
 		if index == 0 {
 			model = output.response.Model
@@ -179,13 +183,29 @@ func (l *Linter) Lint(parent context.Context, request Request) (report.Report, e
 		if output.response.Model != model {
 			return report.Report{}, ErrInvalidRun
 		}
-		if output.response.Usage.InputTokens > math.MaxInt-stats.InputTokens || output.response.Usage.OutputTokens > math.MaxInt-stats.OutputTokens {
+		if output.response.Usage.InputTokens > math.MaxInt-stats.InputTokens ||
+			output.response.Usage.OutputTokens > math.MaxInt-stats.OutputTokens ||
+			output.response.Usage.RequestCount > math.MaxInt-requestCount {
 			return report.Report{}, ErrInvalidRun
 		}
 		stats.InputTokens += output.response.Usage.InputTokens
 		stats.OutputTokens += output.response.Usage.OutputTokens
+		requestCount += output.response.Usage.RequestCount
+		if output.response.Usage.CostUSD == nil {
+			costKnown = false
+		} else if costKnown {
+			costUSD += *output.response.Usage.CostUSD
+			if math.IsInf(costUSD, 0) || math.IsNaN(costUSD) {
+				return report.Report{}, ErrInvalidRun
+			}
+		}
 		decisions = append(decisions, output.decisions...)
 	}
+	metrics := &report.ReviewMetrics{RequestCount: requestCount, ReviewDurationMS: reviewDuration.Milliseconds()}
+	if costKnown {
+		metrics.CostUSD = &costUSD
+	}
+	stats.Review = metrics
 	if err := ctx.Err(); err != nil {
 		return report.Report{}, stageError(parent, ctx, "run", err)
 	}

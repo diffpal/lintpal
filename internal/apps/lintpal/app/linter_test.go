@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +24,10 @@ type lintProvider struct {
 	active, peak, calls int
 	block               <-chan struct{}
 	malformed           bool
+	requestCount        int
+	costUSD             *float64
+	missingCostCall     int
+	delay               time.Duration
 }
 
 type reorderProvider struct {
@@ -64,13 +69,14 @@ func (p *reorderProvider) Evaluate(ctx context.Context, request jev.Request) (je
 			return jev.Response{}, errors.New("provider failed")
 		}
 	}
-	return jev.Response{Model: request.Model, Answers: map[string]jev.Answer{id: jev.NoulAnswer{Probability: 1}}, Usage: jev.Usage{InputTokens: 1, OutputTokens: 1}}, nil
+	return jev.Response{Model: request.Model, Answers: map[string]jev.Answer{id: jev.NoulAnswer{Probability: 1}}, Usage: jev.Usage{InputTokens: 1, OutputTokens: 1, RequestCount: 1}}, nil
 }
 
 func (f *lintProvider) Evaluate(ctx context.Context, request jev.Request) (jev.Response, error) {
 	f.mu.Lock()
 	f.active++
 	f.calls++
+	call := f.calls
 	if f.active > f.peak {
 		f.peak = f.active
 	}
@@ -83,6 +89,15 @@ func (f *lintProvider) Evaluate(ctx context.Context, request jev.Request) (jev.R
 		case <-f.block:
 		}
 	}
+	if f.delay > 0 {
+		timer := time.NewTimer(f.delay)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			return jev.Response{}, ctx.Err()
+		case <-timer.C:
+		}
+	}
 	answers := make(map[string]jev.Answer)
 	for id := range request.Questions {
 		answers[id] = jev.NoulAnswer{Probability: 1}
@@ -90,7 +105,16 @@ func (f *lintProvider) Evaluate(ctx context.Context, request jev.Request) (jev.R
 	if f.malformed {
 		answers = nil
 	}
-	return jev.Response{Model: request.Model, Answers: answers, Usage: jev.Usage{InputTokens: 2, OutputTokens: 3}}, nil
+	requestCount := f.requestCount
+	if requestCount == 0 {
+		requestCount = 1
+	}
+	costUSD := f.costUSD
+	if call == f.missingCostCall {
+		costUSD = nil
+	}
+	return jev.Response{Model: request.Model, Answers: answers,
+		Usage: jev.Usage{InputTokens: 2, OutputTokens: 3, RequestCount: requestCount, CostUSD: costUSD}}, nil
 }
 
 func TestLintCommittedPipeline(t *testing.T) {
@@ -105,7 +129,8 @@ func TestLintCommittedPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.BaseSHA != base || report.HeadSHA != head || len(report.Diagnostics) != 2 || report.Stats.InputTokens != 2 || report.Stats.OutputTokens != 3 {
+	if report.BaseSHA != base || report.HeadSHA != head || len(report.Diagnostics) != 2 || report.Stats.InputTokens != 2 || report.Stats.OutputTokens != 3 ||
+		report.Stats.Review == nil || report.Stats.Review.RequestCount != 1 {
 		t.Fatalf("unexpected report: %+v", report)
 	}
 	// Working-tree edits cannot change committed-source findings.
@@ -117,6 +142,9 @@ func TestLintCommittedPipeline(t *testing.T) {
 		t.Fatalf("working tree changed run: %v, %+v", err, again)
 	}
 	var firstJSON, secondJSON bytes.Buffer
+	// Elapsed time varies across runs; normalize it when checking stable ordering and IDs.
+	report.Stats.Review.ReviewDurationMS = 0
+	again.Stats.Review.ReviewDurationMS = 0
 	if err := reportpkg.WriteJSON(&firstJSON, report); err != nil {
 		t.Fatal(err)
 	}
@@ -145,8 +173,59 @@ func TestLintNoApplicableRules(t *testing.T) {
 		t.Fatal(err)
 	}
 	artifact, err := linter.Lint(context.Background(), Request{Base: base, Head: head, Model: "model", ProviderName: "systemone"})
-	if err != nil || len(artifact.Diagnostics) != 0 || artifact.Stats.Questions != 0 || provider.calls != 0 {
+	if err != nil || len(artifact.Diagnostics) != 0 || artifact.Stats.Questions != 0 || provider.calls != 0 ||
+		artifact.Stats.Review == nil || artifact.Stats.Review.RequestCount != 0 || artifact.Stats.Review.CostUSD == nil || *artifact.Stats.Review.CostUSD != 0 {
 		t.Fatalf("no-rule run: %+v %v calls=%d", artifact, err, provider.calls)
+	}
+}
+
+func TestLintAggregatesReviewMetrics(t *testing.T) {
+	repo, _, base, head := lintRepo(t)
+	request := Request{Base: base, Head: head, Model: "model", ProviderName: "systemone", Limits: Limits{Concurrency: 2}}
+	request.Limits.Context.MaxQuestionsPerBatch = 1
+	cost := 0.25
+	provider := &lintProvider{requestCount: 2, costUSD: &cost, delay: 20 * time.Millisecond}
+	linter, err := NewLinter(repo, provider, testRules(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifact, err := linter.Lint(t.Context(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	metrics := artifact.Stats.Review
+	if metrics == nil || artifact.Stats.Batches != 2 || metrics.RequestCount != 4 || metrics.ReviewDurationMS < 10 ||
+		metrics.CostUSD == nil || *metrics.CostUSD != 0.5 {
+		t.Fatalf("review metrics: %+v", metrics)
+	}
+
+	provider = &lintProvider{costUSD: &cost, missingCostCall: 1}
+	linter, err = NewLinter(repo, provider, testRules(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifact, err = linter.Lint(t.Context(), request)
+	if err != nil || artifact.Stats.Review == nil || artifact.Stats.Review.CostUSD != nil {
+		t.Fatalf("mixed-cost review: %+v, %v", artifact.Stats.Review, err)
+	}
+}
+
+func TestLintRejectsReviewMetricOverflow(t *testing.T) {
+	repo, _, base, head := lintRepo(t)
+	request := Request{Base: base, Head: head, Model: "model", ProviderName: "systemone", Limits: Limits{Concurrency: 2}}
+	request.Limits.Context.MaxQuestionsPerBatch = 1
+	for _, provider := range []*lintProvider{
+		{requestCount: math.MaxInt},
+		{costUSD: func() *float64 { value := math.MaxFloat64; return &value }()},
+	} {
+		linter, err := NewLinter(repo, provider, testRules(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		artifact, err := linter.Lint(t.Context(), request)
+		if !errors.Is(err, ErrInvalidRun) || artifact.SchemaVersion != "" {
+			t.Fatalf("overflow returned report: %+v, %v", artifact, err)
+		}
 	}
 }
 

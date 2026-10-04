@@ -13,7 +13,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
-func TestWireConformsToSharedSchemaOnBothSides(t *testing.T) {
+func TestWireConformsToLintPalSchema(t *testing.T) {
 	items := []git.WorkItem{
 		{ID: strings.Repeat("1", 64), Path: "old.go", OldPath: "old.go", Side: git.Left, StartLine: 3, EndLine: 3, Hunk: 1},
 		{ID: strings.Repeat("2", 64), Path: "new.go", NewPath: "new.go", Side: git.Right, StartLine: 4, EndLine: 4, Hunk: 1},
@@ -23,7 +23,9 @@ func TestWireConformsToSharedSchemaOnBothSides(t *testing.T) {
 		{RuleID: "go/errors.md", WorkItemID: items[0].ID, Path: items[0].Path, Side: items[0].Side, StartLine: 3, EndLine: 3, Severity: rules.High, Title: "Check errors", Message: "Changed code may violate go/errors.md.", Kind: "noul_probability", Value: .97},
 		{RuleID: "go/errors.md", WorkItemID: items[1].ID, Path: items[1].Path, Side: items[1].Side, StartLine: 4, EndLine: 4, Severity: rules.Medium, Title: "Check errors", Message: "Changed code may violate go/errors.md.", Kind: "noul_probability", Value: .96},
 	}
-	artifact, err := New(result, decisions, "systemone", "model", Stats{WorkItems: 2})
+	cost := 0.125
+	artifact, err := New(result, decisions, "systemone", "model", Stats{WorkItems: 2,
+		Review: &ReviewMetrics{RequestCount: 2, ReviewDurationMS: 15, CostUSD: &cost}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +54,7 @@ func TestWireConformsToSharedSchemaOnBothSides(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := compiled.Validate(wireDoc); err != nil {
-		t.Fatalf("report violates shared v5 schema: %v\n%s", err, output.String())
+		t.Fatalf("report violates LintPal v5 schema: %v\n%s", err, output.String())
 	}
 	var bundle wireBundle
 	if err := json.Unmarshal(output.Bytes(), &bundle); err != nil {
@@ -62,5 +64,9 @@ func TestWireConformsToSharedSchemaOnBothSides(t *testing.T) {
 		bundle.Findings[1].Path != "old.go" || bundle.Findings[1].ChangedSpan.Side != git.Left ||
 		bundle.Findings[0].Blocking || !bundle.Findings[1].Blocking || bundle.Findings[0].ID == bundle.Findings[1].ID {
 		t.Fatalf("wrong wire findings: %+v", bundle.Findings)
+	}
+	if bundle.Stats.Review == nil || bundle.Stats.Review.RequestCount != 2 || bundle.Stats.Review.ReviewDurationMS != 15 ||
+		bundle.Stats.Review.CostUSD == nil || *bundle.Stats.Review.CostUSD != cost {
+		t.Fatalf("wrong review metrics: %+v", bundle.Stats.Review)
 	}
 }

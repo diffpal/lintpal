@@ -181,7 +181,9 @@ func runCase(ctx context.Context, pack rules.Pack, c Case) (report.Report, error
 		}
 		answers[binding.QuestionID] = jev.NoulAnswer{Probability: probability}
 	}
-	decisions, err := rules.Decide(ctx, batch, selections, jev.Response{Model: batch.Request.Model, Answers: answers})
+	decisions, err := rules.Decide(ctx, batch, selections, jev.Response{
+		Model: batch.Request.Model, Answers: answers, Usage: jev.Usage{RequestCount: 1},
+	})
 	if err != nil {
 		return report.Report{}, err
 	}

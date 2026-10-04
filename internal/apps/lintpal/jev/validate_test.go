@@ -27,7 +27,7 @@ func sampleResponse() Response {
 			"c": ChoiceAnswer{Choice: "risk", Probabilities: map[string]float64{"safe": 0.2, "risk": 0.8}, Confidence: 0.6},
 			"s": ScoreAnswer{Score: 1.7, Legend: map[string]string{"0": "low", "1": "medium", "2": "high"}, Probabilities: map[string]float64{"0": 0, "1": 0.3, "2": 0.7}, Confidence: 0.7},
 		},
-		Usage: Usage{InputTokens: 10, OutputTokens: 3},
+		Usage: Usage{InputTokens: 10, OutputTokens: 3, RequestCount: 1},
 	}
 }
 
@@ -78,6 +78,8 @@ func TestRejectInvalidAnswers(t *testing.T) {
 			r.Answers["s"] = ScoreAnswer{Score: 0.1, Legend: map[string]string{"0": "low", "1": "medium", "2": "high"}, Probabilities: map[string]float64{"0": 0, "1": 0.3, "2": 0.7}, Confidence: 0.7}
 		},
 		func(r *Response) { r.Usage.InputTokens = -1 },
+		func(r *Response) { r.Usage.RequestCount = 0 },
+		func(r *Response) { r.Usage.RequestCount = -1 },
 	} {
 		response := sampleResponse()
 		mutate(&response)

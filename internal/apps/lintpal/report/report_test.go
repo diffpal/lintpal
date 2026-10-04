@@ -2,6 +2,7 @@ package report
 
 import (
 	"errors"
+	"math"
 	"strings"
 	"testing"
 
@@ -28,5 +29,41 @@ func TestNewAnchorsAndSort(t *testing.T) {
 	report.SchemaVersion = "unknown"
 	if !errors.Is(Validate(report), ErrInvalidReport) {
 		t.Fatal("invalid version accepted")
+	}
+}
+
+func TestValidateReviewMetrics(t *testing.T) {
+	result := git.Result{Revisions: git.Revisions{
+		Base: strings.Repeat("a", 40), Head: strings.Repeat("b", 40), MergeBase: strings.Repeat("a", 40),
+	}}
+	report, err := New(result, nil, "systemone", "model", Stats{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	zero, positive, negative, nan, infinity := 0.0, 0.125, -0.1, math.NaN(), math.Inf(1)
+	for _, tc := range []struct {
+		name    string
+		metrics *ReviewMetrics
+		valid   bool
+	}{
+		{"legacy", nil, true},
+		{"complete", &ReviewMetrics{RequestCount: 2, ReviewDurationMS: 12, CostUSD: &positive}, true},
+		{"unknown-cost", &ReviewMetrics{RequestCount: 1}, true},
+		{"zero-requests", &ReviewMetrics{CostUSD: &zero}, true},
+		{"negative-requests", &ReviewMetrics{RequestCount: -1}, false},
+		{"negative-duration", &ReviewMetrics{RequestCount: 1, ReviewDurationMS: -1}, false},
+		{"negative-cost", &ReviewMetrics{RequestCount: 1, CostUSD: &negative}, false},
+		{"nan-cost", &ReviewMetrics{RequestCount: 1, CostUSD: &nan}, false},
+		{"infinite-cost", &ReviewMetrics{RequestCount: 1, CostUSD: &infinity}, false},
+		{"zero-requests-unknown-cost", &ReviewMetrics{}, false},
+		{"zero-requests-positive-cost", &ReviewMetrics{CostUSD: &positive}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			candidate := report
+			candidate.Stats.Review = tc.metrics
+			if got := Validate(candidate) == nil; got != tc.valid {
+				t.Fatalf("valid = %t, want %t", got, tc.valid)
+			}
+		})
 	}
 }
