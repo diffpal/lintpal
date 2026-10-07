@@ -158,7 +158,12 @@ func (l *Linter) Lint(parent context.Context, request Request) (report.Report, e
 		return report.Report{}, stageError(parent, ctx, "questions", err)
 	}
 	started = time.Now()
-	batches, err := contextplan.Plan(ctx, groups, bindings, request.Model, limits.Context)
+	var batches []contextplan.Batch
+	if sizer, ok := l.provider.(jev.RequestSizer); ok {
+		batches, err = contextplan.PlanWithSizer(ctx, groups, bindings, request.Model, limits.Context, sizer.RequestSize)
+	} else {
+		batches, err = contextplan.Plan(ctx, groups, bindings, request.Model, limits.Context)
+	}
 	l.observe(StagePlan, started, len(batches), err)
 	if err != nil {
 		return report.Report{}, stageError(parent, ctx, "plan", err)

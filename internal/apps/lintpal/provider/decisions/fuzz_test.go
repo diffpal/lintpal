@@ -25,3 +25,21 @@ func FuzzResponseEnvelope(f *testing.F) {
 		}
 	})
 }
+
+func FuzzOpenAIResponseEnvelope(f *testing.F) {
+	f.Add([]byte(openAIResponse))
+	f.Add([]byte(`{"model":"gpt-6-luna","answers":[{"type":"refusal","name":"n"}],"usage":{"input_tokens":1,"input_tokens_details":{"cached_tokens":0,"cache_write_tokens":0},"output_tokens":0}}`))
+	f.Add([]byte(`{"raw":"openai-provider-body-sentinel"}`))
+	request := typedRequest()
+	request.Model = "gpt-6-luna"
+	request.State = "bounded source"
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) > maxResponseBytes {
+			return
+		}
+		response, err := (openAICodec{}).decode(data, request)
+		if err != nil && (!errors.Is(err, ErrProtocol) || strings.Contains(err.Error(), "openai-provider-body-sentinel") || len(response.Answers) != 0) {
+			t.Fatal("unsafe or partial OpenAI response")
+		}
+	})
+}

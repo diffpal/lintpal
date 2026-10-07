@@ -33,10 +33,10 @@ catalog into the same directory.
 ## Choose a provider
 
 LintPal supports TypeSafe/Jev (`jev`, the default), OpenRouter (`openrouter`),
-OpenAI (`openai`, assuming a compatible Decisions API), and your own compatible
-endpoint (`custom`). Follow [provider setup](configuration.md#supported-providers)
-for credentials and commands for each. OpenAI live availability is unverified
-and its preset requires an explicit model. The example below uses TypeSafe/Jev.
+the official OpenAI Decisions API (`openai`), and your own compatible endpoint
+(`custom`). Follow [provider setup](configuration.md#supported-providers) for
+credentials and commands for each. The OpenAI API is in limited preview and
+its preset requires an explicit model. The example below uses TypeSafe/Jev.
 
 ## Lint uncommitted or committed changes
 

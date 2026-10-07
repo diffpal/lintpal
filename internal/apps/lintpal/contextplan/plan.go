@@ -20,11 +20,22 @@ type stateBucket struct {
 	bindings []Binding
 }
 
+// RequestSizeFunc returns the serialized byte size of one provider request.
+type RequestSizeFunc func(jev.Request) (int, error)
+
 // Plan creates bounded System One requests. Every binding appears once, and
 // equal state strings share a request whenever the complete request fits.
 func Plan(ctx context.Context, groups []Group, bindings []Binding, model string, limits Limits) ([]Batch, error) {
+	return PlanWithSizer(ctx, groups, bindings, model, limits, sharedRequestSize)
+}
+
+// PlanWithSizer creates bounded requests using the selected provider's exact encoding size.
+func PlanWithSizer(ctx context.Context, groups []Group, bindings []Binding, model string, limits Limits, size RequestSizeFunc) ([]Batch, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if size == nil {
+		return nil, ErrInvalidInput
 	}
 	l, err := limits.normalized()
 	if err != nil {
@@ -152,7 +163,7 @@ func Plan(ctx context.Context, groups []Group, bindings []Binding, model string,
 			}
 			if len(current.Request.Questions) >= l.MaxQuestionsPerBatch {
 				var err error
-				batches, planBytes, err = appendBatch(batches, current, planBytes, l)
+				batches, planBytes, err = appendBatch(batches, current, planBytes, l, size)
 				if err != nil {
 					return nil, err
 				}
@@ -164,7 +175,7 @@ func Plan(ctx context.Context, groups []Group, bindings []Binding, model string,
 			if !contains(current.GroupIDs, binding.GroupID) {
 				current.GroupIDs = append(current.GroupIDs, binding.GroupID)
 			}
-			fits, err := requestFits(current.Request, l)
+			fits, err := requestFits(current.Request, l, size)
 			if err != nil {
 				return nil, err
 			}
@@ -177,7 +188,7 @@ func Plan(ctx context.Context, groups []Group, bindings []Binding, model string,
 				if !groupUsed(current, binding.GroupID, info) {
 					current.GroupIDs = current.GroupIDs[:len(current.GroupIDs)-1]
 				}
-				batches, planBytes, err = appendBatch(batches, current, planBytes, l)
+				batches, planBytes, err = appendBatch(batches, current, planBytes, l, size)
 				if err != nil {
 					return nil, err
 				}
@@ -185,7 +196,7 @@ func Plan(ctx context.Context, groups []Group, bindings []Binding, model string,
 					Request: jev.Request{Model: model, State: bucket.state,
 						Questions: map[string]jev.Question{binding.QuestionID: binding.Question}},
 					ItemByQuestion: map[string]string{binding.QuestionID: binding.WorkItemID}}
-				fits, err = requestFits(current.Request, l)
+				fits, err = requestFits(current.Request, l, size)
 				if err != nil {
 					return nil, err
 				}
@@ -196,7 +207,7 @@ func Plan(ctx context.Context, groups []Group, bindings []Binding, model string,
 		}
 		if len(current.Request.Questions) > 0 {
 			var err error
-			batches, planBytes, err = appendBatch(batches, current, planBytes, l)
+			batches, planBytes, err = appendBatch(batches, current, planBytes, l, size)
 			if err != nil {
 				return nil, err
 			}
@@ -223,23 +234,34 @@ func groupUsed(batch Batch, groupID string, info map[string]groupInfo) bool {
 	return false
 }
 
-func appendBatch(batches []Batch, batch Batch, planBytes int, limits Limits) ([]Batch, int, error) {
-	body, err := requestBody(batch.Request)
+func appendBatch(batches []Batch, batch Batch, planBytes int, limits Limits, size RequestSizeFunc) ([]Batch, int, error) {
+	requestBytes, err := size(batch.Request)
 	if err != nil {
 		return nil, 0, err
 	}
-	if len(body) > limits.MaxPlanBytes-planBytes {
+	if requestBytes < 0 {
+		return nil, 0, ErrInvalidInput
+	}
+	if requestBytes > limits.MaxPlanBytes-planBytes {
 		return nil, 0, ErrLimit
 	}
-	return append(batches, batch), planBytes + len(body), nil
+	return append(batches, batch), planBytes + requestBytes, nil
 }
 
-func requestFits(request jev.Request, limits Limits) (bool, error) {
-	body, err := requestBody(request)
+func requestFits(request jev.Request, limits Limits, size RequestSizeFunc) (bool, error) {
+	requestBytes, err := size(request)
 	if err != nil {
 		return false, err
 	}
-	return len(body) <= limits.MaxRequestBytes && len(body) <= limits.ByteBudget, nil
+	if requestBytes < 0 {
+		return false, ErrInvalidInput
+	}
+	return requestBytes <= limits.MaxRequestBytes && requestBytes <= limits.ByteBudget, nil
+}
+
+func sharedRequestSize(request jev.Request) (int, error) {
+	body, err := requestBody(request)
+	return len(body), err
 }
 
 // requestBody mirrors the Decisions transport's request JSON fields so the

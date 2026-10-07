@@ -50,6 +50,42 @@ func TestPlanRequestMatchesTransportEncoding(t *testing.T) {
 	}
 }
 
+func TestPlanUsesOpenAIWireSize(t *testing.T) {
+	groups, bindings := testPlanInput(t)
+	provider, err := decisions.New(decisions.OpenAI(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateByGroup := make(map[string]string, len(groups))
+	for _, group := range groups {
+		stateByGroup[group.ID] = group.State
+	}
+	maxSingle := 0
+	for _, binding := range bindings {
+		size, err := provider.RequestSize(jev.Request{Model: "gpt-6-luna", State: stateByGroup[binding.GroupID],
+			Questions: map[string]jev.Question{binding.QuestionID: binding.Question}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if size > maxSingle {
+			maxSingle = size
+		}
+	}
+	batches, err := PlanWithSizer(t.Context(), groups, bindings, "gpt-6-luna", Limits{MaxRequestBytes: maxSingle}, provider.RequestSize)
+	if err != nil || len(batches) != len(bindings) {
+		t.Fatalf("OpenAI split: %v, batches=%d", err, len(batches))
+	}
+	for _, batch := range batches {
+		size, err := provider.RequestSize(batch.Request)
+		if err != nil || size > maxSingle {
+			t.Fatalf("oversized OpenAI batch: %v, bytes=%d", err, size)
+		}
+	}
+	if _, err := PlanWithSizer(t.Context(), groups, bindings, "gpt-6-luna", Limits{MaxRequestBytes: maxSingle - 1}, provider.RequestSize); !errors.Is(err, ErrLimit) {
+		t.Fatalf("single OpenAI question should refuse: %v", err)
+	}
+}
+
 func TestPlanByteBoundaryAndIdenticalState(t *testing.T) {
 	groups, bindings := testPlanInput(t)
 	// An identical state may serve distinct work items while retaining both IDs.

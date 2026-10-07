@@ -8,6 +8,11 @@ type Provider interface {
 	Evaluate(context.Context, Request) (Response, error)
 }
 
+// RequestSizer is an optional provider capability for exact wire-byte planning.
+type RequestSizer interface {
+	RequestSize(Request) (int, error)
+}
+
 // Request is independent of the provider's wire format.
 type Request struct {
 	Model     string

@@ -28,9 +28,21 @@ type Endpoint struct {
 	base                *url.URL
 	apiPath             string
 	tokenEnv            string
+	codecKind           codecKind
 	usagePricing        bool
 	inputUSDPerMillion  float64
 	outputUSDPerMillion float64
+}
+
+func (e Endpoint) codec() (codec, error) {
+	switch e.codecKind {
+	case sharedCodecKind:
+		return sharedCodec{}, nil
+	case openAICodecKind:
+		return openAICodec{}, nil
+	default:
+		return nil, ErrInvalidEndpoint
+	}
 }
 
 // TypeSafe uses the fixed native System One destination and token source.
@@ -46,10 +58,10 @@ func OpenRouter() Endpoint {
 	return Endpoint{base: base, apiPath: "/alpha/decisions", tokenEnv: "OPENROUTER_API_KEY"}
 }
 
-// OpenAI uses the assumed compatible Decisions destination and its own key.
+// OpenAI uses the official Decisions destination and its own wire codec.
 func OpenAI() Endpoint {
 	base, _ := url.Parse(openAIBase)
-	return Endpoint{base: base, apiPath: "/v1/decisions", tokenEnv: "OPENAI_API_KEY"}
+	return Endpoint{base: base, apiPath: "/v1/decisions", tokenEnv: "OPENAI_API_KEY", codecKind: openAICodecKind}
 }
 
 // TrustedCustom constructs a custom endpoint from process-trusted settings.
