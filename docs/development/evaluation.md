@@ -21,9 +21,12 @@ export LINTPAL_EVAL_OUTPUT=/tmp/lintpal-live-before.json
 scripts/eval-live.sh
 ```
 
-For the fixed presets, set `LINTPAL_EVAL_PROVIDER=jev` with `TYPESAFE_API_KEY`, or `openrouter` with `OPENROUTER_API_KEY`, or `openai` with `OPENAI_API_KEY`
-and an explicit accepted model under the assumed compatible OpenAI Decisions
-contract (live availability unverified); omit custom endpoint settings for presets. A custom token variable can be selected with `LINTPAL_EVAL_AUTH_TOKEN_ENV`;
+For the fixed presets, set `LINTPAL_EVAL_PROVIDER=jev` with `TYPESAFE_API_KEY`,
+or `openrouter` with `OPENROUTER_API_KEY`, or `openai` with `OPENAI_API_KEY`
+and an explicit accepted model such as `gpt-6-luna` for the official OpenAI
+Decisions API; omit custom endpoint settings for presets. OpenAI access may be
+limited while the API is in preview. A custom token variable can be selected
+with `LINTPAL_EVAL_AUTH_TOKEN_ENV`;
 `LINTPAL_EVAL_API_PATH` selects the custom path (default `/v1/systemone`).
 Custom rejects preset key variable names. The helper refuses a missing credential and the default `jev-latest` alias. No live job is part of pull-request CI, and the helper makes no request until an operator runs it.
 

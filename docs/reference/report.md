@@ -53,9 +53,13 @@ counter name `diagnostics`), and provider-reported token totals. Its optional
 milliseconds, and optional provider-specific USD cost. The direct TypeSafe
 adapter calculates Jev cost from reported input tokens at the
 [published $0.042 per million rate](https://typesafe.ai/blog/introducing-system-one-models-and-jev);
-output tokens are free. Other adapters use `usage.cost` from the provider. A
-missing `cost_usd` means the aggregate cost is unknown. A zero token count does
-not prove the provider used no tokens.
+output tokens are free. The OpenAI adapter calculates `gpt-6-luna` Standard
+short-context cost from reported uncached input, cached input, cache writes,
+and output tokens using the
+[published OpenAI rates](https://developers.openai.com/api/docs/pricing).
+Provider-reported cost takes precedence when available. Other models and
+adapters omit `cost_usd` when no supported price or provider cost is available.
+A zero token count does not prove the provider used no tokens.
 
 The gate runs after the complete report is written. The default
 `--fail-on high` returns exit code `10` for a high or critical finding;

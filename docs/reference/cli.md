@@ -36,9 +36,9 @@ lintpal lint --uncommitted
 export OPENROUTER_API_KEY='...'
 lintpal lint --base origin/main --head HEAD --provider openrouter --format json
 
-# Use the assumed compatible OpenAI Decisions endpoint with an explicit model
+# Use the official OpenAI Decisions endpoint with an explicit model
 export OPENAI_API_KEY='...'
-lintpal lint --base origin/main --head HEAD --provider openai --model '<model-id>'
+lintpal lint --base origin/main --head HEAD --provider openai --model gpt-6-luna
 
 # Use a custom endpoint and write an atomic JSON artifact
 export LINTPAL_TOKEN='...'
@@ -83,8 +83,9 @@ for complete commands, endpoint and credential choices.
 
 `jev` uses `https://api.typesafe.ai/v1/systemone`; OpenRouter uses
 `https://openrouter.ai/api/alpha/decisions`. OpenAI fixes
-`https://api.openai.com/v1/decisions` under the assumed compatible API contract;
-live availability is not verified. OpenAI requires `--model` or `LINTPAL_MODEL`.
+`https://api.openai.com/v1/decisions` and uses the official Decisions schema.
+As of October 6, 2026, the API is in limited preview. OpenAI requires `--model`
+or `LINTPAL_MODEL`; `gpt-6-luna` is the documented Decisions model.
 Without an override, OpenRouter uses `typesafe/jev-1.13`; jev/custom use `jev-latest`.
 
 Custom appends `--api-path` (default `/v1/systemone`) to the trusted base URL
@@ -96,7 +97,7 @@ rejects all three preset key variable names. Invalid configuration fails before 
 - **Uncommitted vs. Committed**: With `--uncommitted`, LintPal reviews working-tree modifications, staged edits, and untracked regular files against `HEAD`. Combining `--uncommitted` with `--base` or `--head` is rejected. In this mode, `head_sha` in reports is set to `UNCOMMITTED` and `base_sha` is the current `HEAD` commit SHA (or the Git empty tree if no commits exist). Untracked empty and binary files are skipped.
 - **Precedence Order**: Explicit CLI flags override environment variables (`LINTPAL_*`), which override `.env` values, which override built-in defaults. Provider credentials in process environment take precedence over `.env`.
 - **Credential Protection**: Before writing any report or artifact, LintPal checks output bytes against the active credential. If found, the run fails with exit code `4` without writing output.
-- **Metrics**: `--metrics` prints fixed stage lines to stderr (e.g. `metric stage=compare status=ok count=1 duration_ms=18`). Every successful findings artifact also stores numeric review aggregates under `stats.review`: provider request attempts, evaluate-stage duration, and optional provider-specific USD cost. Direct TypeSafe/Jev cost uses reported input tokens at $0.042 per million with free output; other adapters use cost reported by the provider. This uses the existing `--out` path and requires no new flag. No source code, prompt, endpoint, credential, response, or error text enters these metrics.
+- **Metrics**: `--metrics` prints fixed stage lines to stderr (e.g. `metric stage=compare status=ok count=1 duration_ms=18`). Every successful findings artifact also stores numeric review aggregates under `stats.review`: provider request attempts, evaluate-stage duration, and optional provider-specific USD cost. Direct TypeSafe/Jev cost uses reported input tokens at $0.042 per million with free output. OpenAI `gpt-6-luna` cost uses reported Standard short-context input, cached-input, cache-write, and output tokens; unsupported models omit cost unless the provider reports it. This uses the existing `--out` path and requires no new flag. No source code, prompt, endpoint, credential, response, or error text enters these metrics.
 
 Committed comparisons review the unique merge base of `--base` and `--head`
 through `--head`, equivalent to the range selected by `git diff BASE...HEAD`.
@@ -211,7 +212,7 @@ lintpal doctor
 export OPENROUTER_API_KEY='...'
 lintpal doctor --provider openrouter
 
-# Check OpenAI credential presence without contacting the assumed endpoint
+# Check OpenAI credential presence without contacting the endpoint
 export OPENAI_API_KEY='...'
 lintpal doctor --provider openai
 
@@ -338,7 +339,7 @@ All `lintpal` commands adhere to the following exit codes:
 | --- | --- | --- |
 | `TYPESAFE_API_KEY` | — | API key for the default `jev` (TypeSafe) provider. |
 | `OPENROUTER_API_KEY` | — | API key for the `openrouter` provider. |
-| `OPENAI_API_KEY` | — | API key for the `openai` preset (assumed compatible Decisions API). |
+| `OPENAI_API_KEY` | — | API key for the official OpenAI Decisions API preset. |
 | `LINTPAL_TOKEN` | `--auth-token-env` | Default environment variable checked for bearer token when `--provider custom` is used. |
 | `GITHUB_TOKEN` | `--auth-token-env` | Default token variable for `lintpal feedback github`. |
 | `LINTPAL_PROVIDER` | `--provider` | Default provider (`jev`, `openrouter`, `openai`, or `custom`). |

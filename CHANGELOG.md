@@ -3,6 +3,48 @@
 The [GitHub Releases](https://github.com/diffpal/lintpal/releases) page shows
 which versions have been published.
 
+## [0.8.0] - 2026-10-07
+
+### Added
+
+- Native support for OpenAI's official Decisions API request and response
+  schema, including predicate, choice, score, refusal, and usage handling.
+- Provider-aware request sizing so local batching limits use the selected wire
+  format exactly.
+
+### Changed
+
+- OpenAI examples use `gpt-6-luna` and document the API's preview access.
+- Review cost for `gpt-6-luna` uses reported Standard short-context input,
+  cached-input, cache-write, and output token categories. Unknown OpenAI models
+  retain an unknown cost unless the provider reports one.
+
+### Fixed
+
+- The `openai` preset now sends the official ordered question array instead of
+  the shared TypeSafe/OpenRouter question-map shape.
+- Malformed, refused, duplicate, unknown, missing, unnamed, or mismatched
+  OpenAI answers fail the complete review without partial findings.
+
+### Known limitations
+
+- OpenAI Decisions API is in limited preview and requires an explicit model.
+- LintPal currently sends text input only and supports string-valued choices.
+
+## [0.7.0] - 2026-10-04
+
+### Added
+
+- Successful findings artifacts include provider request count, review
+  duration, and optional USD cost in `stats.review`.
+- Markdown and GitHub feedback render the stored review summary without another
+  provider request.
+
+### Changed
+
+- LintPal owns the findings v5 schema while retaining DiffPal v5 as a design
+  and compatibility baseline.
+
 ## [0.6.1] - 2026-09-30
 
 This patch updates documentation and npm package copy. CLI runtime behavior

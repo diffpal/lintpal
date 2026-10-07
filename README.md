@@ -51,13 +51,14 @@ findings, and severity gate work the same way across providers.
 | --- | --- | --- | --- |
 | [**TypeSafe / Jev**](docs/guides/configuration.md#typesafe--jev) | Direct access to Jev; the default setup | `--provider jev` | `TYPESAFE_API_KEY` |
 | [**OpenRouter**](docs/guides/configuration.md#openrouter) | Decisions through your OpenRouter account | `--provider openrouter` | `OPENROUTER_API_KEY` |
-| [**OpenAI**](docs/guides/configuration.md#openai) | A preset for compatible OpenAI Decisions | `--provider openai --model <model-id>` | `OPENAI_API_KEY` |
+| [**OpenAI**](docs/guides/configuration.md#openai) | Native OpenAI Decisions API support | `--provider openai --model gpt-6-luna` | `OPENAI_API_KEY` |
 | [**Custom**](docs/guides/configuration.md#custom-compatible-service) | Your own compatible service, including a local endpoint | `--provider custom --base-url <url> --api-path <path>` | `LINTPAL_TOKEN` or your chosen token variable |
 
-All four provider options are included in
-[v0.6.0](https://github.com/diffpal/lintpal/releases/tag/v0.6.0).
-The OpenAI preset assumes a compatible `/v1/decisions` API; live availability
-has not been verified.
+All four provider options are included. The OpenAI preset uses the official
+[`POST /v1/decisions`](https://developers.openai.com/api/reference/resources/decisions/methods/create)
+schema. As of October 6, 2026, OpenAI describes Decisions API as a
+[limited preview](https://openai.com/index/devday-2026-recap/), so access may
+depend on the API account.
 See [provider setup and commands](docs/guides/configuration.md#supported-providers)
 for all four options. The quickstart below uses TypeSafe/Jev.
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,7 +21,6 @@ func (f roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) 
 func TestPresetAndCustomConformance(t *testing.T) {
 	t.Setenv("TYPESAFE_API_KEY", "native-secret")
 	t.Setenv("OPENROUTER_API_KEY", "router-secret")
-	t.Setenv("OPENAI_API_KEY", "openai-secret")
 	for _, tc := range []struct {
 		name     string
 		endpoint Endpoint
@@ -30,7 +30,6 @@ func TestPresetAndCustomConformance(t *testing.T) {
 	}{
 		{"typesafe", TypeSafe(), "https://api.typesafe.ai/v1/systemone", "native-secret", func() *float64 { value := 12 * typeSafeInputUSDPerMillion / 1_000_000; return &value }()},
 		{"openrouter", OpenRouter(), "https://openrouter.ai/api/alpha/decisions", "router-secret", nil},
-		{"openai", OpenAI(), "https://api.openai.com/v1/decisions", "openai-secret", nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
@@ -197,28 +196,34 @@ func TestOpenRouterDecisionsContract(t *testing.T) {
 	}
 }
 
-// Fixture for the operator-assumed compatible OpenAI contract, not a live response.
-const openAIResponse = `{"id":"gen-decision-fixture","provider":"TypeSafe","model":"decision-test-model-20260917","answers":{"n":{"type":"noul","noul":0.7},"c":{"type":"choice","choice":"risk","probabilities":{"safe":0.2,"risk":0.8},"confidence":0.6},"s":{"type":"score","score":0.8,"legend":{"0":"low","1":"high"},"probabilities":{"0":0.2,"1":0.8},"confidence":0.6}},"usage":{"input_tokens":12,"output_tokens":3,"cost":0.00002}}`
+// Mirrors the official OpenAI Decisions response shape documented on 2026-10-06.
+const openAIResponse = `{"model":"gpt-6-luna","answers":[{"type":"predicate","name":"n","probability":0.7},{"type":"choice","name":"c","choice":"risk","probabilities":[{"value":"safe","probability":0.2},{"value":"risk","probability":0.8}],"confidence":0.6},{"type":"score","name":"s","score":0.8,"probabilities":[{"label":"0","value":0,"probability":0.2},{"label":"1","value":1,"probability":0.8}],"confidence":0.6}],"usage":{"input_tokens":100,"input_tokens_details":{"cached_tokens":20,"cache_write_tokens":10},"output_tokens":5,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":105}}`
 
-func TestOpenAIAssumedDecisionsContract(t *testing.T) {
+func TestOpenAIDecisionsContract(t *testing.T) {
 	t.Setenv("TYPESAFE_API_KEY", "unselected-native-secret")
 	request := typedRequest()
-	request.Model = "decision-test-model"
+	request.Model = "gpt-6-luna"
+	request.State = "safe bounded state"
 	calls := 0
+	actualSize := 0
 	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		calls++
 		if r.Method != http.MethodPost || r.URL.String() != "https://api.openai.com/v1/decisions" || r.Header.Get("Authorization") != "Bearer openai-secret" || r.Header.Get("Content-Type") != "application/json" {
 			t.Fatalf("wrong Decisions destination/headers: %s %s", r.Method, r.URL)
 		}
-		var payload struct {
-			Model     string
-			State     map[string]any
-			Questions map[string]map[string]any
-		}
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
 			t.Fatal(err)
 		}
-		if payload.Model != request.Model || payload.State["file"] != "safe bounded state" || len(payload.Questions) != 3 || payload.Questions["n"]["type"] != "noul" || payload.Questions["c"]["type"] != "choice" || payload.Questions["s"]["type"] != "score" {
+		actualSize = len(body)
+		var payload openAIRequestWire
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatal(err)
+		}
+		if payload.Model != request.Model || payload.Input != "safe bounded state" || len(payload.Questions) != 3 ||
+			payload.Questions[0].Name != "c" || payload.Questions[0].Type != "choice" ||
+			payload.Questions[1].Name != "n" || payload.Questions[1].Type != "predicate" ||
+			payload.Questions[2].Name != "s" || payload.Questions[2].Type != "score" {
 			t.Fatalf("invalid Decisions payload: %+v", payload)
 		}
 		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(openAIResponse))}, nil
@@ -227,23 +232,33 @@ func TestOpenAIAssumedDecisionsContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	wantSize, err := provider.RequestSize(request)
+	if err != nil {
+		t.Fatal(err)
+	}
 	response, err := provider.Evaluate(t.Context(), request)
 	if err != nil || calls != 1 {
 		t.Fatalf("calls=%d err=%v", calls, err)
 	}
-	if response.Model != "decision-test-model-20260917" || response.Usage.InputTokens != 12 || response.Usage.OutputTokens != 3 || response.Usage.CostUSD == nil || *response.Usage.CostUSD != 0.00002 || len(response.Answers) != 3 {
+	if actualSize != wantSize || response.Model != "gpt-6-luna" || response.Usage.InputTokens != 100 || response.Usage.OutputTokens != 5 ||
+		response.Usage.CostUSD == nil || math.Abs(*response.Usage.CostUSD-0.00001095) > 1e-15 || len(response.Answers) != 3 {
 		t.Fatalf("normalization: %+v", response)
 	}
 	if response.Answers["n"].(jev.NoulAnswer).Probability != .7 || response.Answers["c"].(jev.ChoiceAnswer).Choice != "risk" || response.Answers["s"].(jev.ScoreAnswer).Score != .8 {
 		t.Fatalf("typed answers: %+v", response.Answers)
 	}
 	for _, body := range []string{
-		strings.Replace(openAIResponse, `"type":"noul"`, `"type":"unsupported"`, 1),
-		strings.Replace(openAIResponse, `"noul":0.7`, `"noul":1.7`, 1),
-		strings.Replace(openAIResponse, `"input_tokens":12`, `"input_tokens":-1`, 1),
-		strings.Replace(openAIResponse, `"n":{"type":"noul","noul":0.7},`, ``, 1),
+		strings.Replace(openAIResponse, `"type":"predicate"`, `"type":"unsupported"`, 1),
+		strings.Replace(openAIResponse, `"probability":0.7`, `"probability":1.7`, 1),
+		strings.Replace(openAIResponse, `"input_tokens":100`, `"input_tokens":-1`, 1),
+		strings.Replace(openAIResponse, `{"type":"predicate","name":"n","probability":0.7},`, ``, 1),
+		strings.Replace(openAIResponse, `"type":"predicate"`, `"type":"refusal"`, 1),
+		strings.Replace(openAIResponse, `"name":"n"`, `"name":null`, 1),
+		strings.Replace(openAIResponse, `"name":"n"`, `"name":"unknown"`, 1),
+		strings.Replace(openAIResponse, `"name":"n"`, `"name":"c"`, 1),
+		strings.Replace(openAIResponse, `"input_tokens_details":{"cached_tokens":20,"cache_write_tokens":10},`, ``, 1),
 	} {
-		if _, err := decodeResponse([]byte(body), request); !errors.Is(err, ErrProtocol) {
+		if _, err := (openAICodec{}).decode([]byte(body), request); !errors.Is(err, ErrProtocol) {
 			t.Fatalf("invalid Decisions envelope accepted: %v", err)
 		}
 	}

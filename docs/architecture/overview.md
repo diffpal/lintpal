@@ -71,9 +71,11 @@ questions per batch. Callers can lower limits but cannot exceed finite hard
 caps. One serialized UTF-8 byte counts as one token in the conservative local
 estimate; the actual provider tokenizer may differ. The request cap remains
 well below the Decisions transport's 1 MiB guard, and the byte budget reserves
-headroom beneath the portable 32K token target. Limit errors contain no source
-or question text. Source disclosure to a remote provider occurs when
-`app.Linter` sends a batch.
+headroom beneath the portable 32K token target. The Decisions provider exposes
+its selected wire codec's exact serialized size to the planner; providers
+without that optional capability retain the shared Decisions estimate. Limit
+errors contain no source or question text. Source disclosure to a remote
+provider occurs when `app.Linter` sends a batch.
 
 ## Declarative rules and policy
 
@@ -117,19 +119,23 @@ System One API; Choice and Score answers preserve distributions and confidence
 for later rule policy. `jev.ValidateRequest` and `jev.ValidateResponse` reject
 invalid or partial decisions without echoing state or question text.
 
-`internal/apps/lintpal/provider/decisions` shares request/answer codecs and
-HTTP retry logic across provider-specific routes. `TypeSafe()` fixes
+`internal/apps/lintpal/provider/decisions` selects a provider-specific codec
+behind shared HTTP retry logic. TypeSafe, OpenRouter, and custom use the shared
+System One shape. `TypeSafe()` fixes
 `https://api.typesafe.ai/v1/systemone` and `TYPESAFE_API_KEY`; `OpenRouter()`
 fixes `https://openrouter.ai/api/alpha/decisions` and `OPENROUTER_API_KEY`.
-`OpenAI()` fixes `https://api.openai.com/v1/decisions` and `OPENAI_API_KEY`
-under the operator-assumed compatible shape; live availability is unverified.
-OpenAI requires an explicit model.
+`OpenAI()` fixes `https://api.openai.com/v1/decisions` and `OPENAI_API_KEY`,
+maps the native typed port to OpenAI's official ordered Decisions schema, and
+requires an explicit model. Decisions API was in limited preview as of October
+6, 2026.
 The CLI defaults to `typesafe/jev-1.13` for OpenRouter and `jev-latest` for
 native/custom providers; explicitly configured models retain their precedence.
 The normalized response retains model, typed answers, tokens, request attempts,
 and optional provider-specific cost. The direct TypeSafe adapter derives cost
-from reported input tokens at its documented Jev rate; gateway adapters retain
-provider-reported cost. OpenRouter request `id` and `provider` metadata are
+from reported input tokens at its documented Jev rate. The OpenAI adapter
+derives `gpt-6-luna` Standard short-context cost from reported token classes;
+unsupported models have no local price. Provider-reported cost takes
+precedence. OpenRouter request `id` and `provider` metadata are
 ignored. `TrustedCustom(baseURL, tokenEnv)` must be called only
 from trusted process settings, never repository rules/config. It does not
 inherit preset tokens and rejects their environment variable names. Its

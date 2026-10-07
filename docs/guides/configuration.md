@@ -11,19 +11,19 @@ and the full [CLI reference](../reference/cli.md).
 ## Supported providers
 
 Choose TypeSafe/Jev for direct native access, OpenRouter to use your OpenRouter
-account, OpenAI for its compatible Decisions preset, or custom to connect your
+account, OpenAI for its native Decisions API, or custom to connect your
 own compatible service. All four use the same rules, findings, and gate.
 
 | Provider | Credential | Additional setting |
 | --- | --- | --- |
 | `jev` (default) | `TYPESAFE_API_KEY` | Fixed native endpoint; optional model alias |
 | `openrouter` | `OPENROUTER_API_KEY` | Fixed Decisions endpoint; optional model identifier |
-| `openai` | `OPENAI_API_KEY` | Fixed assumed Decisions endpoint; required `--model` or `LINTPAL_MODEL` |
+| `openai` | `OPENAI_API_KEY` | Official Decisions endpoint; required `--model` or `LINTPAL_MODEL` |
 | `custom` | `LINTPAL_TOKEN` by default | Required `--base-url`; optional `--api-path` and `--auth-token-env` |
 
 These commands assume a globally installed CLI (`npm install -g lintpal`),
 a Git worktree and [repository rules](../rules/authoring.md). All four provider
-options are included in [v0.6.0](https://github.com/diffpal/lintpal/releases/tag/v0.6.0).
+options are included in LintPal.
 
 ### TypeSafe / Jev
 
@@ -49,19 +49,27 @@ OpenRouter uses `https://openrouter.ai/api/alpha/decisions`, with model
 
 ### OpenAI
 
-The preset assumes OpenAI exposes `https://api.openai.com/v1/decisions` with
-the compatible Decisions shape. Its live availability and model identifiers
-have not been verified. Replace the model placeholder with one accepted by
-that service; LintPal requires an explicit model and supplies no OpenAI default.
+The preset uses OpenAI's official
+[`POST /v1/decisions`](https://developers.openai.com/api/reference/resources/decisions/methods/create)
+schema at `https://api.openai.com/v1/decisions`. LintPal maps its typed Noul,
+choice, and score questions to OpenAI predicate, choice, and score questions.
+It requires an explicit model and supplies no OpenAI default. As of October 6,
+2026, OpenAI describes Decisions API as a
+[limited preview](https://openai.com/index/devday-2026-recap/), so access may
+depend on the API account.
 
 ```bash
 export OPENAI_API_KEY='your-openai-key'
 lintpal doctor --provider openai
-lintpal lint --uncommitted --provider openai --model '<model-id>'
+lintpal lint --uncommitted --provider openai --model gpt-6-luna
 ```
 
 `doctor` checks local configuration and credential presence, not API or model
-availability.
+availability. For `gpt-6-luna`, LintPal calculates Standard short-context cost
+from reported input, cached-input, cache-write, and output tokens using the
+[OpenAI pricing published on October 6, 2026](https://developers.openai.com/api/docs/pricing).
+For other OpenAI models, `cost_usd` is omitted unless the provider reports a
+cost directly.
 
 ### Custom compatible service
 
